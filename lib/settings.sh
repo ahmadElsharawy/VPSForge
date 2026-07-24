@@ -58,7 +58,7 @@ update_menu() {
   [ -d "$repo/.git" ] || { echo "No Git repository configured."; pause; return; }
 
   echo "Checking available versions..."
-  git -C "$repo" fetch --tags --force || { echo "Failed to fetch versions."; pause; return; }
+  git -C "$repo" fetch --tags --force --prune --prune-tags || { echo "Failed to fetch versions."; pause; return; }
   mapfile -t tags < <(git -C "$repo" tag --sort=-version:refname)
   [ "${#tags[@]}" -gt 0 ] || { echo "No tagged versions found."; pause; return; }
 
