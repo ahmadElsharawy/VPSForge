@@ -8,6 +8,7 @@ ensure_setup() {
   command -v iptables >/dev/null 2>&1 || apt-get install -y iptables
   command -v netfilter-persistent >/dev/null 2>&1 || DEBIAN_FRONTEND=noninteractive apt-get install -y iptables-persistent
   command -v curl >/dev/null 2>&1 || apt-get install -y curl
+  command -v python3 >/dev/null 2>&1 || apt-get install -y python3
   incus network show incusbr0 >/dev/null 2>&1 || incus admin init --minimal
 
   sysctl -w net.ipv4.ip_forward=1 >/dev/null

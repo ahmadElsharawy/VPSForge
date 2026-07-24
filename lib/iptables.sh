@@ -4,7 +4,6 @@
 # ── Protocol Helper ──────────────────────────────────────────────────────────
 
 # Resolves "both" → "tcp udp"; otherwise returns the protocol as-is.
-# Usage: for proto in $(resolve_protocols "$protocol"); do ...; done
 # Resolves "both" → "tcp udp"; otherwise returns the protocol as-is.
 # Usage: for proto in $(resolve_protocols "$protocol"); do ...; done
 resolve_protocols() {
