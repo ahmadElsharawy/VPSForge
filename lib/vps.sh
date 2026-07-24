@@ -803,17 +803,7 @@ import_vps_backup() {
   restore_vps_port_forwards_metadata "$target_name" "$new_ip" || true
 
   echo "[  98% ] Restoring proxy configurations..."
-  local proxy_b64
-  proxy_b64=$(incus config get "$target_name" user.vpsforge.proxy 2>/dev/null || true)
-  if [ -n "$proxy_b64" ]; then
-    local proxy_file="/etc/caddy/vpsforge/${target_name}.caddy"
-    mkdir -p /etc/caddy/vpsforge
-    echo "$proxy_b64" | base64 -d > "$proxy_file"
-    # Update the internal IP in the Caddyfile to the newly assigned IP
-    sed -i -E "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/$new_ip/g" "$proxy_file"
-    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
-    echo "         Proxy domain routes restored for $target_name!"
-  fi
+  restore_vps_proxy_metadata "$target_name" "$new_ip" || true
 
   echo "[ 100% ] Success: $target_name restored at $new_ip (SSH Port $new_port)"
 }
