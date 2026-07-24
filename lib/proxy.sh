@@ -104,7 +104,13 @@ add_path_to_vps() {
     url_path=""
   else
     [[ "$url_path" != /* ]] && url_path="/$url_path"
-    [[ "$url_path" != */* ]] && url_path="$url_path*"
+    if [[ "$url_path" != *\* ]]; then
+      if [[ "$url_path" != */ ]]; then
+        url_path="${url_path}/*"
+      else
+        url_path="${url_path}*"
+      fi
+    fi
   fi
 
   echo -n "Enter target port inside VPS [Default: 80]: "
@@ -180,20 +186,50 @@ delete_path_from_vps() {
   echo -n "Enter the number of the path to delete (or leave empty to cancel): "
   read -r choice
   if [ -n "$choice" ] && [ -n "${lines[$choice]:-}" ]; then
-    # Delete the specific line from the file
-    local escaped_line=$(printf '%s\n' "${lines[$choice]}" | sed -e 's/[]\/$*.^|[]/\\&/g')
-    sed -i "/$escaped_line/d" "$conf_file"
+    local target_line="${lines[$choice]}"
+    local -a new_lines=()
+    local deleting=0
+    local brace_count=0
+
+    while IFS= read -r line; do
+      if [ $deleting -eq 1 ]; then
+        local open_b=$(echo "$line" | tr -cd '{' | wc -c)
+        local close_b=$(echo "$line" | tr -cd '}' | wc -c)
+        brace_count=$((brace_count + open_b - close_b))
+        if [ $brace_count -le 0 ]; then
+          deleting=0
+        fi
+        continue
+      fi
+
+      if [[ "$line" == "$target_line"* ]]; then
+        deleting=1
+        local open_b=$(echo "$line" | tr -cd '{' | wc -c)
+        local close_b=$(echo "$line" | tr -cd '}' | wc -c)
+        brace_count=$((open_b - close_b))
+        if [ $brace_count -le 0 ]; then
+          deleting=0
+        fi
+        continue
+      fi
+
+      new_lines+=("$line")
+    done < "$conf_file"
+
+    printf "%s\n" "${new_lines[@]}" > "$conf_file"
     
-    # If the file now only contains the domain and "}", it's basically empty. 
-    # Let's count lines
     local line_count=$(wc -l < "$conf_file")
     if [ "$line_count" -le 2 ]; then
       rm -f "$conf_file"
       echo "No paths left. Domain unlinked automatically."
     fi
 
-    systemctl reload-or-restart caddy
-    echo "SUCCESS: Path deleted."
+    if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
+      systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+      echo "SUCCESS: Path deleted."
+    else
+      echo "ERROR: Failed to delete path cleanly. Please use 'Manual Advanced Edit' or 'Unlink Domain' to fix the file."
+    fi
   else
     echo "Cancelled."
   fi
