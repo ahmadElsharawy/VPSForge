@@ -414,6 +414,8 @@ print_preserved_settings() {
 create_vps_snapshot() {
   local name="$1" snap_name="$2"
   [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"
+  snap_name=$(echo "$snap_name" | tr ' ' '_' | sed 's/[^a-zA-Z0-9_.-]//g')
+  [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"
   sync_vps_metadata "$name"
   echo "Creating snapshot '$snap_name' for $name..."
   incus snapshot create "$name" "$snap_name" && echo "Snapshot '$snap_name' created successfully."
@@ -426,16 +428,35 @@ list_vps_snapshots() {
 }
 
 restore_vps_snapshot() {
-  local name="$1" snap_name="$2"
+  local name="$1" snap_name="$2" was_running=false
+  [ -z "$snap_name" ] && { echo "No snapshot name specified."; return 1; }
+
+  if [ "$(get_state "$name")" = "RUNNING" ]; then
+    was_running=true
+    echo "Container $name is currently running. Stopping it to restore snapshot..."
+    incus stop "$name" --force 2>/dev/null || true
+  fi
+
   echo "Restoring $name to snapshot '$snap_name'..."
   if incus snapshot restore "$name" "$snap_name"; then
     echo "Snapshot '$snap_name' restored successfully."
     restore_vps_port_forwards_metadata "$name"
+    if [ "$was_running" = true ]; then
+      echo "Restarting container $name..."
+      incus start "$name" 2>/dev/null || true
+    fi
+  else
+    echo "Failed to restore snapshot '$snap_name'."
+    if [ "$was_running" = true ]; then
+      echo "Restarting container $name..."
+      incus start "$name" 2>/dev/null || true
+    fi
   fi
 }
 
 delete_vps_snapshot() {
   local name="$1" snap_name="$2"
+  [ -z "$snap_name" ] && { echo "No snapshot name specified."; return 1; }
   echo "Deleting snapshot '$snap_name' from $name..."
   incus snapshot delete "$name" "$snap_name" && echo "Snapshot '$snap_name' deleted."
 }
