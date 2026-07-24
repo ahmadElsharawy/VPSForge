@@ -293,13 +293,8 @@ delete_path_from_vps() {
 
 manage_vps_proxy() {
   ensure_caddy_installed
-  echo -n "Enter VPS Name to manage its paths (e.g. ${VPS_PREFIX}1): "
-  read -r vps_name
-  if ! incus info "$vps_name" >/dev/null 2>&1; then
-    echo "ERROR: VPS '$vps_name' does not exist."
-    sleep 2
-    return
-  fi
+  select_vps || { sleep 2; return; }
+  local vps_name="$SELECTED"
 
   local ip
   ip=$(get_ip "$vps_name")
