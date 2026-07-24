@@ -618,7 +618,8 @@ update_vps_backup() {
     if [[ "${confirm,,}" =~ ^y ]]; then
       sync_vps_metadata "$name"
       echo "Exporting fresh backup for $name to $SELECTED_BACKUP_FILE..."
-      if incus export "$name" "$SELECTED_BACKUP_FILE" --overwrite; then
+      rm -f "$SELECTED_BACKUP_FILE"
+      if incus export "$name" "$SELECTED_BACKUP_FILE"; then
         echo "Backup updated successfully: $SELECTED_BACKUP_FILE"
         incus config show "$name" --expanded > "${SELECTED_BACKUP_FILE}.info" 2>/dev/null || true
       fi
