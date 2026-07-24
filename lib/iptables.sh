@@ -209,17 +209,27 @@ port_forward_clear_rules_file() {
 
 # ── Container Metadata Port Forward Sync ─────────────────────────────────────
 
-sync_vps_port_forwards_metadata() {
+sync_vps_metadata() {
   local name="$1" ip rules=""
   [ -n "$name" ] || return 0
   ip=$(get_ip "$name" 2>/dev/null || true)
   [ -n "$ip" ] || return 0
 
+  # Sync Port Forwards
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     rules=$(grep "|${ip}|" "$PORT_FORWARD_RULES_FILE" 2>/dev/null | tr '\n' ';' || true)
   fi
-
   incus config set "$name" user.vpsforge.portforwards "$rules" 2>/dev/null || true
+
+  # Sync Proxy Config
+  local proxy_file="/etc/caddy/vpsforge/${name}.caddy"
+  if [ -f "$proxy_file" ]; then
+    local proxy_b64
+    proxy_b64=$(base64 -w0 "$proxy_file")
+    incus config set "$name" user.vpsforge.proxy "$proxy_b64" 2>/dev/null || true
+  else
+    incus config unset "$name" user.vpsforge.proxy 2>/dev/null || true
+  fi
 }
 
 restore_vps_port_forwards_metadata() {
@@ -435,7 +445,7 @@ port_forward_cli() {
       done
       save_iptables
       target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
-      [ -n "$target_vps" ] && sync_vps_port_forwards_metadata "$target_vps"
+      [ -n "$target_vps" ] && sync_vps_metadata "$target_vps"
       echo "Port forward applied: $protocol $external_ip:$external_port -> $internal_ip:$internal_port"
       ;;
 
@@ -456,7 +466,7 @@ port_forward_cli() {
       done
       save_iptables
       target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
-      [ -n "$target_vps" ] && sync_vps_port_forwards_metadata "$target_vps"
+      [ -n "$target_vps" ] && sync_vps_metadata "$target_vps"
       echo "Port forward updated: $protocol $external_ip:$external_port -> $internal_ip:$internal_port"
       ;;
 
@@ -473,7 +483,7 @@ port_forward_cli() {
       done
       save_iptables
       target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
-      [ -n "$target_vps" ] && sync_vps_port_forwards_metadata "$target_vps"
+      [ -n "$target_vps" ] && sync_vps_metadata "$target_vps"
       echo "Port forward removed: $protocol $external_ip:$external_port -> $internal_ip:$internal_port"
       ;;
 

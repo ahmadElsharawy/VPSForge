@@ -414,7 +414,7 @@ print_preserved_settings() {
 create_vps_snapshot() {
   local name="$1" snap_name="$2"
   [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"
-  sync_vps_port_forwards_metadata "$name"
+  sync_vps_metadata "$name"
   echo "Creating snapshot '$snap_name' for $name..."
   incus snapshot create "$name" "$snap_name" && echo "Snapshot '$snap_name' created successfully."
 }
@@ -595,7 +595,7 @@ update_vps_backup() {
     inspect_backup_file "$SELECTED_BACKUP_FILE"
     read -r -p "Overwrite and update '$(basename "$SELECTED_BACKUP_FILE")' with fresh data from $name? [y/N]: " confirm
     if [[ "${confirm,,}" =~ ^y ]]; then
-      sync_vps_port_forwards_metadata "$name"
+      sync_vps_metadata "$name"
       echo "Exporting fresh backup for $name to $SELECTED_BACKUP_FILE..."
       if incus export "$name" "$SELECTED_BACKUP_FILE" --overwrite; then
         echo "Backup updated successfully: $SELECTED_BACKUP_FILE"
@@ -609,7 +609,7 @@ update_vps_backup() {
 
 export_vps_backup() {
   local name="$1" file_path
-  sync_vps_port_forwards_metadata "$name"
+  sync_vps_metadata "$name"
   mkdir -p "$BACKUP_DIR"
   file_path="${BACKUP_DIR}/${name}-backup-$(date +%Y%m%d-%H%M%S).tar.gz"
   echo "Exporting backup for $name to $file_path..."
@@ -650,6 +650,7 @@ import_vps_backup() {
         old_ip=$(get_ip "$target_name"); old_port=$(get_port "$old_ip")
         remove_ip "$old_ip"; [ -n "$old_port" ] && remove_port "$old_port"
         [ -n "$old_ip" ] && port_forward_delete_rules_for_ip "$old_ip"
+        rm -f "/etc/caddy/vpsforge/${target_name}.caddy"
         incus delete "$target_name" --force >/dev/null 2>&1 || true
         ;;
       *)
@@ -710,6 +711,19 @@ import_vps_backup() {
   set_vps_password "$target_name" "$ROOT_PASSWORD"
   set_vps_saved_port "$target_name" "$new_port"
   restore_vps_port_forwards_metadata "$target_name" "$new_ip" >/dev/null 2>&1 || true
+
+  echo "[  98% ] Restoring proxy configurations..."
+  local proxy_b64
+  proxy_b64=$(incus config get "$target_name" user.vpsforge.proxy 2>/dev/null || true)
+  if [ -n "$proxy_b64" ]; then
+    local proxy_file="/etc/caddy/vpsforge/${target_name}.caddy"
+    mkdir -p /etc/caddy/vpsforge
+    echo "$proxy_b64" | base64 -d > "$proxy_file"
+    # Update the internal IP in the Caddyfile to the newly assigned IP
+    sed -i -E "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/$new_ip/g" "$proxy_file"
+    systemctl reload caddy >/dev/null 2>&1 || true
+    echo "         Proxy domain routes restored for $target_name!"
+  fi
 
   echo "[ 100% ] Success: $target_name restored at $new_ip (SSH Port $new_port)"
 }

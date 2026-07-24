@@ -372,6 +372,7 @@ delete_vps_menu() {
     ip=$(get_ip "$n"); p=$(get_port "$ip")
     remove_ip "$ip"; [ -n "$p" ] && remove_port "$p"
     [ -n "$ip" ] && port_forward_delete_rules_for_ip "$ip"
+    rm -f "/etc/caddy/vpsforge/${n}.caddy"
     incus delete "$n" --force >/dev/null 2>&1 || true
     if incus list -c n --format csv 2>/dev/null | grep -Fxq "$n"; then
       echo "WARNING: $n still appears in Incus after delete attempt."
@@ -379,6 +380,7 @@ delete_vps_menu() {
       echo "Deleted $n"
     fi
   done
+  systemctl reload caddy >/dev/null 2>&1 || true
   save_iptables
 }
 
