@@ -800,7 +800,7 @@ import_vps_backup() {
   set_vps_user "$target_name" "root"
   set_vps_password "$target_name" "$ROOT_PASSWORD"
   set_vps_saved_port "$target_name" "$new_port"
-  restore_vps_port_forwards_metadata "$target_name" "$new_ip" >/dev/null 2>&1 || true
+  restore_vps_port_forwards_metadata "$target_name" "$new_ip" || true
 
   echo "[  98% ] Restoring proxy configurations..."
   local proxy_b64

@@ -292,27 +292,32 @@ restore_vps_port_forwards_metadata() {
       [ -n "$conflict_vps" ] && conflict_vps="$conflict_vps ($conflict)" || conflict_vps="$conflict"
       
       echo ""
-      echo "WARNING: External port $ext_port ($protocol) is already forwarded to $conflict_vps."
+      echo "========================================================"
+      echo "PORT CONFLICT: External port $ext_port ($protocol) is already assigned to $conflict_vps."
       echo "1) Skip this port for $name"
-      echo "2) Steal this port (remove from $conflict_vps, give to $name)"
-      echo "3) Enter a different external port for $name"
+      echo "2) Overwrite / Move port from $conflict_vps to $name"
+      echo "3) Change external port (enter a new port for $name)"
+      echo "========================================================"
       local choice new_ext_port
       while :; do
         read -r -p "Choice [1-3]: " choice
         case "$choice" in
-          1) continue 2 ;; # skip this rule entirely
+          1) continue 2 ;; # skip this rule
           2)
             port_forward_cli delete "$protocol" "$ext_ip" "$ext_port" "$conflict" "$int_port" >/dev/null 2>&1
             break
             ;;
           3)
-            read -r -p "New External Port: " new_ext_port
-            if [[ "$new_ext_port" =~ ^[0-9]+$ ]]; then
+            read -r -p "Enter new external port for $name: " new_ext_port
+            if [[ "$new_ext_port" =~ ^[0-9]+$ ]] && [ "$new_ext_port" -ge 1 ] && [ "$new_ext_port" -le 65535 ]; then
               ext_port="$new_ext_port"
               break
             else
-              echo "Invalid port."
+              echo "Invalid port. Please enter a valid port number (1-65535)."
             fi
+            ;;
+          *)
+            echo "Invalid choice. Please enter 1, 2, or 3."
             ;;
         esac
       done
