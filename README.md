@@ -1,5 +1,4 @@
-# VPSForge v1.0.14
-
+# VPSForge v1.0.15
 VPSForge is an interactive Terminal Bash Manager for lightweight Ubuntu & Linux containers powered by Incus.
 
 ## Main Features
@@ -74,14 +73,25 @@ vpsforge snapshot vps1
 vpsforge backup vps1
 ```
 
-## Ubuntu Versions Supported
+## Supported OS Distributions
 
-When adding a VPS, choose your preferred Ubuntu release:
+When adding a VPS, you can choose from a wide variety of Linux distributions. We strongly support **Minimal** images for the lowest resource footprint:
+
+**Ubuntu Releases:**
 - `1) Ubuntu 24.04 LTS (Noble Numbat - Default)`
 - `2) Ubuntu 22.04 LTS (Jammy Jellyfish)`
 - `3) Ubuntu 20.04 LTS (Focal Fossa)`
-- `4) Ubuntu 24.04 Minimal`
-- `5) Ubuntu 22.04 Minimal`
+- `4) Ubuntu 24.04 Minimal` *(Highly Recommended for low RAM)*
+- `5) Ubuntu 22.04 Minimal` *(Highly Recommended for low RAM)*
+
+**Other Linux Distributions:**
+- **Debian** (12 Bookworm / 11 Bullseye / 10 Buster)
+- **Alpine Linux** (Extremely lightweight, boots in seconds)
+- **AlmaLinux** (9 / 8)
+- **Rocky Linux** (9 / 8)
+- **Fedora / CentOS Stream**
+- **Arch Linux**
+- *Plus: Search capability for any other distribution available in the Incus repository!*
 
 ## Interactive Port Forwarding
 
