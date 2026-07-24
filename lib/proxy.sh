@@ -49,8 +49,14 @@ list_all_domains() {
     local domain
     domain=$(head -n 1 "$conf" | awk '{print $1}')
     
-    # Extract reverse_proxy lines
+    # Extract reverse_proxy lines with their domains
+    local current_dom=""
     while read -r line; do
+      if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+        current_dom=$(echo "$line" | awk '{print $1}')
+        current_dom=${current_dom%,}
+      fi
+      
       if [[ "$line" == *"reverse_proxy"* ]]; then
         # format: reverse_proxy /path/* https://ip:port
         local path_str="/"
@@ -58,7 +64,7 @@ list_all_domains() {
         
         # Count words
         local words=($line)
-        if [ "${#words[@]}" -ge 3 ]; then
+        if [ "${#words[@]}" -ge 3 ] && [[ "${words[1]}" == *"/"* ]]; then
           path_str="${words[1]}"
           target_str="${words[2]}"
         else
@@ -66,7 +72,7 @@ list_all_domains() {
           target_str="${words[1]}"
         fi
         
-        printf "%-15s %-25s %-15s %-15s\n" "$vps_name" "$domain" "$path_str" "$target_str"
+        printf "%-15s %-25s %-15s %-15s\n" "$vps_name" "$current_dom" "$path_str" "$target_str"
       fi
     done < "$conf"
   done
@@ -207,10 +213,22 @@ delete_path_from_vps() {
   echo "Current paths for $vps_name:"
   local -a lines=()
   local i=1
+  local current_dom=""
   while read -r line; do
+    if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+      current_dom=$(echo "$line" | awk '{print $1}')
+      current_dom=${current_dom%,}
+    fi
     if [[ "$line" == *"reverse_proxy"* ]]; then
-      echo "$i) $line"
       lines[$i]="$line"
+      local display_line="$line"
+      if [[ "$line" == *"reverse_proxy /"* ]]; then
+        display_line=$(echo "$line" | sed "s|reverse_proxy \(/[^ ]*\)|reverse_proxy https://$current_dom\1|")
+      else
+        display_line=$(echo "$line" | sed "s|reverse_proxy |reverse_proxy https://$current_dom/ |")
+      fi
+      display_line=$(echo "$display_line" | sed 's/^[ \t]*//')
+      echo "$i) $display_line"
       ((i++))
     fi
   done < "$conf_file"
@@ -307,7 +325,23 @@ manage_vps_proxy() {
     
     if [ -f "$conf_file" ]; then
       echo "CURRENT PATHS:"
-      grep "reverse_proxy" "$conf_file" | sed 's/^[ \t]*//' | sed 's/^/- /'
+      local current_dom=""
+      while read -r line; do
+        if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+          current_dom=$(echo "$line" | awk '{print $1}')
+          current_dom=${current_dom%,}
+        fi
+        if [[ "$line" == *"reverse_proxy"* ]]; then
+          local display_line="$line"
+          if [[ "$line" == *"reverse_proxy /"* ]]; then
+            display_line=$(echo "$line" | sed "s|reverse_proxy \(/[^ ]*\)|reverse_proxy https://$current_dom\1|")
+          else
+            display_line=$(echo "$line" | sed "s|reverse_proxy |reverse_proxy https://$current_dom/ |")
+          fi
+          display_line=$(echo "$display_line" | sed 's/^[ \t]*//')
+          echo "- $display_line"
+        fi
+      done < "$conf_file"
       echo "----------------------------------------------------------------"
     fi
 
