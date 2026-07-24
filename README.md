@@ -134,8 +134,7 @@ Configured Port-Forward Rules:
 ### Quick Install from GitHub
 
 ```bash
-curl -Ls https://raw.githubusercontent.com/ahmadElsharawy/VPSForge/main/install.sh -o /tmp/vpsforge-install.sh && \
-VPSFORGE_REPO_URL=https://github.com/ahmadElsharawy/VPSForge.git bash /tmp/vpsforge-install.sh
+curl -sSL https://raw.githubusercontent.com/ahmadElsharawy/VPSForge/main/install.sh | sudo bash
 ```
 
 ### Manual Install
