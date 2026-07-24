@@ -1,0 +1,33 @@
+name: Create Release on Tag
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create_release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: |
+            ## VPSForge ${{ github.ref_name }}
+
+            - **Modular Clean Architecture**: Split into 9 clean modules under `lib/`.
+            - **Snapshots & Backups**: Instant snapshots, list, restore, and `.tar.gz` export/import.
+            - **Realtime Resource Monitoring**: Live Network I/O (↓Received ↑Sent) directly on dashboard.
+            - **Dynamic Ubuntu Discovery**: Auto-fetches all available Ubuntu releases (Standard & Minimal) from Incus.
+            - **Interactive Port Forwarding**: Select VPS name/number and rule index effortlessly.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
