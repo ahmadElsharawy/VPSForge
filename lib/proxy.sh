@@ -24,7 +24,7 @@ ensure_caddy_installed() {
   if [ -f "$MAIN_CADDYFILE" ]; then
     if ! grep -q "import /etc/caddy/vpsforge/\*.caddy" "$MAIN_CADDYFILE"; then
       echo -e "\nimport /etc/caddy/vpsforge/*.caddy" >> "$MAIN_CADDYFILE"
-      systemctl reload caddy >/dev/null 2>&1 || true
+      systemctl reload-or-restart caddy >/dev/null 2>&1 || true
     fi
   else
     echo "import /etc/caddy/vpsforge/*.caddy" > "$MAIN_CADDYFILE"
@@ -140,13 +140,13 @@ add_path_to_vps() {
 
   echo "Validating Caddy configuration..."
   if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
-    systemctl reload caddy
+    systemctl reload-or-restart caddy
     echo "SUCCESS: $domain$url_path is now securely routed to $vps_name (${target_schema}://$ip:$target_port)"
   else
     echo "ERROR: Invalid configuration! Opening file in nano so you can fix it manually..."
     sleep 2
     nano "$conf_file"
-    systemctl reload caddy >/dev/null 2>&1 || true
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
   fi
 }
 
@@ -192,7 +192,7 @@ delete_path_from_vps() {
       echo "No paths left. Domain unlinked automatically."
     fi
 
-    systemctl reload caddy
+    systemctl reload-or-restart caddy
     echo "SUCCESS: Path deleted."
   else
     echo "Cancelled."
@@ -253,7 +253,7 @@ manage_vps_proxy() {
         if [ -f "$conf_file" ]; then
           nano "$conf_file"
           echo "Validating..."
-          caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1 && systemctl reload caddy && echo "Reloaded successfully." || echo "Validation failed! Please fix errors."
+          caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1 && systemctl reload-or-restart caddy && echo "Reloaded successfully." || echo "Validation failed! Please fix errors."
         else
           echo "No config exists yet. Add a path first."
         fi
@@ -262,7 +262,7 @@ manage_vps_proxy() {
       4)
         if [ -f "$conf_file" ]; then
           rm -f "$conf_file"
-          systemctl reload caddy
+          systemctl reload-or-restart caddy
           echo "SUCCESS: Domain and all paths unlinked."
         fi
         echo "Press Enter..."; read -r

@@ -380,7 +380,7 @@ delete_vps_menu() {
       echo "Deleted $n"
     fi
   done
-  systemctl reload caddy >/dev/null 2>&1 || true
+  systemctl reload-or-restart caddy >/dev/null 2>&1 || true
   save_iptables
 }
 

@@ -721,7 +721,7 @@ import_vps_backup() {
     echo "$proxy_b64" | base64 -d > "$proxy_file"
     # Update the internal IP in the Caddyfile to the newly assigned IP
     sed -i -E "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/$new_ip/g" "$proxy_file"
-    systemctl reload caddy >/dev/null 2>&1 || true
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
     echo "         Proxy domain routes restored for $target_name!"
   fi
 
