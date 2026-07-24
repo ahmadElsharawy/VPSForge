@@ -780,6 +780,9 @@ import_vps_backup() {
   new_port=$(vps_fixed_port "$new_num")
 
   echo "[  75% ] Applying Incus compatibility & basic network..."
+  incus config unset "$target_name" volatile.eth0.hwaddr >/dev/null 2>&1 || true
+  incus config unset "$target_name" volatile.eth0.host_name >/dev/null 2>&1 || true
+  incus config device unset "$target_name" eth0 hwaddr >/dev/null 2>&1 || true
   apply_incus_compatibility_profile "$target_name" >/dev/null 2>&1 || true
   configure_vps_network_device "$target_name" >/dev/null 2>&1 || true
   incus config set "$target_name" user.vpsforge.ip "$new_ip" >/dev/null 2>&1 || true
