@@ -82,7 +82,6 @@ add_path_to_vps() {
   local ip="$2"
   local conf_file="$CADDY_CONF_DIR/${vps_name}.caddy"
   local domain=""
-
   if [ ! -f "$conf_file" ]; then
     echo -n "Enter Domain Name for this VPS (e.g. app1.domain.com): "
     read -r domain
@@ -91,11 +90,13 @@ add_path_to_vps() {
       sleep 2
       return
     fi
-    echo "$domain {" > "$conf_file"
-    echo "}" >> "$conf_file"
   else
-    domain=$(head -n 1 "$conf_file" | awk '{print $1}')
-    echo "Using existing domain for this VPS: $domain"
+    local existing_domain=$(head -n 1 "$conf_file" | awk '{print $1}')
+    echo -n "Enter Domain Name [Default: $existing_domain]: "
+    read -r domain
+    if [ -z "$domain" ]; then
+      domain="$existing_domain"
+    fi
   fi
 
   echo -n "Enter Path (e.g. /sub/ or leave empty for root '/'): "
@@ -133,16 +134,53 @@ add_path_to_vps() {
     }"
   fi
 
-  # Remove closing bracket, append, re-add closing bracket
-  sed -i '$ d' "$conf_file"
-  
+  local proxy_line=""
   if [ -n "$url_path" ]; then
-    echo "    reverse_proxy $url_path ${target_schema}://$ip:$target_port$caddy_transport" >> "$conf_file"
+    proxy_line="    reverse_proxy $url_path ${target_schema}://$ip:$target_port$caddy_transport"
   else
-    echo "    reverse_proxy ${target_schema}://$ip:$target_port$caddy_transport" >> "$conf_file"
+    proxy_line="    reverse_proxy ${target_schema}://$ip:$target_port$caddy_transport"
   fi
-  
-  echo "}" >> "$conf_file"
+
+  if [ ! -f "$conf_file" ]; then
+    echo "$domain {" > "$conf_file"
+    echo "$proxy_line" >> "$conf_file"
+    echo "}" >> "$conf_file"
+  else
+    local -a new_lines=()
+    local in_domain=0
+    local brace_count=0
+    local inserted=0
+
+    while IFS= read -r line; do
+      if [ $inserted -eq 0 ]; then
+        if [ $in_domain -eq 1 ]; then
+          local open_b=$(echo "$line" | tr -cd '{' | wc -c)
+          local close_b=$(echo "$line" | tr -cd '}' | wc -c)
+          brace_count=$((brace_count + open_b - close_b))
+          
+          if [ $brace_count -le 0 ]; then
+            new_lines+=("$proxy_line")
+            inserted=1
+          fi
+        else
+          if [[ "$line" == "$domain {"* ]] || [[ "$line" == "$domain,"* ]]; then
+            in_domain=1
+            brace_count=1
+          fi
+        fi
+      fi
+      new_lines+=("$line")
+    done < "$conf_file"
+
+    if [ $inserted -eq 0 ]; then
+      new_lines+=("")
+      new_lines+=("$domain {")
+      new_lines+=("$proxy_line")
+      new_lines+=("}")
+    fi
+
+    printf "%s\n" "${new_lines[@]}" > "$conf_file"
+  fi
 
   echo "Validating Caddy configuration..."
   if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
