@@ -237,15 +237,16 @@ manage_vps_proxy() {
       echo "----------------------------------------------------------------"
     fi
 
+    echo "0) Back"
     echo "1) Add New Path"
     echo "2) Delete a Path"
     echo "3) Manual Advanced Edit (nano)"
     echo "4) Unlink Domain (Delete All Paths)"
-    echo "5) Back"
     echo "================================================================"
-    echo -n "Select an option [1-5]: "
+    echo -n "Select an option [0-4]: "
     read -r choice
     case "$choice" in
+      0) break ;;
       1) add_path_to_vps "$vps_name" "$ip"; echo "Press Enter..."; read -r ;;
       2) delete_path_from_vps "$vps_name"; echo "Press Enter..."; read -r ;;
       3) 
@@ -266,7 +267,6 @@ manage_vps_proxy() {
         fi
         echo "Press Enter..."; read -r
         ;;
-      5) break ;;
       *) sleep 1 ;;
     esac
   done
@@ -278,16 +278,16 @@ proxy_menu() {
     echo "================================================================"
     echo "                  DOMAINS & REVERSE PROXY (CADDY)"
     echo "================================================================"
+    echo "0) Back to Main Menu"
     echo "1) List All Linked Domains & Paths"
     echo "2) Manage Paths for a VPS (Add/Delete/Edit)"
-    echo "3) Back to Main Menu"
     echo "================================================================"
-    echo -n "Select an option [1-3]: "
+    echo -n "Select an option [0-2]: "
     read -r choice
     case "$choice" in
+      0) break ;;
       1) list_all_domains; echo "Press Enter to continue..."; read -r ;;
       2) manage_vps_proxy ;;
-      3) break ;;
       *) echo "Invalid option." ; sleep 1 ;;
     esac
   done

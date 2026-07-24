@@ -72,8 +72,8 @@ dashboard() {
   echo "9) Shell"
   echo "10) Connection"
   echo "11) Port Forward"
-  echo "12) Snapshots & Backups"
-  echo "13) Domains & Reverse Proxy"
+  echo "12) Domains & Reverse Proxy"
+  echo "13) Snapshots & Backups"
   echo "14) Settings"
   echo "15) Exit"
 }
@@ -768,12 +768,12 @@ port_forward_menu() {
     echo
     port_forward_list_rules
     echo
+    echo "0) Back"
     echo "1) Add Rule"
     echo "2) Edit Rule"
     echo "3) Delete Rule"
     echo "4) Delete ALL Rules"
     echo "5) Active NAT Status"
-    echo "0) Back"
     echo
     read -r -p "Choice: " c
 
@@ -805,6 +805,7 @@ backup_vps_menu() {
     echo "              SNAPSHOTS & BACKUPS"
     echo "================================================"
     echo
+    echo "0) Back"
     echo "1) Create Snapshot"
     echo "2) List Snapshots"
     echo "3) Restore Snapshot"
@@ -814,7 +815,6 @@ backup_vps_menu() {
     echo "7) Inspect Backup File Details"
     echo "8) Update / Overwrite Existing Backup"
     echo "9) Delete Backup File"
-    echo "0) Back"
     echo
     read -r -p "Choice: " c
 
@@ -915,8 +915,8 @@ interactive() {
       9)  shell_menu;;
       10) bulk_connection_menu; pause;;
       11) port_forward_menu; pause;;
-      12) backup_vps_menu;;
-      13) proxy_menu;;
+      12) proxy_menu;;
+      13) backup_vps_menu;;
       14) settings_menu;;
       15) exit 0;;
       *)  sleep 1;;
