@@ -837,18 +837,18 @@ backup_vps_menu() {
         ask_vps_selection "VPS name or number: " || { pause; continue; }
         [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
         n="${SELECTED_VPS[0]}"
-        list_vps_snapshots "$n"
-        read -r -p "Snapshot name to restore: " snap_name
-        [ -n "$snap_name" ] && restore_vps_snapshot "$n" "$snap_name"
+        if select_vps_snapshot "$n" "Snapshot number or name to restore: "; then
+          restore_vps_snapshot "$n" "$SELECTED_SNAPSHOT"
+        fi
         pause
         ;;
       4)
         ask_vps_selection "VPS name or number: " || { pause; continue; }
         [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
         n="${SELECTED_VPS[0]}"
-        list_vps_snapshots "$n"
-        read -r -p "Snapshot name to delete: " snap_name
-        [ -n "$snap_name" ] && delete_vps_snapshot "$n" "$snap_name"
+        if select_vps_snapshot "$n" "Snapshot number or name to delete: "; then
+          delete_vps_snapshot "$n" "$SELECTED_SNAPSHOT"
+        fi
         pause
         ;;
       5)

@@ -421,15 +421,64 @@ create_vps_snapshot() {
   incus snapshot create "$name" "$snap_name" && echo "Snapshot '$snap_name' created successfully."
 }
 
+SNAPSHOT_NAMES_RESULT=()
+SELECTED_SNAPSHOT=""
+
 list_vps_snapshots() {
-  local name="$1"
+  local name="$1" s date_created
+  SNAPSHOT_NAMES_RESULT=()
   echo "Snapshots for $name:"
-  incus snapshot list "$name" --format csv 2>/dev/null | awk -F',' 'NF {printf "  - %s (Created: %s)\n", $1, $2}' || echo "No snapshots found."
+  while IFS=',' read -r s date_created rest; do
+    [ -n "$s" ] || continue
+    SNAPSHOT_NAMES_RESULT+=("$s")
+    printf "   %2d) %-35s (Created: %s)\n" "${#SNAPSHOT_NAMES_RESULT[@]}" "$s" "$date_created"
+  done < <(incus snapshot list "$name" --format csv 2>/dev/null || true)
+
+  if [ "${#SNAPSHOT_NAMES_RESULT[@]}" -eq 0 ]; then
+    echo "  No snapshots found for $name."
+    return 1
+  fi
+  return 0
+}
+
+select_vps_snapshot() {
+  local name="$1" prompt="${2:-Snapshot number or name: }" c snap
+  SELECTED_SNAPSHOT=""
+
+  if ! list_vps_snapshots "$name"; then
+    return 1
+  fi
+
+  read -r -p "$prompt" c
+  [ -z "$c" ] && return 1
+
+  if [[ "$c" =~ ^[0-9]+$ ]] && [ "$c" -ge 1 ] && [ "$c" -le "${#SNAPSHOT_NAMES_RESULT[@]}" ]; then
+    SELECTED_SNAPSHOT="${SNAPSHOT_NAMES_RESULT[$((c-1))]}"
+    return 0
+  else
+    for snap in "${SNAPSHOT_NAMES_RESULT[@]}"; do
+      if [ "$snap" = "$c" ]; then
+        SELECTED_SNAPSHOT="$c"
+        return 0
+      fi
+    done
+    echo "Invalid snapshot selection: $c"
+    return 1
+  fi
 }
 
 restore_vps_snapshot() {
   local name="$1" snap_name="$2" was_running=false
-  [ -z "$snap_name" ] && { echo "No snapshot name specified."; return 1; }
+  [ -z "$snap_name" ] && { echo "No snapshot specified."; return 1; }
+
+  # Resolve numeric index if passed directly
+  if [[ "$snap_name" =~ ^[0-9]+$ ]]; then
+    local -a snaps=()
+    mapfile -t snaps < <(incus snapshot list "$name" --format csv 2>/dev/null | cut -d',' -f1 || true)
+    if [ "$snap_name" -ge 1 ] && [ "$snap_name" -le "${#snaps[@]}" ]; then
+      snap_name="${snaps[$((snap_name-1))]}"
+    fi
+  fi
 
   if [ "$(get_state "$name")" = "RUNNING" ]; then
     was_running=true
@@ -456,7 +505,17 @@ restore_vps_snapshot() {
 
 delete_vps_snapshot() {
   local name="$1" snap_name="$2"
-  [ -z "$snap_name" ] && { echo "No snapshot name specified."; return 1; }
+  [ -z "$snap_name" ] && { echo "No snapshot specified."; return 1; }
+
+  # Resolve numeric index if passed directly
+  if [[ "$snap_name" =~ ^[0-9]+$ ]]; then
+    local -a snaps=()
+    mapfile -t snaps < <(incus snapshot list "$name" --format csv 2>/dev/null | cut -d',' -f1 || true)
+    if [ "$snap_name" -ge 1 ] && [ "$snap_name" -le "${#snaps[@]}" ]; then
+      snap_name="${snaps[$((snap_name-1))]}"
+    fi
+  fi
+
   echo "Deleting snapshot '$snap_name' from $name..."
   incus snapshot delete "$name" "$snap_name" && echo "Snapshot '$snap_name' deleted."
 }
