@@ -638,6 +638,7 @@ inspect_backup_file() {
   cpu_lim=$(echo "$index_content" | awk -F': ' '/limits\.cpu:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "Unlimited")
   os_img=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.image:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "Ubuntu")
   pfs=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.portforwards:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "-")
+  proxy_b64=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.proxy:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "-")
 
   [ -n "$orig_ip" ] || orig_ip="-"
   [ -n "$orig_port" ] || orig_port="-"
@@ -661,6 +662,14 @@ inspect_backup_file() {
     echo "Forwarded Ports: $(echo "$pfs" | tr ';' ' ')"
   else
     echo "Forwarded Ports: None"
+  fi
+  if [ -n "$proxy_b64" ] && [ "$proxy_b64" != "-" ]; then
+    local proxy_decoded doms
+    proxy_decoded=$(echo "$proxy_b64" | base64 -d 2>/dev/null || true)
+    doms=$(echo "$proxy_decoded" | awk '/\{/{print $1}' | tr '\n' ' ' | sed 's/ *$//')
+    [ -n "$doms" ] && echo "Linked Domains:  $doms" || echo "Linked Domains:  Configured"
+  else
+    echo "Linked Domains:  None"
   fi
   echo "================================================"
 }

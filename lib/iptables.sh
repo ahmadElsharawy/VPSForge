@@ -206,6 +206,29 @@ port_forward_clear_rules_file() {
   : > "$file"
 }
 
+# Auto-sync active iptables NAT rules to rules file
+port_forward_auto_sync_active_rules() {
+  local line proto ext_port int_ip int_port
+  mkdir -p "$(dirname "$PORT_FORWARD_RULES_FILE")"
+  touch "$PORT_FORWARD_RULES_FILE"
+
+  while read -r line; do
+    [ -n "$line" ] || continue
+    proto=$(echo "$line" | grep -oP '-p \K\w+' || true)
+    ext_port=$(echo "$line" | grep -oP '--dport \K\d+' || true)
+    int_ip=$(echo "$line" | grep -oP '--to-destination \K[^:]+' || true)
+    int_port=$(echo "$line" | grep -oP '--to-destination [^:]+:\K\d+' || true)
+
+    if [ -n "$proto" ] && [ -n "$ext_port" ] && [ -n "$int_ip" ] && [ -n "$int_port" ]; then
+      # Exclude default SSH ports (9000-9999 -> 22)
+      if [ "$ext_port" -ge 9000 ] && [ "$ext_port" -le 9999 ] && [ "$int_port" -eq 22 ]; then
+        continue
+      fi
+      port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" "$proto" "0.0.0.0" "$ext_port" "$int_ip" "$int_port"
+    fi
+  done < <(iptables -t nat -S PREROUTING 2>/dev/null | grep -E 'DNAT --to-destination' || true)
+}
+
 # ── Container Metadata Port Forward Sync ─────────────────────────────────────
 
 sync_vps_metadata() {
@@ -213,6 +236,9 @@ sync_vps_metadata() {
   [ -n "$name" ] || return 0
   ip=$(get_ip "$name" 2>/dev/null || true)
   [ -n "$ip" ] || return 0
+
+  # Auto-sync active rules first
+  port_forward_auto_sync_active_rules
 
   # Sync Port Forwards
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
@@ -224,7 +250,7 @@ sync_vps_metadata() {
   local proxy_file="/etc/caddy/vpsforge/${name}.caddy"
   if [ -f "$proxy_file" ]; then
     local proxy_b64
-    proxy_b64=$(base64 -w0 "$proxy_file")
+    proxy_b64=$(base64 -w0 "$proxy_file" 2>/dev/null || base64 "$proxy_file" | tr -d '\n')
     incus config set "$name" user.vpsforge.proxy "$proxy_b64" 2>/dev/null || true
   else
     incus config unset "$name" user.vpsforge.proxy 2>/dev/null || true
@@ -287,6 +313,15 @@ restore_vps_port_forwards_metadata() {
     port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" "$protocol" "$ext_ip" "$ext_port" "$target_ip" "$int_port"
   done
   save_iptables
+
+  # Restore Proxy (Caddy) Config if present in metadata
+  local proxy_b64
+  proxy_b64=$(incus config get "$name" user.vpsforge.proxy 2>/dev/null || true)
+  if [ -n "$proxy_b64" ]; then
+    mkdir -p /etc/caddy/vpsforge
+    echo "$proxy_b64" | base64 -d > "/etc/caddy/vpsforge/${name}.caddy" 2>/dev/null || true
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+  fi
 }
 
 # ── Bulk Rule Operations ────────────────────────────────────────────────────
