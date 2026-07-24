@@ -1,4 +1,4 @@
-# VPSForge v1.0.5
+# VPSForge v1.0.6
 
 VPSForge is an interactive Terminal Bash Manager for lightweight Ubuntu & Linux containers powered by Incus.
 
