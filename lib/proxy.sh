@@ -39,7 +39,7 @@ list_domains() {
   echo "================================================================"
   echo "                 LINKED DOMAINS & PROXIES"
   echo "================================================================"
-  printf "%-30s %-20s %-20s\n" "DOMAIN" "VPS TARGET" "INTERNAL IP"
+  printf "%-30s %-20s %-20s\n" "DOMAIN" "VPS TARGET" "TARGET (IP:PORT)"
   printf '%s\n' "----------------------------------------------------------------------"
   
   local found=0
@@ -87,16 +87,22 @@ link_domain() {
     return
   fi
 
+  echo -n "Enter target port inside VPS [Default: 80]: "
+  read -r target_port
+  if [ -z "$target_port" ]; then
+    target_port="80"
+  fi
+
   local conf_file="$CADDY_CONF_DIR/${vps_name}.caddy"
   
   echo "$domain {" > "$conf_file"
-  echo "    reverse_proxy $ip:80" >> "$conf_file"
+  echo "    reverse_proxy $ip:$target_port" >> "$conf_file"
   echo "}" >> "$conf_file"
 
   echo "Validating Caddy configuration..."
   if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
     systemctl reload caddy
-    echo "SUCCESS: $domain is now securely routed to $vps_name ($ip:80)"
+    echo "SUCCESS: $domain is now securely routed to $vps_name ($ip:$target_port)"
   else
     echo "ERROR: Invalid Caddy configuration generated."
     rm -f "$conf_file"
