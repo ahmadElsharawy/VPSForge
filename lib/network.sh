@@ -93,14 +93,6 @@ remove_ip() {
   done
 }
 
-free_port() {
-  local p=$((SSH_PORT_BASE + 1))
-  while iptables -t nat -L PREROUTING -n 2>/dev/null | grep -qE "dpt:${p}([^0-9]|$)"; do
-    p=$((p+1))
-  done
-  echo "$p"
-}
-
 vps_fixed_port() {
   local num="$1"
   echo $((SSH_PORT_BASE + num))
