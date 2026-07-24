@@ -525,9 +525,9 @@ restore_vps_proxy_metadata() {
         echo "--------------------------------------------------------"
         echo "1) Skip this proxy route for $target_name"
         echo "2) Overwrite / Transfer route to $target_name (remove route from $conflict_vps)"
-        echo "3) Change Path for $target_name (keep domain '$main_dom')"
-        echo "4) Change Target Port for $target_name"
-        echo "5) Change Domain Name for $target_name"
+        echo "3) Change Domain Name & Target Port for $target_name"
+        echo "4) Change Path for $target_name (keep domain '$main_dom')"
+        echo "5) Change Target Port only for $target_name"
         echo "========================================================"
         
         local opt new_path new_port new_domain
@@ -545,6 +545,20 @@ restore_vps_proxy_metadata() {
               break
               ;;
             3)
+              read -r -p "Enter new Domain Name for $target_name: " new_domain
+              read -r -p "Enter new Target Port inside $target_name: " new_port
+              if [ -n "$new_domain" ]; then
+                main_dom="$new_domain"
+                if [ "${#final_lines[@]}" -gt 0 ]; then
+                  final_lines[0]="$main_dom {"
+                fi
+              fi
+              if [[ "$new_port" =~ ^[0-9]+$ ]]; then
+                line=$(echo "$line" | sed -E "s/:[0-9]+/:$new_port/g")
+              fi
+              break
+              ;;
+            4)
               read -r -p "Enter new Path for $target_name (e.g. /app2/*): " new_path
               if [ -n "$new_path" ]; then
                 [[ "$new_path" != /* ]] && new_path="/$new_path"
@@ -554,26 +568,13 @@ restore_vps_proxy_metadata() {
                 echo "Path cannot be empty."
               fi
               ;;
-            4)
+            5)
               read -r -p "Enter new Target Port inside $target_name [e.g. 8080]: " new_port
               if [[ "$new_port" =~ ^[0-9]+$ ]]; then
                 line=$(echo "$line" | sed -E "s/:[0-9]+/:$new_port/g")
                 break
               else
                 echo "Invalid port."
-              fi
-              ;;
-            5)
-              read -r -p "Enter new Domain Name for $target_name: " new_domain
-              if [ -n "$new_domain" ]; then
-                main_dom="$new_domain"
-                # Update header in final_lines if needed
-                if [ "${#final_lines[@]}" -gt 0 ]; then
-                  final_lines[0]="$main_dom {"
-                fi
-                break
-              else
-                echo "Domain cannot be empty."
               fi
               ;;
             *)
