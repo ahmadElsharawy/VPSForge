@@ -208,25 +208,34 @@ port_forward_clear_rules_file() {
 
 # Auto-sync active iptables NAT rules to rules file
 port_forward_auto_sync_active_rules() {
-  local line proto ext_port int_ip int_port
+  local proto ext_port int_ip int_port
   mkdir -p "$(dirname "$PORT_FORWARD_RULES_FILE")"
   touch "$PORT_FORWARD_RULES_FILE"
 
-  while read -r line; do
-    [ -n "$line" ] || continue
-    proto=$(echo "$line" | grep -oP '-p \K\w+' || true)
-    ext_port=$(echo "$line" | grep -oP '--dport \K\d+' || true)
-    int_ip=$(echo "$line" | grep -oP '--to-destination \K[^:]+' || true)
-    int_port=$(echo "$line" | grep -oP '--to-destination [^:]+:\K\d+' || true)
-
-    if [ -n "$proto" ] && [ -n "$ext_port" ] && [ -n "$int_ip" ] && [ -n "$int_port" ]; then
-      # Exclude default SSH ports (9000-9999 -> 22)
-      if [ "$ext_port" -ge 9000 ] && [ "$ext_port" -le 9999 ] && [ "$int_port" -eq 22 ]; then
-        continue
-      fi
-      port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" "$proto" "0.0.0.0" "$ext_port" "$int_ip" "$int_port"
+  while IFS='|' read -r proto ext_port int_ip int_port; do
+    [ -n "$proto" ] && [ -n "$ext_port" ] && [ -n "$int_ip" ] && [ -n "$int_port" ] || continue
+    # Exclude default SSH ports (9000-9999 -> 22)
+    if [ "$ext_port" -ge 9000 ] && [ "$ext_port" -le 9999 ] && [ "$int_port" -eq 22 ]; then
+      continue
     fi
-  done < <(iptables -t nat -S PREROUTING 2>/dev/null | grep -E 'DNAT --to-destination' || true)
+    port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" "$proto" "0.0.0.0" "$ext_port" "$int_ip" "$int_port"
+  done < <(
+    iptables -t nat -S PREROUTING 2>/dev/null | grep -E 'DNAT --to-destination' | awk '{
+      proto=""; ext_port=""; int_ip=""; int_port="";
+      for (i=1; i<=NF; i++) {
+        if ($i == "-p" && i<NF) proto=$(i+1);
+        if ($i == "--dport" && i<NF) ext_port=$(i+1);
+        if ($i == "--to-destination" && i<NF) {
+          split($(i+1), a, ":");
+          int_ip=a[1];
+          int_port=a[2];
+        }
+      }
+      if (proto != "" && ext_port != "" && int_ip != "" && int_port != "") {
+        print proto "|" ext_port "|" int_ip "|" int_port;
+      }
+    }' || true
+  )
 }
 
 # ── Container Metadata Port Forward Sync ─────────────────────────────────────
