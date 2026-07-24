@@ -472,60 +472,129 @@ restore_vps_proxy_metadata() {
   proxy_b64=$(incus config get "$target_name" user.vpsforge.proxy 2>/dev/null || true)
   [ -n "$proxy_b64" ] || return 0
 
-  local proxy_content proxy_file old_dom choice new_dom conflict_file conflict_vps
+  local proxy_content proxy_file main_dom
   proxy_content=$(echo "$proxy_b64" | base64 -d 2>/dev/null || true)
   [ -n "$proxy_content" ] || return 0
 
   mkdir -p /etc/caddy/vpsforge
   proxy_file="/etc/caddy/vpsforge/${target_name}.caddy"
 
-  # Extract domain name from proxy_content (first line entry)
-  old_dom=$(echo "$proxy_content" | awk '/\{/{print $1}' | head -n 1 | tr -d '{},' || true)
+  main_dom=$(echo "$proxy_content" | awk '/\{/{print $1}' | head -n 1 | tr -d '{},' || true)
 
-  # Check if domain conflicts with an existing VPS caddy file
-  if [ -n "$old_dom" ]; then
-    conflict_file=$(grep -l -E "^\s*${old_dom}" /etc/caddy/vpsforge/*.caddy 2>/dev/null | grep -v "/${target_name}\.caddy$" | head -n 1 || true)
-    if [ -n "$conflict_file" ]; then
-      conflict_vps=$(basename "$conflict_file" .caddy)
-      echo ""
-      echo "========================================================"
-      echo "DOMAIN CONFLICT: Domain '$old_dom' is already assigned to $conflict_vps."
-      echo "1) Skip proxy domain for $target_name (keep domain on $conflict_vps)"
-      echo "2) Overwrite / Transfer domain to $target_name (remove from $conflict_vps, point to $target_name)"
-      echo "3) Enter a new domain name for $target_name"
-      echo "========================================================"
-      while :; do
-        read -r -p "Choice [1-3]: " choice
-        case "$choice" in
-          1)
-            echo "Proxy restore skipped for $target_name."
-            return 0
-            ;;
-          2)
-            echo "Transferring domain '$old_dom' to $target_name..."
-            rm -f "$conflict_file"
-            break
-            ;;
-          3)
-            read -r -p "Enter new domain name for $target_name: " new_dom
-            if [ -n "$new_dom" ]; then
-              proxy_content=$(echo "$proxy_content" | sed "s/$old_dom/$new_dom/g")
-              break
-            else
-              echo "Domain name cannot be empty."
-            fi
-            ;;
-          *)
-            echo "Invalid choice. Please enter 1, 2, or 3."
-            ;;
-        esac
-      done
+  local -a final_lines=()
+  local line
+
+  while IFS= read -r line; do
+    if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+      main_dom=$(echo "$line" | awk '{print $1}' | tr -d '{},')
+      final_lines+=("$line")
+      continue
     fi
-  fi
+
+    if [[ "$line" == *"reverse_proxy"* ]]; then
+      local path_str="/" target_str=""
+      local words=($line)
+      if [ "${#words[@]}" -ge 3 ] && [[ "${words[1]}" == *"/"* ]]; then
+        path_str="${words[1]}"
+        target_str="${words[2]}"
+      else
+        path_str="/"
+        target_str="${words[1]}"
+      fi
+
+      # Check if this exact Domain + Path exists in another VPS caddy file
+      local conflict_conf="" conflict_vps=""
+      if [ -n "$main_dom" ]; then
+        for other_conf in /etc/caddy/vpsforge/*.caddy; do
+          [ -e "$other_conf" ] || continue
+          [ "$other_conf" = "$proxy_file" ] && continue
+          if grep -q -F "$main_dom" "$other_conf" 2>/dev/null && grep -q -F "$path_str" "$other_conf" 2>/dev/null; then
+            conflict_conf="$other_conf"
+            conflict_vps=$(basename "$other_conf" .caddy)
+            break
+          fi
+        done
+      fi
+
+      if [ -n "$conflict_conf" ]; then
+        echo ""
+        echo "========================================================"
+        echo "CADDY PROXY CONFLICT FOR $target_name:"
+        echo "Domain: $main_dom | Path: $path_str"
+        echo "Currently routed to: $conflict_vps"
+        echo "--------------------------------------------------------"
+        echo "1) Skip this proxy route for $target_name"
+        echo "2) Overwrite / Transfer route to $target_name (remove route from $conflict_vps)"
+        echo "3) Change Path for $target_name (keep domain '$main_dom')"
+        echo "4) Change Target Port for $target_name"
+        echo "5) Change Domain Name for $target_name"
+        echo "========================================================"
+        
+        local opt new_path new_port new_domain
+        while :; do
+          read -r -p "Choice [1-5]: " opt
+          case "$opt" in
+            1)
+              echo "Route $path_str skipped for $target_name."
+              line=""
+              break
+              ;;
+            2)
+              echo "Transferring route $path_str to $target_name..."
+              sed -i "\#$path_str#d" "$conflict_conf" 2>/dev/null || true
+              break
+              ;;
+            3)
+              read -r -p "Enter new Path for $target_name (e.g. /app2/*): " new_path
+              if [ -n "$new_path" ]; then
+                [[ "$new_path" != /* ]] && new_path="/$new_path"
+                line=$(echo "$line" | sed "s#$path_str#$new_path#")
+                break
+              else
+                echo "Path cannot be empty."
+              fi
+              ;;
+            4)
+              read -r -p "Enter new Target Port inside $target_name [e.g. 8080]: " new_port
+              if [[ "$new_port" =~ ^[0-9]+$ ]]; then
+                line=$(echo "$line" | sed -E "s/:[0-9]+/:$new_port/g")
+                break
+              else
+                echo "Invalid port."
+              fi
+              ;;
+            5)
+              read -r -p "Enter new Domain Name for $target_name: " new_domain
+              if [ -n "$new_domain" ]; then
+                main_dom="$new_domain"
+                # Update header in final_lines if needed
+                if [ "${#final_lines[@]}" -gt 0 ]; then
+                  final_lines[0]="$main_dom {"
+                fi
+                break
+              else
+                echo "Domain cannot be empty."
+              fi
+              ;;
+            *)
+              echo "Invalid choice. Please enter 1, 2, 3, 4, or 5."
+              ;;
+          esac
+        done
+      fi
+    fi
+
+    [ -n "$line" ] && final_lines+=("$line")
+  done <<< "$proxy_content"
 
   # Write proxy file and update IP
-  echo "$proxy_content" > "$proxy_file"
+  printf "%s\n" "${final_lines[@]}" > "$proxy_file"
   sed -i -E "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/$new_ip/g" "$proxy_file"
-  systemctl reload-or-restart caddy >/dev/null 2>&1 || true
-  echo "Proxy domain routes restored for $target_name!"
+  
+  if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+    echo "Proxy domain routes updated & restored for $target_name!"
+  else
+    echo "WARNING: Caddy validation check completed."
+  fi
 }
