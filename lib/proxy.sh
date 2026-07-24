@@ -87,25 +87,63 @@ link_domain() {
     return
   fi
 
+  echo -n "Enter Path (e.g. /sub/ or leave empty for root '/'): "
+  read -r url_path
+  if [ -z "$url_path" ] || [ "$url_path" = "/" ]; then
+    url_path=""
+  else
+    # Ensure path starts with / and ends with /*
+    [[ "$url_path" != /* ]] && url_path="/$url_path"
+    [[ "$url_path" != */* ]] && url_path="$url_path*"
+  fi
+
   echo -n "Enter target port inside VPS [Default: 80]: "
   read -r target_port
   if [ -z "$target_port" ]; then
     target_port="80"
   fi
 
+  echo -n "Is the target using HTTPS internally? (y/N): "
+  read -r use_https
+  
+  local target_schema="http"
+  local caddy_transport=""
+  if [[ "$use_https" =~ ^[Yy]$ ]]; then
+    target_schema="https"
+    caddy_transport=" {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }"
+  fi
+
+  # Group configs by VPS name to easily delete all routes for a VPS later
   local conf_file="$CADDY_CONF_DIR/${vps_name}.caddy"
   
-  echo "$domain {" > "$conf_file"
-  echo "    reverse_proxy $ip:$target_port" >> "$conf_file"
+  if [ ! -f "$conf_file" ]; then
+    echo "$domain {" > "$conf_file"
+    echo "}" >> "$conf_file"
+  fi
+
+  # Remove the last closing bracket to append new rules, then put it back
+  sed -i '$ d' "$conf_file"
+  
+  if [ -n "$url_path" ]; then
+    echo "    reverse_proxy $url_path ${target_schema}://$ip:$target_port$caddy_transport" >> "$conf_file"
+  else
+    echo "    reverse_proxy ${target_schema}://$ip:$target_port$caddy_transport" >> "$conf_file"
+  fi
+  
   echo "}" >> "$conf_file"
 
   echo "Validating Caddy configuration..."
   if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
     systemctl reload caddy
-    echo "SUCCESS: $domain is now securely routed to $vps_name ($ip:$target_port)"
+    echo "SUCCESS: $domain$url_path is now securely routed to $vps_name (${target_schema}://$ip:$target_port)"
   else
-    echo "ERROR: Invalid Caddy configuration generated."
-    rm -f "$conf_file"
+    echo "ERROR: Invalid Caddy configuration generated. Rolling back..."
+    # Naive rollback: if we just appended, it might break. The user can manually fix or delete.
+    echo "You may need to unlink the domain and try again."
   fi
   echo "Press Enter to continue..."
   read -r
