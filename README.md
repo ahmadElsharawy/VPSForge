@@ -1,9 +1,10 @@
-# VPSForge v1.0.0
+# VPSForge v1.0.1
 
 VPSForge is an interactive Terminal Bash Manager for lightweight Ubuntu & Linux containers powered by Incus.
 
 ## Main Features
 
+- **Reverse Proxy & Auto-SSL (NEW)**: Built-in Caddy integration to route subdomains directly to containers with automatic HTTPS certificates.
 - **VPS Management**: Create, Delete, Start, Stop, Restart, and Reinstall single or multiple VPS containers.
 - **Inter-VPS Tenant Isolation**: Automatic L2/L3 firewall isolation between VPS containers. Containers share the internal subnet for WAN access but **cannot ping or connect to each other**.
 - **Ubuntu Version Choice**: Select between **Ubuntu 24.04 LTS**, **22.04 LTS**, **20.04 LTS**, or **Ubuntu Minimal** builds on creation.

@@ -7,7 +7,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v1.0.0"
+VPSFORGE_VERSION="v1.0.1"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -39,6 +39,7 @@ source "$LIB_DIR/resources.sh"
 source "$LIB_DIR/selection.sh"
 source "$LIB_DIR/vps.sh"
 source "$LIB_DIR/settings.sh"
+source "$LIB_DIR/proxy.sh"
 source "$LIB_DIR/menus.sh"
 
 # ── Root Check ───────────────────────────────────────────────────────────────

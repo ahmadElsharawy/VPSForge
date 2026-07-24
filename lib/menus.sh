@@ -73,8 +73,9 @@ dashboard() {
   echo "10) Connection"
   echo "11) Port Forward"
   echo "12) Snapshots & Backups"
-  echo "13) Settings"
-  echo "14) Exit"
+  echo "13) Domains & Reverse Proxy"
+  echo "14) Settings"
+  echo "15) Exit"
 }
 
 # ── Details ──────────────────────────────────────────────────────────────────
@@ -913,8 +914,9 @@ interactive() {
       10) bulk_connection_menu; pause;;
       11) port_forward_menu; pause;;
       12) backup_vps_menu;;
-      13) settings_menu;;
-      14) exit 0;;
+      13) proxy_menu;;
+      14) settings_menu;;
+      15) exit 0;;
       *)  sleep 1;;
     esac
   done
