@@ -194,6 +194,8 @@ create_vps() {
   echo "Installing and configuring SSH in $name..."
   _install_ssh "$name" "$ip" "$port" || return 1
 
+  _configure_guest_optimizations "$name"
+
   add_forward_rule "$ip" "$port"
   set_vps_user "$name" "root"
   set_vps_password "$name" "$ROOT_PASSWORD"
@@ -286,6 +288,30 @@ _install_ssh() {
   return 0
 }
 
+_configure_guest_optimizations() {
+  local name="$1"
+  echo "Applying guest optimizations (2GB Swap, MTU 1420, IP Forwarding) for $name..."
+  incus exec "$name" -- bash -c '
+    set -e
+    # 1. Automatic 2GB Swap configuration for Docker applications
+    if ! swapon --show 2>/dev/null | grep -q "/swapfile"; then
+      if [ ! -f /swapfile ]; then
+        fallocate -l 2G /swapfile 2>/dev/null || dd if=/dev/zero of=/swapfile bs=1M count=2048 2>/dev/null
+        chmod 600 /swapfile
+        mkswap /swapfile >/dev/null 2>&1 || true
+      fi
+      swapon /swapfile 2>/dev/null || true
+      grep -q "/swapfile" /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
+    fi
+
+    # 2. Network MTU tuning to prevent packet loss during Docker pulls / SSL handshakes
+    ip link set dev eth0 mtu 1420 2>/dev/null || true
+
+    # 3. Kernel forwarding sysctl for Docker containers
+    sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+  ' >/dev/null 2>&1 || true
+}
+
 # ── VPS Editing ──────────────────────────────────────────────────────────────
 
 validate_port() {
@@ -346,6 +372,7 @@ repair_vps_connection() {
   incus restart "$name" || true
   wait_ready "$name" || { echo "FAILED: $name did not become ready after profile refresh."; return 1; }
   incus exec "$name" -- touch /.dockerenv 2>/dev/null || true
+  _configure_guest_optimizations "$name"
 
   ip=$(get_ip "$name")
   [ -n "$ip" ] || { echo "FAILED: No IPv4 for $name."; return 1; }

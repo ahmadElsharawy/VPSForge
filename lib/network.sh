@@ -266,11 +266,12 @@ network:
   ethernets:
     eth0:
       dhcp4: no
+      mtu: 1420
       addresses:
-        - '"$ip"'/'"$prefix"'
+        - "$ip/$prefix"
       routes:
         - to: default
-          via: '"$gateway"'
+          via: "$gateway"
       nameservers:
         addresses:
           - 1.1.1.1
@@ -285,6 +286,7 @@ EOF
 
   incus exec "$name" -- bash -lc '
     set -e
+    ip link set eth0 mtu 1420 2>/dev/null || true
     ip link set eth0 up
     ip -4 addr flush dev eth0 scope global || true
     ip -4 addr add '"$ip"'/'"$prefix"' dev eth0
