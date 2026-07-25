@@ -382,17 +382,25 @@ delete_vps_menu() {
     remove_ip "$ip"; [ -n "$p" ] && remove_port "$p"
     [ -n "$ip" ] && port_forward_delete_rules_for_ip "$ip"
     rm -f "/etc/caddy/vpsforge/${n}.caddy"
+    
+    # Delete container snapshots first if any exist
+    local s_list
+    mapfile -t s_list < <(incus snapshot list "$n" --format csv 2>/dev/null | cut -d',' -f1 || true)
+    for snap in "${s_list[@]}"; do
+      [ -n "$snap" ] && incus snapshot delete "$n" "$snap" >/dev/null 2>&1 || true
+    done
+
     incus stop "$n" --force >/dev/null 2>&1 || true
-    local del_retry=0
+    local del_retry=0 del_err=""
     for del_retry in 1 2 3; do
-      incus delete "$n" --force >/dev/null 2>&1 || true
+      del_err=$(incus delete "$n" --force 2>&1 || true)
       if ! incus list -c n --format csv 2>/dev/null | grep -Fxq "$n"; then
         break
       fi
       sleep 1
     done
     if incus list -c n --format csv 2>/dev/null | grep -Fxq "$n"; then
-      echo "WARNING: $n still appears in Incus after delete attempt."
+      echo "WARNING: $n still appears in Incus. Details: ${del_err:-Unknown error}"
     else
       echo "Deleted $n"
     fi
