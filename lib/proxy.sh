@@ -191,6 +191,7 @@ add_path_to_vps() {
   echo "Validating Caddy configuration..."
   if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
     systemctl reload-or-restart caddy
+    incus exec "$vps_name" -- bash -c "grep -qF '$domain' /etc/hosts || echo '127.0.0.1 $domain' >> /etc/hosts" 2>/dev/null || true
     echo "SUCCESS: $domain$url_path is now securely routed to $vps_name (${target_schema}://$ip:$target_port)"
   else
     echo "ERROR: Invalid configuration! Opening file in nano so you can fix it manually..."

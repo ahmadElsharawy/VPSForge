@@ -316,6 +316,15 @@ _configure_guest_optimizations() {
     sysctl -w net.ipv4.conf.all.route_localnet=1 >/dev/null 2>&1 || true
     sysctl -w net.ipv4.conf.eth0.route_localnet=1 >/dev/null 2>&1 || true
   ' >/dev/null 2>&1 || true
+
+  # 4. Auto-sync configured reverse proxy domains to guest /etc/hosts for instant loopback resolution
+  local caddy_conf="/etc/caddy/vpsforge/${name}.caddy"
+  if [ -f "$caddy_conf" ]; then
+    local d
+    while read -r d; do
+      [ -n "$d" ] && incus exec "$name" -- bash -c "grep -qF '$d' /etc/hosts || echo '127.0.0.1 $d' >> /etc/hosts" 2>/dev/null || true
+    done < <(grep -E '^[a-zA-Z0-9.-]+\s*\{' "$caddy_conf" | awk '{print $1}' || true)
+  fi
 }
 
 # ── VPS Editing ──────────────────────────────────────────────────────────────
