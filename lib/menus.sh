@@ -390,13 +390,34 @@ delete_vps_menu() {
       [ -n "$snap" ] && incus snapshot delete "$n" "$snap" >/dev/null 2>&1 || true
     done
 
+    # Disable swap and remove immutable flags inside container & on host storage rootfs
+    incus exec "$n" -- swapoff -a 2>/dev/null || true
+    incus exec "$n" -- chattr -i -a /swapfile 2>/dev/null || true
+
     incus stop "$n" --force >/dev/null 2>&1 || true
+
+    # Clear host-side swapfile locks / immutable attributes if present in storage pools
+    local sf
+    for sf in /var/lib/incus/storage-pools/*/containers/"$n"/rootfs/swapfile /var/lib/lxd/storage-pools/*/containers/"$n"/rootfs/swapfile; do
+      if [ -f "$sf" ]; then
+        swapoff "$sf" 2>/dev/null || true
+        chattr -i -a "$sf" 2>/dev/null || true
+        rm -f "$sf" 2>/dev/null || true
+      fi
+    done
+
     local del_retry=0 del_err=""
     for del_retry in 1 2 3; do
       del_err=$(incus delete "$n" --force 2>&1 || true)
       if ! incus list -c n --format csv 2>/dev/null | grep -Fxq "$n"; then
         break
       fi
+      # Retry clearing swapfile attribute on failure
+      for sf in /var/lib/incus/storage-pools/*/containers/"$n"/rootfs/swapfile; do
+        swapoff "$sf" 2>/dev/null || true
+        chattr -i -a "$sf" 2>/dev/null || true
+        rm -f "$sf" 2>/dev/null || true
+      done
       sleep 1
     done
     if incus list -c n --format csv 2>/dev/null | grep -Fxq "$n"; then
