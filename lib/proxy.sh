@@ -1,0 +1,632 @@
+#!/bin/bash
+# VPSForge — Caddy Reverse Proxy & Domain Management
+
+CADDY_CONF_DIR="/etc/caddy/vpsforge"
+MAIN_CADDYFILE="/etc/caddy/Caddyfile"
+
+ensure_caddy_installed() {
+  if ! command -v caddy &> /dev/null; then
+    echo "Installing Caddy Reverse Proxy (HTTPS auto-ssl)..."
+    apt-get update -y >/dev/null 2>&1
+    apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl >/dev/null 2>&1
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+    apt-get update -y >/dev/null 2>&1
+    apt-get install caddy -y >/dev/null 2>&1
+    systemctl enable --now caddy >/dev/null 2>&1
+    echo "Caddy installed successfully."
+  fi
+
+  if [ ! -d "$CADDY_CONF_DIR" ]; then
+    mkdir -p "$CADDY_CONF_DIR"
+  fi
+
+  if [ -f "$MAIN_CADDYFILE" ]; then
+    if ! grep -q "import /etc/caddy/vpsforge/\*.caddy" "$MAIN_CADDYFILE"; then
+      echo -e "\nimport /etc/caddy/vpsforge/*.caddy" >> "$MAIN_CADDYFILE"
+      systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+    fi
+  else
+    echo "import /etc/caddy/vpsforge/*.caddy" > "$MAIN_CADDYFILE"
+    systemctl restart caddy >/dev/null 2>&1 || true
+  fi
+}
+
+list_all_domains() {
+  ensure_caddy_installed
+  echo "=========================================================================="
+  echo "                 ALL LINKED DOMAINS & PATHS"
+  echo "=========================================================================="
+  printf "%-15s %-25s %-15s %-15s\n" "VPS" "DOMAIN" "PATH" "TARGET"
+  printf '%s\n' "--------------------------------------------------------------------------"
+  
+  local found=0
+  for conf in "$CADDY_CONF_DIR"/*.caddy; do
+    [ -e "$conf" ] || continue
+    found=1
+    local vps_name
+    vps_name=$(basename "$conf" .caddy)
+    local domain
+    domain=$(head -n 1 "$conf" | awk '{print $1}')
+    
+    # Extract reverse_proxy lines with their domains
+    local current_dom=""
+    while read -r line; do
+      if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+        current_dom=$(echo "$line" | awk '{print $1}')
+        current_dom=${current_dom%,}
+      fi
+      
+      if [[ "$line" == *"reverse_proxy"* ]]; then
+        # format: reverse_proxy /path/* https://ip:port
+        local path_str="/"
+        local target_str=""
+        
+        # Count words
+        local words=($line)
+        if [ "${#words[@]}" -ge 3 ] && [[ "${words[1]}" == *"/"* ]]; then
+          path_str="${words[1]}"
+          target_str="${words[2]}"
+        else
+          path_str="/"
+          target_str="${words[1]}"
+        fi
+        
+        printf "%-15s %-25s %-15s %-15s\n" "$vps_name" "$current_dom" "$path_str" "$target_str"
+      fi
+    done < "$conf"
+  done
+
+  if [ $found -eq 0 ]; then
+    echo "No domains linked yet."
+  fi
+  echo "=========================================================================="
+}
+
+add_path_to_vps() {
+  local vps_name="$1"
+  local ip="$2"
+  local conf_file="$CADDY_CONF_DIR/${vps_name}.caddy"
+  local domain=""
+  if [ ! -f "$conf_file" ]; then
+    echo -n "Enter Domain Name for this VPS (e.g. app1.domain.com): "
+    read -r domain
+    if [ -z "$domain" ]; then
+      echo "ERROR: Domain cannot be empty."
+      sleep 2
+      return
+    fi
+  else
+    local existing_domain=$(head -n 1 "$conf_file" | awk '{print $1}')
+    echo -n "Enter Domain Name [Default: $existing_domain]: "
+    read -r domain
+    if [ -z "$domain" ]; then
+      domain="$existing_domain"
+    fi
+  fi
+
+  echo -n "Enter Path (e.g. /sub/ or leave empty for root '/'): "
+  read -r url_path
+  if [ -z "$url_path" ] || [ "$url_path" = "/" ]; then
+    url_path=""
+  else
+    [[ "$url_path" != /* ]] && url_path="/$url_path"
+    if [[ "$url_path" != *\* ]]; then
+      if [[ "$url_path" != */ ]]; then
+        url_path="${url_path}/*"
+      else
+        url_path="${url_path}*"
+      fi
+    fi
+  fi
+
+  echo -n "Enter target port inside VPS [Default: 80]: "
+  read -r target_port
+  if [ -z "$target_port" ]; then
+    target_port="80"
+  fi
+
+  echo -n "Is the target using HTTPS internally? (y/N): "
+  read -r use_https
+  
+  local target_schema="http"
+  local caddy_transport=""
+  if [[ "$use_https" =~ ^[Yy]$ ]]; then
+    target_schema="https"
+    caddy_transport=" {
+        transport http {
+            tls_insecure_skip_verify
+        }
+    }"
+  fi
+
+  local proxy_line=""
+  if [ -n "$url_path" ]; then
+    proxy_line="    reverse_proxy $url_path ${target_schema}://$ip:$target_port$caddy_transport"
+  else
+    proxy_line="    reverse_proxy ${target_schema}://$ip:$target_port$caddy_transport"
+  fi
+
+  if [ ! -f "$conf_file" ]; then
+    echo "$domain {" > "$conf_file"
+    echo "$proxy_line" >> "$conf_file"
+    echo "}" >> "$conf_file"
+  else
+    local -a new_lines=()
+    local in_domain=0
+    local brace_count=0
+    local inserted=0
+
+    while IFS= read -r line; do
+      if [ $inserted -eq 0 ]; then
+        if [ $in_domain -eq 1 ]; then
+          local open_b=$(echo "$line" | tr -cd '{' | wc -c)
+          local close_b=$(echo "$line" | tr -cd '}' | wc -c)
+          brace_count=$((brace_count + open_b - close_b))
+          
+          if [ $brace_count -le 0 ]; then
+            new_lines+=("$proxy_line")
+            inserted=1
+          fi
+        else
+          if [[ "$line" == "$domain {"* ]] || [[ "$line" == "$domain,"* ]]; then
+            in_domain=1
+            brace_count=1
+          fi
+        fi
+      fi
+      new_lines+=("$line")
+    done < "$conf_file"
+
+    if [ $inserted -eq 0 ]; then
+      new_lines+=("")
+      new_lines+=("$domain {")
+      new_lines+=("$proxy_line")
+      new_lines+=("}")
+    fi
+
+    printf "%s\n" "${new_lines[@]}" > "$conf_file"
+  fi
+
+  echo "Validating Caddy configuration..."
+  if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
+    systemctl reload-or-restart caddy
+    echo "SUCCESS: $domain$url_path is now securely routed to $vps_name (${target_schema}://$ip:$target_port)"
+  else
+    echo "ERROR: Invalid configuration! Opening file in nano so you can fix it manually..."
+    sleep 2
+    nano "$conf_file"
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+  fi
+}
+
+delete_path_from_vps() {
+  local vps_name="$1"
+  local conf_file="$CADDY_CONF_DIR/${vps_name}.caddy"
+  
+  if [ ! -f "$conf_file" ]; then
+    echo "No routes exist for VPS '$vps_name'."
+    sleep 2
+    return
+  fi
+
+  echo "Current paths for $vps_name:"
+  local -a lines=()
+  local i=1
+  local current_dom=""
+  while read -r line; do
+    if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+      current_dom=$(echo "$line" | awk '{print $1}')
+      current_dom=${current_dom%,}
+    fi
+    if [[ "$line" == *"reverse_proxy"* ]]; then
+      lines[$i]="$line"
+      local display_line="$line"
+      if [[ "$line" == *"reverse_proxy /"* ]]; then
+        display_line=$(echo "$line" | sed "s|reverse_proxy \(/[^ ]*\)|reverse_proxy https://$current_dom\1|")
+      else
+        display_line=$(echo "$line" | sed "s|reverse_proxy |reverse_proxy https://$current_dom/ |")
+      fi
+      display_line=$(echo "$display_line" | sed 's/^[ \t]*//')
+      echo "$i) $display_line"
+      ((i++))
+    fi
+  done < "$conf_file"
+
+  if [ ${#lines[@]} -eq 0 ]; then
+    echo "No paths found."
+    sleep 2
+    return
+  fi
+
+  echo -n "Enter the number of the path to delete (or leave empty to cancel): "
+  read -r choice
+  if [ -n "$choice" ] && [ -n "${lines[$choice]:-}" ]; then
+    local target_line="${lines[$choice]}"
+    local -a new_lines=()
+    local deleting=0
+    local brace_count=0
+
+    while IFS= read -r line; do
+      if [ $deleting -eq 1 ]; then
+        local open_b=$(echo "$line" | tr -cd '{' | wc -c)
+        local close_b=$(echo "$line" | tr -cd '}' | wc -c)
+        brace_count=$((brace_count + open_b - close_b))
+        if [ $brace_count -le 0 ]; then
+          deleting=0
+        fi
+        continue
+      fi
+
+      if [[ "$line" == "$target_line"* ]]; then
+        deleting=1
+        local open_b=$(echo "$line" | tr -cd '{' | wc -c)
+        local close_b=$(echo "$line" | tr -cd '}' | wc -c)
+        brace_count=$((open_b - close_b))
+        if [ $brace_count -le 0 ]; then
+          deleting=0
+        fi
+        continue
+      fi
+
+      new_lines+=("$line")
+    done < "$conf_file"
+
+    printf "%s\n" "${new_lines[@]}" > "$conf_file"
+    
+    local line_count=$(wc -l < "$conf_file")
+    if [ "$line_count" -le 2 ]; then
+      rm -f "$conf_file"
+      echo "No paths left. Domain unlinked automatically."
+    fi
+
+    if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
+      systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+      echo "SUCCESS: Path deleted."
+    else
+      echo "ERROR: Failed to delete path cleanly. Please use 'Manual Advanced Edit' or 'Unlink Domain' to fix the file."
+    fi
+  else
+    echo "Cancelled."
+  fi
+}
+
+manage_vps_proxy() {
+  ensure_caddy_installed
+  select_vps || { sleep 2; return; }
+  local vps_name="$SELECTED"
+
+  local ip
+  ip=$(get_ip "$vps_name")
+  if [ -z "$ip" ] || [ "$ip" = "-" ]; then
+    echo "ERROR: VPS '$vps_name' has no IPv4 address. Make sure it is running."
+    sleep 2
+    return
+  fi
+
+  local conf_file="$CADDY_CONF_DIR/${vps_name}.caddy"
+
+  while true; do
+    clear
+    local domain="NOT LINKED YET"
+    if [ -f "$conf_file" ]; then
+      domain=$(head -n 1 "$conf_file" | awk '{print $1}')
+    fi
+
+    echo "================================================================"
+    echo "          PATH MANAGER FOR: $vps_name (IP: $ip)"
+    echo "          Domain: $domain"
+    echo "================================================================"
+    
+    if [ -f "$conf_file" ]; then
+      echo "CURRENT PATHS:"
+      local current_dom=""
+      while read -r line; do
+        if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+          current_dom=$(echo "$line" | awk '{print $1}')
+          current_dom=${current_dom%,}
+        fi
+        if [[ "$line" == *"reverse_proxy"* ]]; then
+          local display_line="$line"
+          if [[ "$line" == *"reverse_proxy /"* ]]; then
+            display_line=$(echo "$line" | sed "s|reverse_proxy \(/[^ ]*\)|reverse_proxy https://$current_dom\1|")
+          else
+            display_line=$(echo "$line" | sed "s|reverse_proxy |reverse_proxy https://$current_dom/ |")
+          fi
+          display_line=$(echo "$display_line" | sed 's/^[ \t]*//')
+          echo "- $display_line"
+        fi
+      done < "$conf_file"
+      echo "----------------------------------------------------------------"
+    fi
+
+    echo "0) Back"
+    echo "1) Add New Path"
+    echo "2) Delete a Path"
+    echo "3) Manual Advanced Edit (nano)"
+    echo "4) Unlink Domain (Delete All Paths)"
+    echo "================================================================"
+    echo -n "Select an option [0-4]: "
+    read -r choice
+    case "$choice" in
+      0) break ;;
+      1) add_path_to_vps "$vps_name" "$ip"; echo "Press Enter..."; read -r ;;
+      2) delete_path_from_vps "$vps_name"; echo "Press Enter..."; read -r ;;
+      3) 
+        if [ -f "$conf_file" ]; then
+          nano "$conf_file"
+          echo "Validating..."
+          caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1 && systemctl reload-or-restart caddy && echo "Reloaded successfully." || echo "Validation failed! Please fix errors."
+        else
+          echo "No config exists yet. Add a path first."
+        fi
+        echo "Press Enter..."; read -r
+        ;;
+      4)
+        if [ -f "$conf_file" ]; then
+          rm -f "$conf_file"
+          systemctl reload-or-restart caddy
+          echo "SUCCESS: Domain and all paths unlinked."
+        fi
+        echo "Press Enter..."; read -r
+        ;;
+      *) sleep 1 ;;
+    esac
+  done
+}
+
+configure_cloudflare_realip() {
+  ensure_caddy_installed
+  local caddyfile="/etc/caddy/Caddyfile"
+  
+  while true; do
+    clear
+    echo "================================================================"
+    echo "                  CLOUDFLARE REAL-IP SETUP"
+    echo "================================================================"
+    if grep -q "trusted_proxies" "$caddyfile"; then
+      echo "Status: ENABLED (Caddy will trust Cloudflare IPs)"
+    else
+      echo "Status: DISABLED"
+    fi
+    echo "================================================================"
+    echo "0) Back"
+    echo "1) Enable / Update Cloudflare IPs"
+    echo "2) Disable Cloudflare Real-IP"
+    echo "================================================================"
+    echo -n "Select an option [0-2]: "
+    read -r choice
+    case "$choice" in
+      0) break ;;
+      1)
+        echo "Fetching Cloudflare IP ranges from cloudflare.com..."
+        local cf_ipv4 cf_ipv6
+        cf_ipv4=$(curl -sL https://www.cloudflare.com/ips-v4)
+        cf_ipv6=$(curl -sL https://www.cloudflare.com/ips-v6)
+
+        if [ -z "$cf_ipv4" ] || [ -z "$cf_ipv6" ]; then
+          echo "ERROR: Failed to fetch Cloudflare IPs. Check your internet connection."
+          sleep 2
+          continue
+        fi
+
+        local all_ips
+        all_ips=$(echo -e "${cf_ipv4}\n${cf_ipv6}" | grep -v "^$" | tr '\n' ' ')
+        
+        cat > "$caddyfile" <<EOF
+{
+    servers {
+        trusted_proxies static $all_ips
+    }
+}
+import /etc/caddy/vpsforge/*.caddy
+EOF
+
+        if caddy validate --config "$caddyfile" >/dev/null 2>&1; then
+          systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+          echo "SUCCESS: Cloudflare Real-IP is now ENABLED!"
+        else
+          echo "ERROR: Validation failed. Reverting..."
+          echo "import /etc/caddy/vpsforge/*.caddy" > "$caddyfile"
+          systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+        fi
+        echo "Press Enter..."; read -r
+        ;;
+      2)
+        echo "import /etc/caddy/vpsforge/*.caddy" > "$caddyfile"
+        systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+        echo "SUCCESS: Cloudflare Real-IP is now DISABLED."
+        echo "Press Enter..."; read -r
+        ;;
+      *) sleep 1 ;;
+    esac
+  done
+}
+
+proxy_menu() {
+  while true; do
+    clear
+    echo "================================================================"
+    echo "                  DOMAINS & REVERSE PROXY (CADDY)"
+    echo "================================================================"
+    echo "0) Back to Main Menu"
+    echo "1) List All Linked Domains & Paths"
+    echo "2) Manage Paths for a VPS (Add/Delete/Edit)"
+    echo "3) Configure Cloudflare Real-IP Support"
+    echo "================================================================"
+    echo -n "Select an option [0-3]: "
+    read -r choice
+    case "$choice" in
+      0) break ;;
+      1) list_all_domains; echo "Press Enter to continue..."; read -r ;;
+      2) manage_vps_proxy ;;
+      3) configure_cloudflare_realip ;;
+      *) echo "Invalid option." ; sleep 1 ;;
+    esac
+  done
+}
+
+restore_vps_proxy_metadata() {
+  local target_name="$1" new_ip="$2"
+  local proxy_b64
+  proxy_b64=$(incus config get "$target_name" user.vpsforge.proxy 2>/dev/null || true)
+  [ -n "$proxy_b64" ] || return 0
+
+  local proxy_content proxy_file main_dom
+  proxy_content=$(echo "$proxy_b64" | base64 -d 2>/dev/null || true)
+  [ -n "$proxy_content" ] || return 0
+
+  mkdir -p /etc/caddy/vpsforge
+  proxy_file="/etc/caddy/vpsforge/${target_name}.caddy"
+
+  main_dom=$(echo "$proxy_content" | awk '/\{/{print $1}' | head -n 1 | tr -d '{},' || true)
+
+  local -a final_lines=()
+  local line
+
+  while IFS= read -r line; do
+    if [[ "$line" == *"{"* ]] && [[ "$line" != *"reverse_proxy"* ]] && [[ "$line" != *"transport"* ]] && [[ "$line" != *"tls_"* ]]; then
+      main_dom=$(echo "$line" | awk '{print $1}' | tr -d '{},')
+      final_lines+=("$line")
+      continue
+    fi
+
+    if [[ "$line" == *"reverse_proxy"* ]]; then
+      local path_str="/" target_str=""
+      local words=($line)
+      if [ "${#words[@]}" -ge 3 ] && [[ "${words[1]}" == *"/"* ]]; then
+        path_str="${words[1]}"
+        target_str="${words[2]}"
+      else
+        path_str="/"
+        target_str="${words[1]}"
+      fi
+
+      # Check if this exact Domain + Path exists in another VPS caddy file
+      local conflict_conf="" conflict_vps=""
+      if [ -n "$main_dom" ]; then
+        for other_conf in /etc/caddy/vpsforge/*.caddy; do
+          [ -e "$other_conf" ] || continue
+          [ "$other_conf" = "$proxy_file" ] && continue
+          if grep -q -F "$main_dom" "$other_conf" 2>/dev/null && grep -q -F "$path_str" "$other_conf" 2>/dev/null; then
+            conflict_conf="$other_conf"
+            conflict_vps=$(basename "$other_conf" .caddy)
+            break
+          fi
+        done
+      fi
+
+      if [ -n "$conflict_conf" ]; then
+        echo ""
+        echo "========================================================"
+        echo "CADDY PROXY CONFLICT FOR $target_name:"
+        echo "Domain: $main_dom | Path: $path_str"
+        echo "Currently routed to: $conflict_vps"
+        echo "--------------------------------------------------------"
+        echo "1) Skip this proxy route for $target_name"
+        echo "2) Overwrite / Transfer route to $target_name (remove route from $conflict_vps)"
+        echo "3) Change Path for $target_name (keep domain '$main_dom')"
+        echo "4) Change Target Port for $target_name"
+        echo "5) Change Domain Name for $target_name"
+        echo "6) Change Target Port and Domain Name for $target_name"
+        echo "7) Change Path, Target Port, and Domain Name (Change All)"
+        echo "========================================================"
+        
+        local opt new_path new_port new_domain
+        while :; do
+          read -r -p "Choice [1-7]: " opt </dev/tty
+          case "$opt" in
+            1)
+              echo "Route $path_str skipped for $target_name."
+              line=""
+              break
+              ;;
+            2)
+              echo "Transferring route $path_str to $target_name..."
+              sed -i "\#$path_str#d" "$conflict_conf" 2>/dev/null || true
+              break
+              ;;
+            3)
+              read -r -p "Enter new Path for $target_name (e.g. /app2/*): " new_path </dev/tty
+              if [ -n "$new_path" ]; then
+                [[ "$new_path" != /* ]] && new_path="/$new_path"
+                line=$(echo "$line" | sed "s#$path_str#$new_path#")
+                break
+              else
+                echo "Path cannot be empty."
+              fi
+              ;;
+            4)
+              read -r -p "Enter new Target Port inside $target_name [e.g. 8080]: " new_port </dev/tty
+              if [[ "$new_port" =~ ^[0-9]+$ ]]; then
+                line=$(echo "$line" | sed -E "s/:[0-9]+/:$new_port/g")
+                break
+              else
+                echo "Invalid port."
+              fi
+              ;;
+            5)
+              read -r -p "Enter new Domain Name for $target_name: " new_domain </dev/tty
+              if [ -n "$new_domain" ]; then
+                main_dom="$new_domain"
+                if [ "${#final_lines[@]}" -gt 0 ]; then
+                  final_lines[0]="$main_dom {"
+                fi
+                break
+              else
+                echo "Domain cannot be empty."
+              fi
+              ;;
+            6)
+              read -r -p "Enter new Domain Name for $target_name: " new_domain </dev/tty
+              read -r -p "Enter new Target Port inside $target_name [e.g. 8080]: " new_port </dev/tty
+              if [ -n "$new_domain" ] && [[ "$new_port" =~ ^[0-9]+$ ]]; then
+                main_dom="$new_domain"
+                if [ "${#final_lines[@]}" -gt 0 ]; then
+                  final_lines[0]="$main_dom {"
+                fi
+                line=$(echo "$line" | sed -E "s/:[0-9]+/:$new_port/g")
+                break
+              else
+                echo "Invalid Domain Name or Target Port."
+              fi
+              ;;
+            7)
+              read -r -p "Enter new Domain Name for $target_name: " new_domain </dev/tty
+              read -r -p "Enter new Path for $target_name (e.g. /app2/*): " new_path </dev/tty
+              read -r -p "Enter new Target Port inside $target_name [e.g. 8080]: " new_port </dev/tty
+              if [ -n "$new_domain" ] && [ -n "$new_path" ] && [[ "$new_port" =~ ^[0-9]+$ ]]; then
+                main_dom="$new_domain"
+                if [ "${#final_lines[@]}" -gt 0 ]; then
+                  final_lines[0]="$main_dom {"
+                fi
+                [[ "$new_path" != /* ]] && new_path="/$new_path"
+                line=$(echo "$line" | sed "s#$path_str#$new_path#")
+                line=$(echo "$line" | sed -E "s/:[0-9]+/:$new_port/g")
+                break
+              else
+                echo "Invalid input parameters."
+              fi
+              ;;
+            *)
+              echo "Invalid choice. Please enter 1, 2, 3, 4, 5, 6, or 7."
+              ;;
+          esac
+        done
+      fi
+    fi
+
+    [ -n "$line" ] && final_lines+=("$line")
+  done <<< "$proxy_content"
+
+  # Write proxy file and update IP
+  printf "%s\n" "${final_lines[@]}" > "$proxy_file"
+  sed -i -E "s/[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/$new_ip/g" "$proxy_file"
+  
+  if caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1; then
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+    echo "Proxy domain routes updated & restored for $target_name!"
+  else
+    echo "WARNING: Caddy validation check completed."
+  fi
+}
