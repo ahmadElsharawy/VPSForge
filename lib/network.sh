@@ -92,6 +92,7 @@ resolve_ip_collisions() {
       new_port=$(vps_fixed_port "$new_num")
 
       incus config set "$v" user.vpsforge.ip "$new_ip" >/dev/null 2>&1 || true
+      incus config set "$v" user.vpsforge.num "$new_num" >/dev/null 2>&1 || true
       incus config set "$v" user.vpsforge.ssh_port "$new_port" >/dev/null 2>&1 || true
       set_vps_saved_port "$v" "$new_port"
 

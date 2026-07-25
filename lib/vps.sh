@@ -141,6 +141,7 @@ create_vps() {
   }
 
   incus config set "$name" user.vpsforge.ip "$ip" || true
+  incus config set "$name" user.vpsforge.num "$num" || true
 
   # Apply resource limits — rollback on failure.
   _apply_resource_limit "$name" ram  "$ram_mode"     "$ram"         || { _rollback_vps "$name"; return 1; }

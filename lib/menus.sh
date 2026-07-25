@@ -4,6 +4,8 @@
 # ── Dashboard ────────────────────────────────────────────────────────────────
 
 list_vps() {
+  resolve_ip_collisions >/dev/null 2>&1 || true
+
   printf "%-10s %-10s %-18s %-10s %-16s %-20s %-16s %-8s\n" NAME STATUS RAM CPU DISK NETWORK_IO INTERNAL_IP PORT
   printf '%s\n' "----------------------------------------------------------------------------------------------------------------"
 
