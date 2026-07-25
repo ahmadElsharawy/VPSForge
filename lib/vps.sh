@@ -361,6 +361,70 @@ change_vps_port() {
   echo "SSH port changed for $name: ${old_port:--} -> $new_port"
 }
 
+change_vps_ip() {
+  local name="$1" new_ip="$2" old_ip port
+  old_ip=$(get_ip "$name")
+  port=$(get_port "$old_ip")
+  [ -n "$port" ] || port=$(get_vps_saved_port "$name")
+
+  incus config set "$name" user.vpsforge.ip "$new_ip" || true
+  if [ "$(get_state "$name")" = "RUNNING" ]; then
+    apply_guest_static_network "$name" "$new_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+  fi
+
+  if [ -n "$port" ]; then
+    [ -n "$old_ip" ] && port_forward_delete_rules_for_ip "$old_ip"
+    add_forward_rule "$new_ip" "$port"
+  fi
+  echo "Internal IP changed for $name: ${old_ip:--} -> $new_ip"
+}
+
+swap_vps_ips_and_ports() {
+  local vps1="$1" vps2="$2"
+  local ip1 ip2 port1 port2 num1 num2
+
+  ip1=$(get_ip "$vps1")
+  ip2=$(get_ip "$vps2")
+  num1=$(get_num "$vps1")
+  num2=$(get_num "$vps2")
+  port1=$(get_port "$ip1")
+  [ -n "$port1" ] || port1=$(get_vps_saved_port "$vps1")
+  port2=$(get_port "$ip2")
+  [ -n "$port2" ] || port2=$(get_vps_saved_port "$vps2")
+
+  [ -n "$ip1" ] && [ -n "$ip2" ] || { echo "ERROR: Invalid VPS selection for swap."; return 1; }
+
+  echo "Swapping network settings between $vps1 ($ip1:$port1) and $vps2 ($ip2:$port2)..."
+
+  # Swap metadata
+  incus config set "$vps1" user.vpsforge.ip "$ip2" || true
+  incus config set "$vps1" user.vpsforge.num "$num2" || true
+  incus config set "$vps1" user.vpsforge.ssh_port "$port2" || true
+
+  incus config set "$vps2" user.vpsforge.ip "$ip1" || true
+  incus config set "$vps2" user.vpsforge.num "$num1" || true
+  incus config set "$vps2" user.vpsforge.ssh_port "$port1" || true
+
+  # Apply guest static networks
+  if [ "$(get_state "$vps1")" = "RUNNING" ]; then
+    apply_guest_static_network "$vps1" "$ip2" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+  fi
+  if [ "$(get_state "$vps2")" = "RUNNING" ]; then
+    apply_guest_static_network "$vps2" "$ip1" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+  fi
+
+  # Swap firewall rules
+  port_forward_delete_rules_for_ip "$ip1" 2>/dev/null || true
+  port_forward_delete_rules_for_ip "$ip2" 2>/dev/null || true
+
+  add_forward_rule "$ip2" "$port2" 2>/dev/null || true
+  add_forward_rule "$ip1" "$port1" 2>/dev/null || true
+
+  save_iptables
+
+  echo "Successfully swapped! $vps1 is now ($ip2:$port2) and $vps2 is now ($ip1:$port1)."
+}
+
 # ── VPS Connection Repair ───────────────────────────────────────────────────
 
 repair_vps_connection() {

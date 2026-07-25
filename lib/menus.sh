@@ -454,6 +454,8 @@ edit_single_vps() {
     echo "6) Change Username"
     echo "7) Change Password"
     echo "8) Rename VPS Container"
+    echo "9) Change Internal IP"
+    echo "10) Swap IP & Port with another VPS"
     read -r -p "Choice: " c
     case "$c" in
       1) ask_ram_mode "$name" && set_ram_mode_for_vps "$name" "$RAM_MODE_RESULT" "$RAM_VALUE_RESULT";;
@@ -464,6 +466,13 @@ edit_single_vps() {
       6) read -r -p "New username: " user; change_vps_username "$name" "$user";;
       7) read -r -s -p "New password: " pass; echo; [ -n "$pass" ] && change_vps_password "$name" "$pass";;
       8) rename_vps_container "$name";;
+      9) local new_ip; read -r -p "New Internal IP (e.g. 10.82.200.12): " new_ip; [ -n "$new_ip" ] && change_vps_ip "$name" "$new_ip";;
+      10)
+        local target_other
+        list_available_vps || true
+        read -r -p "Target VPS name to swap IP & Port with: " target_other
+        [ -n "$target_other" ] && [ "$target_other" != "$name" ] && swap_vps_ips_and_ports "$name" "$target_other"
+        ;;
       0) return;;
     esac
   done
