@@ -182,7 +182,7 @@ add_forward_rule() {
   local ip="$1" port="$2"
   remove_port "$port"
   remove_ip "$ip"
-  iptables -t nat -A PREROUTING ! -i incusbr0 -p tcp --dport "$port" -j DNAT --to-destination "${ip}:22"
+  iptables -t nat -A PREROUTING -p tcp --dport "$port" -j DNAT --to-destination "${ip}:22"
   iptables -C FORWARD -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null || \
     iptables -I FORWARD 1 -p tcp -d "$ip" --dport 22 -j ACCEPT
   save_iptables

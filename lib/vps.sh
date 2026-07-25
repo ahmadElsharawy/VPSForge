@@ -308,8 +308,13 @@ _configure_guest_optimizations() {
     # 2. Network MTU tuning to prevent packet loss during Docker pulls / SSL handshakes
     ip link set dev eth0 mtu 1420 2>/dev/null || true
 
-    # 3. Kernel forwarding sysctl for Docker containers
+    # 3. Kernel forwarding and localnet routing sysctl for Docker containers
+    mkdir -p /etc/sysctl.d 2>/dev/null || true
+    printf "net.ipv4.ip_forward=1\nnet.ipv4.conf.all.route_localnet=1\nnet.ipv4.conf.eth0.route_localnet=1\n" > /etc/sysctl.d/99-vpsforge.conf 2>/dev/null || true
+    sysctl -p /etc/sysctl.d/99-vpsforge.conf >/dev/null 2>&1 || true
     sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || true
+    sysctl -w net.ipv4.conf.all.route_localnet=1 >/dev/null 2>&1 || true
+    sysctl -w net.ipv4.conf.eth0.route_localnet=1 >/dev/null 2>&1 || true
   ' >/dev/null 2>&1 || true
 }
 
