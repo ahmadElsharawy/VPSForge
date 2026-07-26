@@ -8,7 +8,7 @@
 INCUS_CIDR=""
 INCUS_GATEWAY=""
 INCUS_NETMASK=""
-NETWORK_PREFIX=""
+IP_START=100
 PUBLIC_IP=""
 
 # ── Network Info ─────────────────────────────────────────────────────────────
@@ -78,30 +78,18 @@ get_next_available_vps_ip_and_num() {
 resolve_ip_collisions() {
   local -a all_vps
   mapfile -t all_vps < <(incus list -c n --format csv 2>/dev/null | grep -v '^$' | sort -V || true)
-  local seen_ips=() v ip new_ip new_num new_port
+  local seen_ips=() v ip static_ip static_gateway static_netmask
 
   for v in "${all_vps[@]}"; do
     ip=$(get_ip "$v" 2>/dev/null || true)
     [ -z "$ip" ] || [ "$ip" = "-" ] && continue
 
     if [[ " ${seen_ips[*]} " == *" $ip "* ]]; then
-      echo "IP Conflict detected: '$v' shares IP $ip. Reassigning unique IP..."
-      get_next_available_vps_ip_and_num
-      new_num="$NEXT_AVAIL_NUM"
-      new_ip="$NEXT_AVAIL_IP"
-      new_port=$(vps_fixed_port "$new_num")
-
-      incus config set "$v" user.vpsforge.ip "$new_ip" >/dev/null 2>&1 || true
-      incus config set "$v" user.vpsforge.num "$new_num" >/dev/null 2>&1 || true
-      incus config set "$v" user.vpsforge.ssh_port "$new_port" >/dev/null 2>&1 || true
-      set_vps_saved_port "$v" "$new_port"
-
-      if [ "$(get_state "$v")" = "RUNNING" ]; then
-        apply_guest_static_network "$v" "$new_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+      echo "WARNING: IP Conflict detected for '$v' on IP $ip. Preserving original identity/port."
+      static_ip=$(incus config get "$v" user.vpsforge.ip 2>/dev/null || true)
+      if [ -n "$static_ip" ] && [ "$(get_state "$v")" = "RUNNING" ]; then
+        apply_guest_static_network "$v" "$static_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
       fi
-      add_forward_rule "$new_ip" "$new_port" >/dev/null 2>&1 || true
-      echo "Reassigned '$v' -> IP: $new_ip | Port: $new_port"
-      seen_ips+=("$new_ip")
     else
       seen_ips+=("$ip")
     fi
