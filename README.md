@@ -1,5 +1,11 @@
-# VPSForge v1.0.0
+# VPSForge v1.1.1
 VPSForge is an interactive Terminal Bash Manager for lightweight Ubuntu & Linux containers powered by Incus.
+
+## Changelog
+- **v1.1.1**: Fixed IP/port collision handling to preserve container metadata, added default `IP_START=100`, removed dead code from lib/vps.sh, bumped version constant.
+- **v1.1.0**: Various stability improvements and bug fixes.
+- **v1.0.9**: Auto-sync configured domains to guest /etc/hosts.
+- **v1.0.0**: Initial release.
 
 ## Main Features
 
