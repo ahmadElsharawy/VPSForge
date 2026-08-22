@@ -1,11 +1,11 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════════
-# VPSForge v1.0.6 — Interactive Bash manager for lightweight Ubuntu VPS
+# VPSForge v1.0.7 — Interactive Bash manager for lightweight Ubuntu VPS
 #                   containers powered by Incus.
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v1.0.6"
+VPSFORGE_VERSION="v1.0.7"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
