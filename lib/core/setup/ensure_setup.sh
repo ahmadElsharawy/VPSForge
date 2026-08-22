@@ -37,12 +37,14 @@ ensure_setup() {
           local -a state_map=()
           for inst in "${instances[@]}"; do
             [ -n "$inst" ] || continue
-            # Save running state
-            local istate
-            istate=$(incus info "$inst" 2>/dev/null | awk '/^Status:/ {print $2}' || echo "STOPPED")
-            if [ "$istate" = "RUNNING" ]; then
+            if is_vps_running "$inst"; then
               state_map+=("$inst")
               incus stop "$inst" --force >/dev/null 2>&1 || true
+              local wait_count=0
+              while is_vps_running "$inst" && [ $wait_count -lt 15 ]; do
+                sleep 1
+                wait_count=$((wait_count + 1))
+              done
             fi
             incus move "$inst" "$inst" -s temp-btrfs >/dev/null 2>&1 || true
           done
@@ -145,9 +147,7 @@ cleanup_legacy_dockerenv_markers() {
     # Remove /.dockerenv via incus file delete (supported for both running and stopped instances)
     incus file delete "$inst/.dockerenv" >/dev/null 2>&1 || true
     # Also verify via exec if container is running
-    local istate
-    istate=$(incus info "$inst" 2>/dev/null | awk '/^Status:/ {print $2}' || echo "STOPPED")
-    if [ "$istate" = "RUNNING" ]; then
+    if is_vps_running "$inst"; then
       incus exec "$inst" -- sh -c 'test -e /.dockerenv && rm -f /.dockerenv' 2>/dev/null || true
     fi
   done

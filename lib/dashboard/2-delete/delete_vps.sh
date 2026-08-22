@@ -1,7 +1,7 @@
 #!/bin/bash
 
 delete_vps_menu() {
-  local n ip p
+  local n ip p x snap
   ask_vps_selection || return 1
   show_selection
   read -r -p "Type DELETE to permanently delete, or 0 to cancel: " x
