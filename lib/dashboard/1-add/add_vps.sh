@@ -2,8 +2,8 @@
 
 add_menu() {
   local count=1 setup=1 first_num i n name port custom_name default_name effective_ram
-  local shared_img shared_rm shared_rv shared_cm shared_cv shared_dm shared_dv shared_nm shared_nv shared_trm shared_trx shared_ttx
-  local -a names=() nums=() ports=() ram_modes=() ram_values=() cpu_modes=() cpu_values=() disk_modes=() disk_values=() network_modes=() network_values=() traffic_modes=() traffic_rxs=() traffic_txs=() images=()
+  local shared_img shared_rm shared_rv shared_cm shared_cv shared_dm shared_dv shared_nm shared_nv shared_trm shared_trx shared_ttx shared_ssh_fwd="y"
+  local -a names=() nums=() ports=() ram_modes=() ram_values=() cpu_modes=() cpu_values=() disk_modes=() disk_values=() network_modes=() network_values=() traffic_modes=() traffic_rxs=() traffic_txs=() images=() ssh_forwards=()
 
   # Main wizard loop
   local main_step=1
@@ -52,7 +52,7 @@ add_menu() {
         if [ "$setup" = "2" ]; then
           # Shared configuration wizard
           local s_step=1
-          while [ $s_step -ge 1 ] && [ $s_step -le 6 ]; do
+          while [ $s_step -ge 1 ] && [ $s_step -le 7 ]; do
             case "$s_step" in
               1)
                 ask_ubuntu_version "all new VPS containers" || { s_step=$((s_step-1)); continue; }
@@ -90,6 +90,22 @@ add_menu() {
                 shared_ttx="${TRAFFIC_TX_RESULT:-0}"
                 s_step=7
                 ;;
+              7)
+                echo "----------------------------------------------------------------"
+                echo "SSH Port Forwarding for all new containers:"
+                read -r -p "Forward external SSH Port (Port -> 22) for all VPS? [Y/n, Enter=Y, 0=Back]: " shared_ssh_fwd </dev/tty
+                if [ "$shared_ssh_fwd" = "0" ]; then
+                  s_step=6
+                  continue
+                fi
+                shared_ssh_fwd="${shared_ssh_fwd:-y}"
+                if [[ "${shared_ssh_fwd,,}" =~ ^n ]]; then
+                  shared_ssh_fwd="n"
+                else
+                  shared_ssh_fwd="y"
+                fi
+                s_step=8
+                ;;
             esac
           done
 
@@ -101,7 +117,7 @@ add_menu() {
 
           # Collect names for all containers
           first_num=$(next_num)
-          names=(); nums=(); ports=(); images=()
+          names=(); nums=(); ports=(); images=(); ssh_forwards=()
           ram_modes=(); ram_values=(); cpu_modes=(); cpu_values=()
           disk_modes=(); disk_values=(); network_modes=(); network_values=()
           traffic_modes=(); traffic_rxs=(); traffic_txs=()
@@ -112,7 +128,7 @@ add_menu() {
             read -r -p "Enter VPS Name for container $i [default: $default_name]: " custom_name </dev/tty
             if [ -n "$custom_name" ]; then name="$custom_name"; else name="$default_name"; fi
             port=$(vps_fixed_port "$n")
-            names+=("$name"); nums+=("$n"); ports+=("$port"); images+=("$shared_img")
+            names+=("$name"); nums+=("$n"); ports+=("$port"); images+=("$shared_img"); ssh_forwards+=("$shared_ssh_fwd")
             ram_modes+=("$shared_rm"); ram_values+=("$shared_rv")
             cpu_modes+=("$shared_cm"); cpu_values+=("$shared_cv")
             disk_modes+=("$shared_dm"); disk_values+=("$shared_dv")
@@ -122,7 +138,7 @@ add_menu() {
         else
           # Individual configuration wizard (setup == 1)
           first_num=$(next_num)
-          names=(); nums=(); ports=(); images=()
+          names=(); nums=(); ports=(); images=(); ssh_forwards=()
           ram_modes=(); ram_values=(); cpu_modes=(); cpu_values=()
           disk_modes=(); disk_values=(); network_modes=(); network_values=()
           traffic_modes=(); traffic_rxs=(); traffic_txs=()
@@ -144,9 +160,10 @@ add_menu() {
             local cur_trm="${traffic_modes[$((vps_i-1))]:-}"
             local cur_trx="${traffic_rxs[$((vps_i-1))]:-0}"
             local cur_ttx="${traffic_txs[$((vps_i-1))]:-0}"
+            local cur_ssh_fwd="${ssh_forwards[$((vps_i-1))]:-y}"
 
             local ind_step=1
-            while [ $ind_step -ge 1 ] && [ $ind_step -le 7 ]; do
+            while [ $ind_step -ge 1 ] && [ $ind_step -le 8 ]; do
               case "$ind_step" in
                 1)
                   echo "----------------------------------------------------------------"
@@ -189,6 +206,23 @@ add_menu() {
                   cur_trm="$TRAFFIC_MODE_RESULT"; cur_trx="${TRAFFIC_RX_RESULT:-0}"; cur_ttx="${TRAFFIC_TX_RESULT:-0}"
                   ind_step=8
                   ;;
+                8)
+                  port=$(vps_fixed_port "$n")
+                  echo "----------------------------------------------------------------"
+                  echo "SSH Port Forwarding for $cur_name (Assigned Port: $port):"
+                  read -r -p "Forward external SSH Port ($PUBLIC_IP:$port -> 22)? [Y/n, Enter=Y, 0=Back]: " cur_ssh_fwd </dev/tty
+                  if [ "$cur_ssh_fwd" = "0" ]; then
+                    ind_step=7
+                    continue
+                  fi
+                  cur_ssh_fwd="${cur_ssh_fwd:-y}"
+                  if [[ "${cur_ssh_fwd,,}" =~ ^n ]]; then
+                    cur_ssh_fwd="n"
+                  else
+                    cur_ssh_fwd="y"
+                  fi
+                  ind_step=9
+                  ;;
               esac
             done
 
@@ -214,6 +248,7 @@ add_menu() {
             traffic_modes[$((vps_i-1))]="$cur_trm"
             traffic_rxs[$((vps_i-1))]="$cur_trx"
             traffic_txs[$((vps_i-1))]="$cur_ttx"
+            ssh_forwards[$((vps_i-1))]="$cur_ssh_fwd"
             vps_i=$((vps_i + 1))
           done
 
@@ -231,7 +266,7 @@ add_menu() {
     echo "================================================================"
     echo "                VPS CREATION SUMMARY CONFIRMATION"
     echo "================================================================"
-    local idx v_ip r_disp c_disp d_disp n_disp t_disp img_disp
+    local idx v_ip r_disp c_disp d_disp n_disp t_disp img_disp ssh_disp
     for ((idx=0; idx<${#names[@]}; idx++)); do
       v_ip="${NETWORK_PREFIX}.$((IP_START + ${nums[$idx]} - 1))"
       
@@ -246,10 +281,17 @@ add_menu() {
       fi
       img_disp="${images[$idx]:-$VPS_IMAGE}"
 
+      if [ "${ssh_forwards[$idx]:-y}" = "y" ]; then
+        ssh_disp="Forwarded (${ports[$idx]} -> 22)"
+      else
+        ssh_disp="Disabled (Internal only :22)"
+      fi
+
       echo "Container $((idx+1)) of ${#names[@]}:"
       echo "  Name:            ${names[$idx]}"
       echo "  Assigned IP:     $v_ip"
       echo "  SSH Port:        ${ports[$idx]}"
+      echo "  SSH Forwarding:  $ssh_disp"
       echo "  OS Image:        $img_disp"
       echo "  RAM Limit:       $r_disp"
       echo "  CPU Limit:       $c_disp"
@@ -277,7 +319,8 @@ add_menu() {
         "${ram_modes[$i]}" "${cpu_modes[$i]}" "${cpu_values[$i]}" \
         "${disk_modes[$i]}" "${disk_values[$i]}" "${network_modes[$i]}" "${network_values[$i]}" \
         "${images[$i]:-$VPS_IMAGE}" \
-        "${traffic_modes[$i]:-unlimited}" "${traffic_rxs[$i]:-0}" "${traffic_txs[$i]:-0}"; then
+        "${traffic_modes[$i]:-unlimited}" "${traffic_rxs[$i]:-0}" "${traffic_txs[$i]:-0}" \
+        "${ssh_forwards[$i]:-y}"; then
       ok=$((ok+1))
     else
       echo "Creation failed for ${names[$i]}. Rolling back incomplete VPS..."

@@ -8,6 +8,7 @@ create_vps() {
   local network_mode="${10:-unlimited}" network_value="${11:-}"
   local image="${12:-$VPS_IMAGE}"
   local traffic_mode="${13:-unlimited}" traffic_rx="${14:-0}" traffic_tx="${15:-0}"
+  local open_ssh="${16:-y}"
   local ip="${NETWORK_PREFIX}.$((IP_START+num-1))"
 
   image=$(normalize_image_alias "$image")
@@ -121,12 +122,20 @@ create_vps() {
 
   _configure_guest_optimizations "$name"
 
-  add_forward_rule "$ip" "$port"
-  set_vps_user "$name" "root"
-  set_vps_password "$name" "$ROOT_PASSWORD"
-  set_vps_saved_port "$name" "$port"
-
-  echo "Done: ssh root@$PUBLIC_IP -p $port"
+  if [[ "${open_ssh,,}" =~ ^y ]]; then
+    add_forward_rule "$ip" "$port"
+    set_vps_user "$name" "root"
+    set_vps_password "$name" "$ROOT_PASSWORD"
+    set_vps_saved_port "$name" "$port"
+    sync_vps_metadata "$name"
+    echo "Done: ssh root@$PUBLIC_IP -p $port"
+  else
+    set_vps_user "$name" "root"
+    set_vps_password "$name" "$ROOT_PASSWORD"
+    set_vps_saved_port "$name" "$port"
+    sync_vps_metadata "$name"
+    echo "Done: VPS $name created (SSH external forwarding disabled, accessible via Shell / Internal IP $ip:22)"
+  fi
 }
 
 _rollback_vps() {
