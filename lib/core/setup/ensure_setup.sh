@@ -101,6 +101,15 @@ ensure_setup() {
 
   setup_inter_vps_isolation
 
+  # Ensure host firewall permits incoming HTTP (80) and HTTPS (443) for Caddy Reverse Proxy
+  iptables -C INPUT -p tcp -m multiport --dports 80,443 -j ACCEPT 2>/dev/null || \
+    iptables -I INPUT 1 -p tcp -m multiport --dports 80,443 -j ACCEPT 2>/dev/null || true
+  if command -v ufw >/dev/null 2>&1 && ufw status 2>/dev/null | grep -q "Status: active"; then
+    ufw allow 80/tcp >/dev/null 2>&1 || true
+    ufw allow 443/tcp >/dev/null 2>&1 || true
+  fi
+  save_iptables 2>/dev/null || true
+
   # Host-side kernel modules and sysctls required for Docker/containerd/WireGuard/etc.
   # to work correctly inside nested Incus/LXC system containers.
   ensure_host_kernel_prerequisites

@@ -53,8 +53,9 @@ manage_vps_proxy() {
     echo "0) Back"
     echo "1) Add New Path"
     echo "2) Delete a Path"
-    echo "3) Manual Advanced Edit (nano)"
-    echo "4) Unlink Domain (Delete All Paths)"
+    echo "3) Test & Diagnose Routing for this VPS"
+    echo "4) Manual Advanced Edit (nano)"
+    echo "5) Unlink Domain (Delete All Paths)"
     echo "================================================================"
     read -r -p "Choice [0=Back, Enter=1]: " choice
     choice="${choice:-1}"
@@ -62,7 +63,38 @@ manage_vps_proxy() {
       0) break ;;
       1) add_path_to_vps "$vps_name" "$ip"; pause ;;
       2) delete_path_from_vps "$vps_name"; pause ;;
-      3) 
+      3)
+        if [ -f "$conf_file" ]; then
+          local d_dom d_target d_schema="http" d_port="80" d_path="/"
+          d_dom=$(head -n 1 "$conf_file" | awk '{print $1}')
+          while read -r line; do
+            if [[ "$line" == *"reverse_proxy"* ]]; then
+              local words=($line)
+              if [ "${#words[@]}" -ge 3 ] && [[ "${words[1]}" == *"/"* ]]; then
+                d_path="${words[1]}"
+                d_target="${words[2]}"
+              else
+                d_path="/"
+                d_target="${words[1]}"
+              fi
+              if [[ "$d_target" =~ ^https:// ]]; then
+                d_schema="https"
+                d_target="${d_target#https://}"
+              elif [[ "$d_target" =~ ^http:// ]]; then
+                d_schema="http"
+                d_target="${d_target#http://}"
+              fi
+              d_port="${d_target##*:}"
+              [ -n "$d_port" ] || d_port="80"
+              diagnose_domain_proxy "$vps_name" "$d_dom" "$d_schema" "$ip" "$d_port" "$d_path"
+            fi
+          done < "$conf_file"
+        else
+          echo "No domain or proxy configured for $vps_name yet."
+        fi
+        pause
+        ;;
+      4) 
         if [ -f "$conf_file" ]; then
           nano "$conf_file"
           echo "Validating..."
@@ -72,10 +104,11 @@ manage_vps_proxy() {
         fi
         pause
         ;;
-      4)
+      5)
         if [ -f "$conf_file" ]; then
           rm -f "$conf_file"
           systemctl reload-or-restart caddy
+          sync_vps_metadata "$vps_name"
           echo "SUCCESS: Domain and all paths unlinked."
         fi
         pause
