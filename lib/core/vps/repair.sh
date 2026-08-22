@@ -4,7 +4,7 @@
 repair_vps_connection() {
   local name="$1" ip port reachable=0
 
-  [ "$(get_state "$name")" = "RUNNING" ] || incus start "$name"
+  is_vps_running "$name" || incus start "$name"
   wait_ready "$name" || { echo "FAILED: $name did not become ready."; return 1; }
 
   apply_incus_compatibility_profile "$name" || echo "WARNING: could not refresh compatibility profile for $name."

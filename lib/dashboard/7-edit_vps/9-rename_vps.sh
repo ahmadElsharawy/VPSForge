@@ -26,10 +26,15 @@ rename_vps_container() {
 
   echo "Renaming VPS from '$old_name' to '$new_name'..."
   local was_running=0
-  if [ "$(get_state "$old_name")" = "RUNNING" ]; then
+  if is_vps_running "$old_name"; then
     was_running=1
     echo "Stopping $old_name..."
     incus stop "$old_name" --force >/dev/null 2>&1 || true
+    local wait_count=0
+    while is_vps_running "$old_name" && [ $wait_count -lt 15 ]; do
+      sleep 1
+      wait_count=$((wait_count + 1))
+    done
   fi
 
   if incus rename "$old_name" "$new_name"; then
@@ -42,11 +47,14 @@ rename_vps_container() {
 
     # Synchronize hostname and /etc/hosts inside the guest container
     if [ $was_running -eq 1 ]; then
-      echo "Starting $new_name..."
+      echo "Restarting $new_name..."
       incus start "$new_name" >/dev/null 2>&1 || true
+      wait_ready "$new_name" || true
       set_guest_hostname "$new_name" "$old_name"
     else
+      # Briefly start to synchronize hostname, then stop so it remains in STOPPED state
       incus start "$new_name" >/dev/null 2>&1 || true
+      wait_ready "$new_name" || true
       set_guest_hostname "$new_name" "$old_name"
       incus stop "$new_name" --force >/dev/null 2>&1 || true
     fi
@@ -55,6 +63,9 @@ rename_vps_container() {
     return 0
   else
     echo "ERROR: Failed to rename VPS container."
+    if [ $was_running -eq 1 ]; then
+      incus start "$old_name" >/dev/null 2>&1 || true
+    fi
     return 1
   fi
 }

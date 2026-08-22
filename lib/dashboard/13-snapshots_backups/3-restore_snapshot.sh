@@ -13,10 +13,15 @@ restore_vps_snapshot() {
     fi
   fi
 
-  if [ "$(get_state "$name")" = "RUNNING" ]; then
+  if is_vps_running "$name"; then
     was_running=true
     echo "Container $name is currently running. Stopping it to restore snapshot..."
     incus stop "$name" --force 2>/dev/null || true
+    local wait_count=0
+    while is_vps_running "$name" && [ $wait_count -lt 15 ]; do
+      sleep 1
+      wait_count=$((wait_count + 1))
+    done
   fi
 
   echo "Restoring $name to snapshot '$snap_name'..."

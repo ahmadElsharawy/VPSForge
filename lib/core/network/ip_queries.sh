@@ -65,7 +65,7 @@ resolve_ip_collisions() {
     if [[ " ${seen_ips[*]} " == *" $ip "* ]]; then
       echo "WARNING: IP Conflict detected for '$v' on IP $ip. Preserving original identity/port."
       static_ip=$(incus config get "$v" user.vpsforge.ip 2>/dev/null || true)
-      if [ -n "$static_ip" ] && [ "$(get_state "$v")" = "RUNNING" ]; then
+      if [ -n "$static_ip" ] && is_vps_running "$v"; then
         apply_guest_static_network "$v" "$static_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
       fi
     else

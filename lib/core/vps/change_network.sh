@@ -25,7 +25,7 @@ change_vps_ip() {
 
   incus config set "$name" user.vpsforge.ip "$new_ip" 2>/dev/null || true
 
-  if [ "$(get_state "$name")" = "RUNNING" ]; then
+  if is_vps_running "$name"; then
     apply_guest_static_network "$name" "$new_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || true
     configure_guest_dns "$name" || true
   fi
@@ -56,10 +56,10 @@ swap_vps_ips_and_ports() {
   incus config set "$name_a" user.vpsforge.ip "$ip_b" 2>/dev/null || true
   incus config set "$name_b" user.vpsforge.ip "$ip_a" 2>/dev/null || true
 
-  if [ "$(get_state "$name_a")" = "RUNNING" ]; then
+  if is_vps_running "$name_a"; then
     apply_guest_static_network "$name_a" "$ip_b" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || true
   fi
-  if [ "$(get_state "$name_b")" = "RUNNING" ]; then
+  if is_vps_running "$name_b"; then
     apply_guest_static_network "$name_b" "$ip_a" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || true
   fi
 
