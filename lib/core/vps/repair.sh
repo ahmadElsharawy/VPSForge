@@ -20,6 +20,7 @@ repair_vps_connection() {
     echo "WARNING: Failed to apply guest static network config."
   }
   configure_guest_dns "$name" || true
+  set_guest_hostname "$name"
 
   port=$(vps_fixed_port "$(get_num "$name")")
   check_fixed_port_available "$name" "$ip" "$port" || return 1

@@ -39,12 +39,19 @@ rename_vps_container() {
       systemctl reload-or-restart caddy >/dev/null 2>&1 || true
     fi
     sync_vps_metadata "$new_name"
-    echo "SUCCESS: VPS renamed to '$new_name'."
 
+    # Synchronize hostname and /etc/hosts inside the guest container
     if [ $was_running -eq 1 ]; then
       echo "Starting $new_name..."
       incus start "$new_name" >/dev/null 2>&1 || true
+      set_guest_hostname "$new_name" "$old_name"
+    else
+      incus start "$new_name" >/dev/null 2>&1 || true
+      set_guest_hostname "$new_name" "$old_name"
+      incus stop "$new_name" --force >/dev/null 2>&1 || true
     fi
+
+    echo "SUCCESS: VPS renamed to '$new_name'."
     return 0
   else
     echo "ERROR: Failed to rename VPS container."

@@ -200,6 +200,7 @@ import_vps_backup() {
   echo "[  90% ] Applying static IP ($new_ip) & DNS..."
   apply_guest_static_network "$target_name" "$new_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
   configure_guest_dns "$target_name" >/dev/null 2>&1 || true
+  set_guest_hostname "$target_name"
 
   # Apply resolved Port Forwarding rules
   echo "[  95% ] Restoring port forwarding rules..."

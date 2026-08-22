@@ -224,6 +224,7 @@ _install_ssh() {
 
 _configure_guest_optimizations() {
   local name="$1"
+  set_guest_hostname "$name"
   incus exec "$name" -- sh -c '
     # Ensure no legacy or spurious Docker marker exists in native Incus/LXC system container
     rm -f /.dockerenv 2>/dev/null || true
