@@ -20,7 +20,9 @@ manage_vps_proxy() {
     clear
     local domain="NOT LINKED YET"
     if [ -f "$conf_file" ]; then
-      domain=$(head -n 1 "$conf_file" | awk '{print $1}')
+      domain=$(grep -E '^[a-zA-Z0-9.-]+[ \t]*\{' "$conf_file" 2>/dev/null | head -n 1 | awk '{print $1}' | sed 's/[,{]//g' || true)
+      [ -n "$domain" ] || domain=$(head -n 1 "$conf_file" | awk '{print $1}' | sed 's/[,{]//g' || true)
+      [ -n "$domain" ] || domain="NOT LINKED YET"
     fi
 
     echo "================================================================"
