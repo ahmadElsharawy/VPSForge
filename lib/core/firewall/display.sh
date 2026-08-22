@@ -3,6 +3,7 @@
 
 port_forward_list_rules() {
   local file="${1:-$PORT_FORWARD_RULES_FILE}" idx=0
+  port_forward_auto_sync_active_rules "$file"
   [ -f "$file" ] || { echo "(No port forward rules configured.)"; return; }
 
   printf "%-5s %-6s %-16s %-10s %-16s %-10s %-12s\n" \

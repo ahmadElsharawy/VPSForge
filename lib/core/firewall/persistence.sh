@@ -20,12 +20,17 @@ port_forward_remove_rule_from_file() {
 port_forward_auto_sync_active_rules() {
   local file="${1:-$PORT_FORWARD_RULES_FILE}"
   mkdir -p "$(dirname "$file")" 2>/dev/null || true
-  > "$file"
+  touch "$file" 2>/dev/null || true
+
+  local tmpf
+  tmpf=$(mktemp)
+  touch "$tmpf"
+  [ -f "$file" ] && cp "$file" "$tmpf"
 
   iptables -t nat -S PREROUTING 2>/dev/null | grep -E '\-j DNAT' | while read -r rule; do
-    local proto ext_ip ext_port int_ip int_port dest_flag
+    local proto ext_ip ext_port int_ip int_port
 
-    proto=$(echo "$rule" | sed -n 's/.*-p \([a-z]*\).*/\1/p')
+    proto=$(echo "$rule" | sed -n 's/.*-p \([a-z0-9]*\).*/\1/p')
     [ -n "$proto" ] || continue
 
     ext_port=$(echo "$rule" | sed -n 's/.*--dport \([0-9]*\).*/\1/p')
@@ -44,6 +49,22 @@ port_forward_auto_sync_active_rules() {
 
     [ -n "$int_ip" ] && [ -n "$int_port" ] || continue
 
-    echo "${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}" >> "$file"
+    local entry="${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}"
+    if ! grep -Fxq "$entry" "$tmpf" 2>/dev/null; then
+      echo "$entry" >> "$tmpf"
+    fi
   done
+
+  # Verify and retain only rules that actually exist in iptables
+  local verified_tmpf
+  verified_tmpf=$(mktemp)
+  touch "$verified_tmpf"
+  while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
+    [ -n "$proto" ] && [ -n "$ext_port" ] && [ -n "$int_ip" ] && [ -n "$int_port" ] || continue
+    if iptables -t nat -S PREROUTING 2>/dev/null | grep -qE -- "-p $proto .*--dport $ext_port .*--to-destination $int_ip:$int_port"; then
+      echo "${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}" >> "$verified_tmpf"
+    fi
+  done < "$tmpf"
+  rm -f "$tmpf"
+  mv -f "$verified_tmpf" "$file"
 }

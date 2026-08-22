@@ -15,6 +15,12 @@ remove_port() {
     [ -z "$line" ] && break
     iptables -t nat -D PREROUTING "$line"
   done
+  if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
+    local tmpf
+    tmpf=$(mktemp)
+    awk -F'|' -v p="$port" '$3 != p' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
+    mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+  fi
 }
 
 remove_ip() {
@@ -25,6 +31,12 @@ remove_ip() {
     [ -z "$line" ] && break
     iptables -t nat -D PREROUTING "$line"
   done
+  if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
+    local tmpf
+    tmpf=$(mktemp)
+    awk -F'|' -v target="$ip" '($4 != target || $5 != 22)' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
+    mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+  fi
 }
 
 vps_fixed_port() {

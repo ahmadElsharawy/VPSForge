@@ -1,7 +1,7 @@
-# VPSForge v1.0.5
+# VPSForge v1.0.6
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v1.0.5-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v1.0.6-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -529,7 +529,7 @@ Automate VPSForge or integrate it with external billing systems and web control 
 
 ```bash
 vpsforge                         # Launch the interactive terminal dashboard
-vpsforge --version               # Check the current version (v1.0.5)
+vpsforge --version               # Check the current version (v1.0.6)
 vpsforge list                    # View a formatted status table of all containers
 vpsforge details <vps>           # Print detailed resource, port, proxy, and snapshot metadata
 vpsforge start <vps>             # Start one or more containers (e.g. vpsforge start vps1,vps2)
