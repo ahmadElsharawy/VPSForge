@@ -41,8 +41,10 @@ ask_ubuntu_version() {
 
   local default_sel="${img_list[0]:-$VPS_IMAGE}"
   local choice
-  read -r -p "Choice [Enter=default ($default_sel)]: " choice </dev/tty
-  if [ -z "$choice" ]; then
+  read -r -p "Choice [0=Back, Enter=default ($default_sel)]: " choice </dev/tty
+  if [ "${choice:-}" = "0" ]; then
+    return 1
+  elif [ -z "$choice" ]; then
     SELECTED_IMAGE="$default_sel"
   elif [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#img_list[@]}" ]; then
     SELECTED_IMAGE="${img_list[$((choice - 1))]}"

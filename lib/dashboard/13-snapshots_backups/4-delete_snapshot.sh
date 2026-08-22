@@ -1,7 +1,7 @@
 #!/bin/bash
 
 delete_vps_snapshot() {
-  local name="$1" snap_name="$2"
+  local name="${1:-}" snap_name="${2:-}"
   [ -z "$snap_name" ] && { echo "No snapshot specified."; return 1; }
 
   # Resolve numeric index if passed directly

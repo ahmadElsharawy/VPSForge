@@ -38,7 +38,12 @@ edit_single_vps() {
       6) edit_change_port "$name";;
       7) edit_change_username "$name";;
       8) edit_change_password "$name";;
-      9) rename_vps_container "$name";;
+      9)
+        rename_vps_container "$name"
+        if [ -n "${RENAMED_VPS_NAME:-}" ]; then
+          name="$RENAMED_VPS_NAME"
+        fi
+        ;;
       10) edit_change_ip "$name";;
       11) edit_swap_ip "$name";;
       12) edit_reinstall_image "$name";;
@@ -48,7 +53,7 @@ edit_single_vps() {
 }
 
 edit_multiple_vps() {
-  local c n sm sv tm trx ttx
+  local c n sm="" sv="" tm="" trx=0 ttx=0
   while :; do
     echo
     echo "0) Back"
@@ -75,24 +80,24 @@ edit_multiple_vps() {
             :
           else
             case "$c" in
-              1) ask_ram_mode "$n" || continue; sm="$RAM_MODE_RESULT"; sv="$RAM_VALUE_RESULT";;
-              2) ask_cpu_mode "$n" || continue; sm="$CPU_MODE_RESULT"; sv="$CPU_VALUE_RESULT";;
-              3) ask_disk_mode "$n" || continue; sm="$DISK_MODE_RESULT"; sv="$DISK_VALUE_RESULT";;
-              4) ask_network_mode "$n" || continue; sm="$NETWORK_MODE_RESULT"; sv="$NETWORK_VALUE_RESULT";;
-              5) ask_traffic_mode "$n" || continue; tm="$TRAFFIC_MODE_RESULT"; trx="$TRAFFIC_RX_RESULT"; ttx="$TRAFFIC_TX_RESULT";;
+              1) ask_ram_mode "$n" || { [ "$mode" = "2" ] && break; continue; }; sm="$RAM_MODE_RESULT"; sv="$RAM_VALUE_RESULT";;
+              2) ask_cpu_mode "$n" || { [ "$mode" = "2" ] && break; continue; }; sm="$CPU_MODE_RESULT"; sv="$CPU_VALUE_RESULT";;
+              3) ask_disk_mode "$n" || { [ "$mode" = "2" ] && break; continue; }; sm="$DISK_MODE_RESULT"; sv="$DISK_VALUE_RESULT";;
+              4) ask_network_mode "$n" || { [ "$mode" = "2" ] && break; continue; }; sm="$NETWORK_MODE_RESULT"; sv="$NETWORK_VALUE_RESULT";;
+              5) ask_traffic_mode "$n" || { [ "$mode" = "2" ] && break; continue; }; tm="$TRAFFIC_MODE_RESULT"; trx="$TRAFFIC_RX_RESULT"; ttx="$TRAFFIC_TX_RESULT";;
             esac
           fi
           case "$c" in
-            1) set_ram_mode_for_vps "$n" "$sm" "$sv";;
-            2) set_cpu_mode_for_vps "$n" "$sm" "$sv";;
-            3) set_disk_mode_for_vps "$n" "$sm" "$sv";;
-            4) set_network_mode_for_vps "$n" "$sm" "$sv";;
-            5) set_traffic_mode_for_vps "$n" "$tm" "$trx" "$ttx";;
+            1) [ -n "$sm" ] && set_ram_mode_for_vps "$n" "$sm" "$sv";;
+            2) [ -n "$sm" ] && set_cpu_mode_for_vps "$n" "$sm" "$sv";;
+            3) [ -n "$sm" ] && set_disk_mode_for_vps "$n" "$sm" "$sv";;
+            4) [ -n "$sm" ] && set_network_mode_for_vps "$n" "$sm" "$sv";;
+            5) [ -n "$tm" ] && set_traffic_mode_for_vps "$n" "$tm" "$trx" "$ttx";;
           esac
         done
         ;;
-      6) local value; read -r -p "New username for all: " value; for n in "${SELECTED_VPS[@]}"; do change_vps_username "$n" "$value"; done;;
-      7) local value; read -r -s -p "New password for all: " value; echo; for n in "${SELECTED_VPS[@]}"; do change_vps_password "$n" "$value"; done;;
+      6) local value; read -r -p "New username for all [0=Back]: " value; [ "$value" = "0" ] || [ -z "$value" ] && continue; for n in "${SELECTED_VPS[@]}"; do change_vps_username "$n" "$value"; done;;
+      7) local value; read -r -s -p "New password for all [0=Back]: " value; echo; [ "$value" = "0" ] || [ -z "$value" ] && continue; for n in "${SELECTED_VPS[@]}"; do change_vps_password "$n" "$value"; done;;
       0) return;;
     esac
   done

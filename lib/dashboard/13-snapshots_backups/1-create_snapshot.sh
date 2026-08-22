@@ -1,7 +1,7 @@
 #!/bin/bash
 
 create_vps_snapshot() {
-  local name="$1" snap_name="$2"
+  local name="${1:-}" snap_name="${2:-}"
   [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"
   snap_name=$(echo "$snap_name" | tr ' ' '_' | sed 's/[^a-zA-Z0-9_.-]//g')
   [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"

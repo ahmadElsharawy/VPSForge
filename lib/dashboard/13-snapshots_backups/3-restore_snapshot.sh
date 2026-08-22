@@ -1,7 +1,7 @@
 #!/bin/bash
 
 restore_vps_snapshot() {
-  local name="$1" snap_name="$2" was_running=false
+  local name="${1:-}" snap_name="${2:-}" was_running=false
   [ -z "$snap_name" ] && { echo "No snapshot specified."; return 1; }
 
   # Resolve numeric index if passed directly
