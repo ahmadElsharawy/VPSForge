@@ -23,7 +23,7 @@ format_ram_display() {
   if [ -n "$limit" ] && [ "$limit" -gt 0 ] 2>/dev/null; then
     echo "${used}MB / ${limit}MB"
   else
-    echo "${used}MB / $(get_host_available_ram_mb)MB"
+    echo "${used}MB / Unlimited"
   fi
 }
 

@@ -249,7 +249,7 @@ def main():
         if ram_limit_mb > 0:
             ram_str = f"{ram_used_mb}MB / {ram_limit_mb}MB"
         else:
-            ram_str = f"{ram_used_mb}MB / {host_avail_ram_mb}MB"
+            ram_str = f"{ram_used_mb}MB / Unlimited"
 
         # 2. CPU cores
         cpu_limit = config.get('limits.cpu', '') or expanded_config.get('limits.cpu', '')
@@ -266,7 +266,7 @@ def main():
         if vps_disk_limit > 0:
             disk_str = f"{vps_disk_used:.1f}GB / {int(vps_disk_limit)}GB"
         else:
-            disk_str = f"{vps_disk_used:.1f}GB / {disk_avail_gb:.1f}GB"
+            disk_str = f"{vps_disk_used:.1f}GB / Unlimited"
 
         # 4. Network Limit and IO
         net_limit = get_network_limit_mbit(vps, host_net_mbit)
