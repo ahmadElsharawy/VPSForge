@@ -9,7 +9,8 @@ port_forward_cli() {
     add)
       [ $# -ge 5 ] || { echo "Usage: vpsforge port-forward add <tcp|udp|both> <external_ip|0.0.0.0> <external_port> <internal_ip> <internal_port>"; return 1; }
       protocol=$(printf '%s' "${2:-TCP}" | tr '[:upper:]' '[:lower:]')
-      external_ip="${3:-}" external_port="${4:-}" internal_ip="${5:-}" internal_port="${6:-}"
+      external_ip="${3:-0.0.0.0}" external_port="${4:-}" internal_ip="${5:-}" internal_port="${6:-}"
+      [ -n "$external_ip" ] || external_ip="0.0.0.0"
       [[ "$protocol" =~ ^(tcp|udp|both)$ ]] || { echo "Protocol must be tcp, udp, or both."; return 1; }
       [[ "$external_port" =~ ^[0-9]+$ ]]    || { echo "External port must be numeric."; return 1; }
       [[ "$internal_port" =~ ^[0-9]+$ ]]    || { echo "Internal port must be numeric."; return 1; }
@@ -33,7 +34,8 @@ port_forward_cli() {
     edit)
       [ $# -ge 5 ] || { echo "Usage: vpsforge port-forward edit <tcp|udp|both> <external_ip|0.0.0.0> <external_port> <internal_ip> <internal_port>"; return 1; }
       protocol=$(printf '%s' "${2:-TCP}" | tr '[:upper:]' '[:lower:]')
-      external_ip="${3:-}" external_port="${4:-}" internal_ip="${5:-}" internal_port="${6:-}"
+      external_ip="${3:-0.0.0.0}" external_port="${4:-}" internal_ip="${5:-}" internal_port="${6:-}"
+      [ -n "$external_ip" ] || external_ip="0.0.0.0"
       [[ "$protocol" =~ ^(tcp|udp|both)$ ]] || { echo "Protocol must be tcp, udp, or both."; return 1; }
       [[ "$external_port" =~ ^[0-9]+$ ]]    || { echo "External port must be numeric."; return 1; }
       [[ "$internal_port" =~ ^[0-9]+$ ]]    || { echo "Internal port must be numeric."; return 1; }
@@ -54,7 +56,8 @@ port_forward_cli() {
     delete)
       [ $# -ge 5 ] || { echo "Usage: vpsforge port-forward delete <tcp|udp|both> <external_ip|0.0.0.0> <external_port> <internal_ip> <internal_port>"; return 1; }
       protocol=$(printf '%s' "${2:-TCP}" | tr '[:upper:]' '[:lower:]')
-      external_ip="${3:-}" external_port="${4:-}" internal_ip="${5:-}" internal_port="${6:-}"
+      external_ip="${3:-0.0.0.0}" external_port="${4:-}" internal_ip="${5:-}" internal_port="${6:-}"
+      [ -n "$external_ip" ] || external_ip="0.0.0.0"
       [[ "$protocol" =~ ^(tcp|udp|both)$ ]] || { echo "Protocol must be tcp, udp, or both."; return 1; }
 
       local proto target_vps
@@ -64,7 +67,12 @@ port_forward_cli() {
       done
       save_iptables
       target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
-      [ -n "$target_vps" ] && sync_vps_metadata "$target_vps"
+      if [ -n "$target_vps" ]; then
+        if [ "$internal_port" = "22" ]; then
+          incus config unset "$target_vps" user.vpsforge.ssh_port 2>/dev/null || true
+        fi
+        sync_vps_metadata "$target_vps"
+      fi
       echo "Port forward removed: $protocol $external_ip:$external_port -> $internal_ip:$internal_port"
       ;;
 

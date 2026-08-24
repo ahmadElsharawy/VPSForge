@@ -4,7 +4,11 @@
 port_forward_append_rule_to_file() {
   local file="$1" proto="$2" ext_ip="$3" ext_port="$4" int_ip="$5" int_port="$6"
   mkdir -p "$(dirname "$file")" 2>/dev/null || true
-  echo "${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}" >> "$file"
+  touch "$file" 2>/dev/null || true
+  local entry="${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}"
+  if ! grep -Fxq "$entry" "$file" 2>/dev/null; then
+    echo "$entry" >> "$file"
+  fi
 }
 
 port_forward_remove_rule_from_file() {
@@ -27,6 +31,7 @@ port_forward_auto_sync_active_rules() {
   touch "$tmpf"
   [ -f "$file" ] && cp "$file" "$tmpf"
 
+  # 1. Capture any active iptables DNAT rules into the rules file if missing
   iptables -t nat -S PREROUTING 2>/dev/null | grep -E '\-j DNAT' | while read -r rule; do
     local proto ext_ip ext_port int_ip int_port
 
@@ -55,16 +60,28 @@ port_forward_auto_sync_active_rules() {
     fi
   done
 
-  # Verify and retain only rules that actually exist in iptables
-  local verified_tmpf
-  verified_tmpf=$(mktemp)
-  touch "$verified_tmpf"
+  # 2. Also ensure each container's SSH port from metadata exists in tmpf if active/saved
+  local -a inst_list=()
+  mapfile -t inst_list < <(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)
+  local inst inst_ip inst_port
+  for inst in "${inst_list[@]}"; do
+    [ -n "$inst" ] || continue
+    inst_ip=$(get_ip "$inst" 2>/dev/null || true)
+    inst_port=$(get_vps_saved_port "$inst" 2>/dev/null || true)
+    [ -z "$inst_port" ] && inst_port=$(get_port "$inst_ip" 2>/dev/null || true)
+    if [ -n "$inst_ip" ] && [ "$inst_ip" != "-" ] && [ -n "$inst_port" ] && [[ "$inst_port" =~ ^[0-9]+$ ]]; then
+      local ssh_entry="tcp|0.0.0.0|${inst_port}|${inst_ip}|22"
+      if ! grep -Fxq "$ssh_entry" "$tmpf" 2>/dev/null; then
+        echo "$ssh_entry" >> "$tmpf"
+      fi
+    fi
+  done
+
+  # 3. Apply all rules from tmpf into iptables
   while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
     [ -n "$proto" ] && [ -n "$ext_port" ] && [ -n "$int_ip" ] && [ -n "$int_port" ] || continue
-    if iptables -t nat -S PREROUTING 2>/dev/null | grep -qE -- "-p $proto .*--dport $ext_port .*--to-destination $int_ip:$int_port"; then
-      echo "${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}" >> "$verified_tmpf"
-    fi
+    port_forward_apply_rule "$proto" "${ext_ip:-0.0.0.0}" "$ext_port" "$int_ip" "$int_port"
   done < "$tmpf"
-  rm -f "$tmpf"
-  mv -f "$verified_tmpf" "$file"
+
+  mv -f "$tmpf" "$file"
 }

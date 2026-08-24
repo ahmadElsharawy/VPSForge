@@ -2,18 +2,53 @@
 # VPSForge v1.0.0 — SSH port management.
 
 get_port() {
-  local ip="$1"; [ -z "$ip" ] && return
-  iptables -t nat -L PREROUTING -n 2>/dev/null |
-    awk -v ip="$ip" '$0 ~ "to:" ip ":22" {for(i=1;i<=NF;i++) if($i~/^dpt:/){sub(/^dpt:/,"",$i);print $i;exit}}'
+  local ip="$1" port=""
+  [ -z "$ip" ] && return
+
+  # 1. Query active iptables PREROUTING table
+  port=$(iptables -t nat -L PREROUTING -n 2>/dev/null |
+    awk -v ip="$ip" '
+      $0 ~ ("to:" ip ":22([^0-9]|$)") {
+        for (i = 1; i <= NF; i++) {
+          if ($i ~ /^dpt:[0-9]+$/) {
+            sub(/^dpt:/, "", $i);
+            print $i;
+            exit;
+          }
+        }
+      }')
+
+  # 2. Fallback to saved port forwards file
+  if [ -z "$port" ] && [ -f "$PORT_FORWARD_RULES_FILE" ]; then
+    port=$(awk -F'|' -v target="$ip" '$4 == target && $5 == "22" { print $3; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null || true)
+  fi
+
+  # 3. Fallback to container metadata
+  if [ -z "$port" ]; then
+    local name
+    name=$(get_vps_name_by_ip "$ip" 2>/dev/null || true)
+    [ -n "$name" ] && port=$(get_vps_saved_port "$name" 2>/dev/null || true)
+  fi
+
+  echo "$port"
 }
 
 remove_port() {
   local port="$1" line
+  [ -z "$port" ] && return
   while :; do
     line=$(iptables -t nat -L PREROUTING -n --line-numbers 2>/dev/null |
-      awk -v p="$port" '$0 ~ "dpt:" p {print $1;exit}')
+      awk -v p="$port" '
+        {
+          for (i = 1; i <= NF; i++) {
+            if ($i == "dpt:" p || $i ~ ("^dpt:" p "$")) {
+              print $1;
+              exit;
+            }
+          }
+        }')
     [ -z "$line" ] && break
-    iptables -t nat -D PREROUTING "$line"
+    iptables -t nat -D PREROUTING "$line" 2>/dev/null || break
   done
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmpf
@@ -24,12 +59,21 @@ remove_port() {
 }
 
 remove_ip() {
-  local ip="$1" line; [ -z "$ip" ] && return
+  local ip="$1" line
+  [ -z "$ip" ] && return
   while :; do
     line=$(iptables -t nat -L PREROUTING -n --line-numbers 2>/dev/null |
-      awk -v ip="$ip" '$0 ~ "to:" ip ":22" {print $1;exit}')
+      awk -v ip="$ip" '
+        {
+          for (i = 1; i <= NF; i++) {
+            if ($i == ("to:" ip ":22") || $i ~ ("^to:" ip ":22$")) {
+              print $1;
+              exit;
+            }
+          }
+        }')
     [ -z "$line" ] && break
-    iptables -t nat -D PREROUTING "$line"
+    iptables -t nat -D PREROUTING "$line" 2>/dev/null || break
   done
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmpf

@@ -67,9 +67,9 @@ _pf_interactive_add() {
   local proto conflict conflict_vps
   for proto in $(resolve_protocols "$protocol"); do
     conflict=$(awk -v p="$proto" -v eip="$external_ip" -v eport="$external_port" -v intip="$internal_ip" -F'|' '
-      BEGIN { if (eip == "") eip = "0.0.0.0" }
+      BEGIN { if (eip == "" || eip == "any") eip = "0.0.0.0" }
       {
-        r_eip = $2; if (r_eip == "") r_eip = "0.0.0.0";
+        r_eip = $2; if (r_eip == "" || r_eip == "any") r_eip = "0.0.0.0";
         if ($1 == p && r_eip == eip && $3 == eport && $4 != intip) {
           print $4 "|" $5; exit
         }
@@ -89,7 +89,7 @@ _pf_interactive_add() {
       echo "1) Replace / Overwrite (Move port from $conflict_vps to this VPS)"
       echo "2) Change External Port (Keep internal port $internal_port)"
       
-      local choice new_ext_port
+      local choice new_ext_port del_proto
       while :; do
         read -r -p "Choice [0=Cancel, 1=Replace, 2=Change Port, Enter=0]: " choice </dev/tty
         choice="${choice:-0}"
@@ -100,7 +100,9 @@ _pf_interactive_add() {
             ;;
           1)
             echo "Replacing port mapping: removing from $conflict_vps..."
-            port_forward_cli delete "$proto" "$external_ip" "$external_port" "$conf_ip" "$conf_port" >/dev/null 2>&1
+            for del_proto in $(resolve_protocols "$protocol"); do
+              port_forward_cli delete "$del_proto" "$external_ip" "$external_port" "$conf_ip" "$conf_port" >/dev/null 2>&1
+            done
             break
             ;;
           2)

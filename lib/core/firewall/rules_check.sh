@@ -19,11 +19,11 @@ port_forward_rule_conflicts() {
   dest_spec=$(_build_dest_spec "$external_ip")
 
   for proto in $(resolve_protocols "$protocol"); do
-    if iptables -t nat -C PREROUTING -p "$proto" $dest_spec \
+    if ! iptables -t nat -C PREROUTING -p "$proto" $dest_spec \
       --dport "$external_port" -j DNAT \
       --to-destination "$internal_ip:$internal_port" 2>/dev/null; then
-      return 0
+      return 1
     fi
   done
-  return 1
+  return 0
 }
