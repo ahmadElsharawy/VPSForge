@@ -11,10 +11,12 @@ details() {
   ram=$(format_ram_display "$name" 2>/dev/null || true); [ -n "$ram" ] || ram="-"
 
   cpu=$(get_vps_cpu_limit "$name" 2>/dev/null || true)
+  local host_cpus
+  host_cpus=$(get_host_cpu_count 2>/dev/null || echo 1)
   if [ -n "$cpu" ]; then
-    cpu="${cpu} Core$([ "$cpu" = "1" ] || echo s)"
+    cpu="${cpu} / ${host_cpus} Core$([ "$host_cpus" = "1" ] || echo s)"
   else
-    cpu="-"
+    cpu="${host_cpus} / ${host_cpus} Core$([ "$host_cpus" = "1" ] || echo s)"
   fi
 
   disk=$(format_disk_display "$name" 2>/dev/null || true); [ -n "$disk" ] || disk="-"

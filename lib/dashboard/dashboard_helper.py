@@ -247,16 +247,18 @@ def main():
         ram_used_bytes = state.get('memory', {}).get('usage', 0) or 0
         ram_used_mb = int(ram_used_bytes / (1024**2))
         if ram_limit_mb > 0:
-            ram_str = f"{ram_used_mb}MB / {ram_limit_mb}MB"
+            ram_str = f"{ram_used_mb}MB / {ram_limit_mb}MB / {host_total_ram_mb}MB"
         else:
-            ram_str = f"{ram_used_mb}MB / {host_avail_ram_mb}MB"
+            ram_str = f"{ram_used_mb}MB / {host_avail_ram_mb}MB / {host_total_ram_mb}MB"
 
         # 2. CPU cores
         cpu_limit = config.get('limits.cpu', '') or expanded_config.get('limits.cpu', '')
         if cpu_limit:
-            cpu_str = f"{cpu_limit} Core" + ("" if str(cpu_limit) == "1" else "s")
+            cpu_unit = "Core" if str(cpu_limit) == "1" and host_cpu_count == 1 else "Cores"
+            cpu_str = f"{cpu_limit} / {host_cpu_count} {cpu_unit}"
         else:
-            cpu_str = f"{host_cpu_count} Core" + ("" if str(host_cpu_count) == "1" else "s")
+            cpu_unit = "Core" if host_cpu_count == 1 else "Cores"
+            cpu_str = f"{host_cpu_count} / {host_cpu_count} {cpu_unit}"
 
         # 3. Disk limit and usage
         vps_disk_limit = get_disk_limit_gb(vps)
@@ -264,9 +266,9 @@ def main():
         vps_disk_used = disk_usages.get(name, 0.0)
 
         if vps_disk_limit > 0:
-            disk_str = f"{vps_disk_used:.1f}GB / {int(vps_disk_limit)}GB"
+            disk_str = f"{vps_disk_used:.1f}GB / {int(vps_disk_limit)}GB / {disk_total_gb:.1f}GB"
         else:
-            disk_str = f"{vps_disk_used:.1f}GB / {disk_avail_gb:.1f}GB"
+            disk_str = f"{vps_disk_used:.1f}GB / {disk_avail_gb:.1f}GB / {disk_total_gb:.1f}GB"
 
         # 4. Network Limit and IO
         net_limit = get_network_limit_mbit(vps, host_net_mbit)
@@ -323,26 +325,26 @@ def main():
         refresh_str = f"ON ({refresh_interval}s)" if auto_refresh == "on" else "OFF"
         host_cpu_str = f"{host_cpu_count} Core" + ("" if str(host_cpu_count) == "1" else "s")
 
-        header_border = "+" + "-" * 140 + "+"
+        header_border = "+" + "-" * 146 + "+"
         grid_border = "+" + "+".join([
-            "-" * 22, # AUTO REFRESH / TOTAL DISK
-            "-" * 22, # PUBLIC IP / HOST OS
-            "-" * 22, # TOTAL RAM / VPS DISK USED
-            "-" * 22, # VPS RAM LIMITS / BACKUPS
-            "-" * 22, # REMAINING RAM / VPS DISK LIMITS
+            "-" * 23, # AUTO REFRESH / TOTAL DISK
+            "-" * 23, # PUBLIC IP / HOST OS
+            "-" * 23, # TOTAL RAM / VPS DISK USED
+            "-" * 23, # VPS RAM LIMITS / BACKUPS
+            "-" * 23, # REMAINING RAM / VPS DISK LIMITS
             "-" * 25  # HOST CPU / AVAILABLE DISK
         ]) + "+"
 
         print(header_border)
-        print(f"| {('VPSFORGE MANAGER ' + version):^138} |")
+        print(f"| {('VPSFORGE MANAGER ' + version):^144} |")
         print(grid_border)
-        print(f"| {'AUTO REFRESH':<20} | {'PUBLIC IP':<20} | {'TOTAL RAM':<20} | {'VPS RAM LIMITS':<20} | {'REMAINING RAM':<20} | {'HOST CPU':<23} |")
+        print(f"| {'AUTO REFRESH':<21} | {'PUBLIC IP':<21} | {'TOTAL RAM':<21} | {'VPS RAM LIMITS':<21} | {'REMAINING RAM':<21} | {'HOST CPU':<23} |")
         print(grid_border)
-        print(f"| {refresh_str:<20} | {public_ip:<20} | {f'{host_total_ram_mb}MB':<20} | {f'{allocated_ram_mb}MB':<20} | {f'{remaining_ram_mb}MB':<20} | {host_cpu_str:<23} |")
+        print(f"| {refresh_str:<21} | {public_ip:<21} | {f'{host_total_ram_mb}MB':<21} | {f'{allocated_ram_mb}MB':<21} | {f'{remaining_ram_mb}MB':<21} | {host_cpu_str:<23} |")
         print(grid_border)
-        print(f"| {'TOTAL DISK':<20} | {'HOST OS':<20} | {'VPS DISK USED':<20} | {'BACKUPS':<20} | {'VPS DISK LIMITS':<20} | {'AVAILABLE DISK':<23} |")
+        print(f"| {'TOTAL DISK':<21} | {'HOST OS':<21} | {'VPS DISK USED':<21} | {'BACKUPS':<21} | {'VPS DISK LIMITS':<21} | {'AVAILABLE DISK':<23} |")
         print(grid_border)
-        print(f"| {f'{disk_total_gb:.1f}GB':<20} | {f'{host_os_gb:.1f}GB':<20} | {f'{disk_used_gb_total:.1f}GB':<20} | {f'{backup_used_gb:.1f}GB':<20} | {f'{disk_allocated_gb}GB':<20} | {f'{disk_avail_gb:.1f}GB':<23} |")
+        print(f"| {f'{disk_total_gb:.1f}GB':<21} | {f'{host_os_gb:.1f}GB':<21} | {f'{disk_used_gb_total:.1f}GB':<21} | {f'{backup_used_gb:.1f}GB':<21} | {f'{disk_allocated_gb}GB':<21} | {f'{disk_avail_gb:.1f}GB':<23} |")
         print(grid_border)
         print()
 
@@ -350,19 +352,19 @@ def main():
     border = "+" + "+".join([
         "-" * 12, # NAME
         "-" * 12, # STATUS
-        "-" * 20, # RAM
-        "-" * 12, # CPU
-        "-" * 20, # DISK
-        "-" * 32, # NETWORK_IO
+        "-" * 26, # RAM
+        "-" * 14, # CPU
+        "-" * 26, # DISK
+        "-" * 28, # NETWORK_IO
         "-" * 17, # INTERNAL_IP
         "-" * 8   # PORT
     ]) + "+"
 
     print(border)
-    print(f"| {'NAME':<10} | {'STATUS':<10} | {'RAM':<18} | {'CPU':<10} | {'DISK':<18} | {'NETWORK_IO':<30} | {'INTERNAL_IP':<15} | {'PORT':<6} |")
+    print(f"| {'NAME':<10} | {'STATUS':<10} | {'RAM':<24} | {'CPU':<12} | {'DISK':<24} | {'NETWORK_IO':<26} | {'INTERNAL_IP':<15} | {'PORT':<6} |")
     print(border)
     for row in sorted(rows, key=lambda x: x[0]):
-        print(f"| {row[0]:<10} | {row[1]:<10} | {row[2]:<18} | {row[3]:<10} | {row[4]:<18} | {row[5]:<30} | {row[6]:<15} | {row[7]:<6} |")
+        print(f"| {row[0]:<10} | {row[1]:<10} | {row[2]:<24} | {row[3]:<12} | {row[4]:<24} | {row[5]:<26} | {row[6]:<15} | {row[7]:<6} |")
         print(border)
 
 if __name__ == "__main__":
