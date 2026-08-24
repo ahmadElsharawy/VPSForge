@@ -363,7 +363,7 @@ def main():
     ]) + "+"
 
     print(border)
-    print(f"| {'NAME':<10} | {'STATUS':<10} | {'RAM (USED/REM/TOTAL)':<24} | {'CPU (USED/REM/TOTAL)':<20} | {'DISK (USED/REM/TOTAL)':<24} | {'NETWORK_IO':<26} | {'INTERNAL_IP':<15} | {'PORT':<6} |")
+    print(f"| {'NAME':<10} | {'STATUS':<10} | {'RAM':<24} | {'CPU':<20} | {'DISK':<24} | {'NETWORK_IO':<26} | {'INTERNAL_IP':<15} | {'PORT':<6} |")
     print(border)
     for row in sorted(rows, key=lambda x: x[0]):
         print(f"| {row[0]:<10} | {row[1]:<10} | {row[2]:<24} | {row[3]:<20} | {row[4]:<24} | {row[5]:<26} | {row[6]:<15} | {row[7]:<6} |")
