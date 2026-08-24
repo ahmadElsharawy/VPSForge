@@ -44,7 +44,7 @@ format_disk_display() {
   if [ -n "$limit" ] && [ "$limit" -gt 0 ] 2>/dev/null; then
     echo "${used}GB / ${limit}GB"
   else
-    echo "${used}GB / Unlimited"
+    echo "${used}GB / $(get_host_disk_total_gb)GB"
   fi
 }
 
