@@ -59,7 +59,7 @@ create_vps() {
     return 1
   }
 
-  configure_vps_network_device "$name" || {
+  configure_vps_network_device "$name" "$ip" || {
     echo "ERROR: Failed to configure network device for $name."
     incus delete "$name" --force >/dev/null 2>&1 || true
     return 1

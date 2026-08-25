@@ -15,6 +15,8 @@ repair_vps_connection() {
   ip=$(get_ip "$name")
   [ -n "$ip" ] || { echo "FAILED: No IPv4 for $name."; return 1; }
 
+  configure_vps_network_device "$name" "$ip" || true
+
   echo "Applying static network config inside guest..."
   apply_guest_static_network "$name" "$ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || {
     echo "WARNING: Failed to apply guest static network config."
