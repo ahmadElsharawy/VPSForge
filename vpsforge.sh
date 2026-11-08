@@ -61,7 +61,7 @@ fi
 # Light commands: no full startup (the cron jobs run these every few minutes).
 case "${1:-}" in
   quota-check) check_vps_traffic_quotas; exit 0;;
-  reclaim) reclaim_pool_space; exit 0;;
+  reclaim) reclaim_pool_space; echo "Freed disk space returned to the server."; exit 0;;
   update|upgrade)
     shift
     get_network_info 2>/dev/null || true

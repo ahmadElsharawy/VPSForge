@@ -7,14 +7,14 @@ cancel_instance_creation() {
   local name="${1:?name}" op waited=0
   while [ "$waited" -lt 60 ]; do
     op=$(incus query "/1.0/operations?recursion=1" 2>/dev/null | python3 -c '
-import sys, json
+import sys, json, re
 name = sys.argv[1]
 try:
     data = json.load(sys.stdin)
     ops = data.get("running", []) if isinstance(data, dict) else []
     for o in ops:
         res = json.dumps(o.get("resources", {}))
-        if ('"/1.0/instances/' + name + '"') in res and o.get("description", "").lower().startswith("creat"):
+        if re.search(re.escape("/instances/" + name) + r"(?![A-Za-z0-9_.-])", res) and o.get("description", "").lower().startswith("creat"):
             print(o["id"]); break
 except Exception:
     pass
