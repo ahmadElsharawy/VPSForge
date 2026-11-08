@@ -17,8 +17,9 @@ create_vps() {
     return 1
   fi
 
-  local ip="${NETWORK_PREFIX}.$((IP_START + num - 1))" port
-  port=$(vps_fixed_port "$num")
+  # VPS_FORCE_IP / VPS_FORCE_PORT: a reinstall keeps the address and SSH port the VPS already had.
+  local ip="${VPS_FORCE_IP:-${NETWORK_PREFIX}.$((IP_START + num - 1))}" port
+  port="${VPS_FORCE_PORT:-$(vps_fixed_port "$num")}"
 
   run_guarded "cleanup_failed_vps $name $ip $port" _create_vps_steps "$@"
 }

@@ -8,7 +8,8 @@ reinstall_single_vps_core() {
   local n="$1" image="${2:-}" num ip port old="${1}-old-reinstall"
   num=$(get_num "$n")
   ip=$(get_ip "$n")
-  port=$(vps_fixed_port "$num")
+  port=$(get_vps_saved_port "$n" 2>/dev/null || true)
+  [[ "$port" =~ ^[0-9]+$ ]] || port=$(vps_fixed_port "$num")
 
   preserve_vps_settings "$n"
 
@@ -32,13 +33,14 @@ reinstall_single_vps_core() {
   remove_ip "$ip"
   remove_port "$port"
 
+  export VPS_FORCE_IP="$ip" VPS_FORCE_PORT="$port"   # the new VPS gets exactly the old address and port
   export VPS_KEEP_FORWARDS=1          # the owner's custom port-forwards must survive a failed reinstall
   if create_vps "$n" "$num" "$PRESERVED_RAM_LIMIT" "$port" \
       "$PRESERVED_RAM_MODE" "$PRESERVED_CPU_MODE" "$PRESERVED_CPU_LIMIT" \
       "$PRESERVED_DISK_MODE" "$PRESERVED_DISK_LIMIT" \
       "$PRESERVED_NETWORK_MODE" "$PRESERVED_NETWORK_LIMIT" \
       "$image"; then
-    unset VPS_KEEP_FORWARDS
+    unset VPS_KEEP_FORWARDS VPS_FORCE_IP VPS_FORCE_PORT
     [ "$PRESERVED_USER" = "root" ] || change_vps_username "$n" "$PRESERVED_USER"
     change_vps_password "$n" "$PRESERVED_PASSWORD"
     incus delete "$old" --force >/dev/null 2>&1 || true
@@ -47,7 +49,7 @@ reinstall_single_vps_core() {
     return 0
   fi
 
-  unset VPS_KEEP_FORWARDS
+  unset VPS_KEEP_FORWARDS VPS_FORCE_IP VPS_FORCE_PORT
   # create_vps already removed the half-made new VPS. Put the original back.
   echo "Reinstall of $n failed (${GUARD_REASON:-unknown reason}). Restoring the original VPS..."
   recover_interrupted_reinstall "$old" "$n"

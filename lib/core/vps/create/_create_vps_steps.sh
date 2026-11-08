@@ -8,10 +8,10 @@ _create_vps_steps() {
   local image="${12:-$VPS_IMAGE}"
   local traffic_mode="${13:-unlimited}" traffic_rx="${14:-0}" traffic_tx="${15:-0}"
   local open_ssh="${16:-y}"
-  local ip="${NETWORK_PREFIX}.$((IP_START+num-1))"
+  local ip="${VPS_FORCE_IP:-${NETWORK_PREFIX}.$((IP_START+num-1))}"
 
   image=$(normalize_image_alias "$image")
-  port=$(vps_fixed_port "$num")
+  port="${VPS_FORCE_PORT:-$(vps_fixed_port "$num")}"
   check_fixed_port_available "$name" "$ip" "$port" || return 1
   pending_operation_set "$name" "$ip" "$port"
 

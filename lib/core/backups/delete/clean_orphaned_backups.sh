@@ -11,6 +11,9 @@ clean_orphaned_backups() {
 
   while read -r file; do
     [ -n "$file" ] || continue
+    # Only files named like VPSForge's own backups (<vps>-backup-<date>.tar) have a known owner.
+    # Any other name (for example web1-before-upgrade.tar) is never treated as an orphan.
+    [[ "$(basename "$file")" == *-backup-* ]] || continue
     owner=$(extract_container_name_from_backup_filename "$file")
     if ! incus info "$owner" >/dev/null 2>&1; then
       orphans+=("$file")
