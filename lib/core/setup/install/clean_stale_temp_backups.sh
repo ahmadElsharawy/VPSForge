@@ -1,0 +1,35 @@
+#!/bin/bash
+clean_stale_temp_backups() {
+  local tmp_dir="/opt/vpsforge-backups/.tmp"
+  if [ -d "$tmp_dir" ]; then
+    local f
+    for f in "$tmp_dir"/*; do
+      [ -f "$f" ] || continue
+      if ! fuser "$f" >/dev/null 2>&1; then
+        rm -f "$f"
+      fi
+    done
+  fi
+
+  # Clean internal Incus orphaned backups
+  local inst_list inst backup_list b_name
+  inst_list=$(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)
+  for inst in $inst_list; do
+    backup_list=$(incus query "/1.0/instances/${inst}/backups" 2>/dev/null | python3 -c '
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    if isinstance(data, dict):
+        data = data.get("metadata", [])
+    if isinstance(data, list):
+        for path in data:
+            print(path.split("/").pop())
+except Exception:
+    pass
+' 2>/dev/null || true)
+    for b_name in $backup_list; do
+      [ -n "$b_name" ] || continue
+      incus query -X DELETE "/1.0/instances/${inst}/backups/${b_name}" >/dev/null 2>&1 || true
+    done
+  done
+}

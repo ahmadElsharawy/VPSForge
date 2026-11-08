@@ -6,10 +6,31 @@ DEFAULT_REPO="https://github.com/ahmadElsharawy/VPSForge.git"
 
 if [ "$EUID" -ne 0 ]; then exec sudo -E bash "$0" "$@"; fi
 
-apt-get update
-apt-get install -y curl git
-
+# Record how the server looks BEFORE VPSForge touches anything. "vpsforge uninstall"
+# uses this to put the server back exactly as it was. (Keep the package list in
+# sync with VPSFORGE_PACKAGES in lib/core/common/constants/constants.sh.)
 mkdir -p "$APP_DIR"
+PRE="$APP_DIR/.pre_install"
+if [ ! -d "$PRE" ]; then
+  mkdir -p "$PRE"
+  command -v iptables-save >/dev/null 2>&1 && iptables-save > "$PRE/iptables.rules" 2>/dev/null || true
+  sysctl -n net.ipv4.ip_forward > "$PRE/ip_forward" 2>/dev/null || true
+  dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' 2>/dev/null | awk '$1=="ii"{print $2}' | sort > "$PRE/packages_all.txt" || true
+  : > "$PRE/packages_present.txt"
+  for pkg in incus iptables iptables-persistent netfilter-persistent curl git python3 zstd pigz psmisc btrfs-progs caddy; do
+    dpkg -s "$pkg" >/dev/null 2>&1 && echo "$pkg" >> "$PRE/packages_present.txt"
+  done
+  date -u '+%Y-%m-%d %H:%M:%S UTC' > "$PRE/captured_at"
+fi
+
+installed_packages() { dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' 2>/dev/null | awk '$1=="ii"{print $2}' | sort; }
+
+apt-get update
+installed_packages > "$PRE/.before_install"
+apt-get install -y curl git
+installed_packages | comm -13 "$PRE/.before_install" - >> "$PRE/packages_installed.txt"
+sort -u "$PRE/packages_installed.txt" -o "$PRE/packages_installed.txt"
+rm -f "$PRE/.before_install"
 
 # Detect if running from local directory containing vpsforge.sh
 SCRIPT_DIR=""
@@ -50,6 +71,7 @@ if [ -d "$APP_DIR/repo/.git" ]; then
   git -C "$APP_DIR/repo" rev-parse --short HEAD > "$APP_DIR/.installed_commit" 2>/dev/null || true
 fi
 
+find "$APP_DIR/lib" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || true
 chmod 755 "$APP_DIR/vpsforge.sh"
 find "$APP_DIR/lib" -type f -name "*.sh" -exec chmod 755 {} + 2>/dev/null || true
 

@@ -1,7 +1,7 @@
-# VPSForge v1.1.7
+# VPSForge v2.0.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v1.1.7-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v2.0.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -13,6 +13,20 @@
 > **An Interactive, Enterprise-Grade Hypervisor-like Terminal Manager for lightweight Linux (Ubuntu, Debian, Alpine, etc.) VPS containers powered by Incus.**
 
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
+
+---
+
+## ✨ What's new in v2.0.0
+
+- **Nothing is ever left half-done.** Creating, importing, cloning, backing up, snapshotting and reinstalling are guarded: if anything fails or is stopped (error, Ctrl-C, closed terminal, even `kill -9` or a power cut), the half-made VPS is removed completely (disk, RAM limits, IP, SSH port, firewall rules, proxy config) and you are told why. A reinstall keeps the original aside and puts it back if the new one cannot be finished.
+- **Clean server.** Deleting a VPS removes its snapshots and firewall rules, offers to delete its backups, and returns the freed space to the real disk. `vpsforge uninstall` puts the whole server back as it was before VPSForge (packages included).
+- **The last answer is the default** in every prompt (RAM/CPU/disk/network/traffic, OS, ports, domain, protocol, selection...), so *Enter, Enter, Enter* repeats what you did before. **`0` goes back one step**, not to the start.
+- **One edit menu** for one, several or all VPSs. **More operating systems**: Ubuntu, Debian, Alpine (about 10MB RAM, ideal for weak servers), Rocky, Alma, Fedora, Arch, CentOS.
+- **Domains made simple** (menu 12, Domains & Reverse Proxy): add a domain in 5 guided steps, see all domains in one list, test or remove them; Caddy changes are validated and rolled back if invalid.
+- **Clone a VPS** (menu 16): an instant exact copy to experiment on.
+- **Protected against Incus updates**: the tested Incus is paused from updating, `vpsforge selftest` checks that every Incus command VPSForge needs still works, and Incus is repaired automatically if it breaks or disappears.
+- **Faster and lighter**: cached public IP, one-time setup, BTRFS pool sized to the server (with a directory-pool fallback), swap for very small servers, backups compressed with zstd.
+- **Every function is its own file**, grouped in topic folders, with offline tests (`scripts/test.sh`), real-server tests (`scripts/e2e.sh`, `scripts/ui-test.py`) and a loader (`lib/load_vpsforge_lib.sh`).
 
 ---
 
@@ -464,48 +478,42 @@ flowchart TD
 
 ## 8. 📂 Project File Directory & Module Structure
 
+**Rule: every function lives in its own file, named after the function, inside a folder named after its topic.**
+`lib/load_vpsforge_lib.sh` (`load_vpsforge_lib`) sources every file under `lib/`, so folders can be reorganized freely.
+
 ```
-vpsforge.sh                              # Main entry point & CLI dispatcher
-install.sh                               # Automated installer and dependency manager
-release.sh                               # Git release tagging automated script
+vpsforge.sh                  # Entry point & CLI dispatcher
+install.sh                   # Installer (records the server's original state first)
+release.sh                   # Git release tagging script
+scripts/
+  check.sh                   # bash -n on every script + one-function-per-file rule
+  test.sh                    # Offline unit tests (no root / incus needed)
+  e2e.sh                     # End-to-end test of every feature on a real VPS (root)
+  space-test.sh              # Measures real disk use of snapshots/backups/deleted VPSs
 lib/
+  load_vpsforge_lib.sh                  # load_vpsforge_lib: loads constants, then every function file
   core/
-    constants.sh                         # Shared paths, default images, ports, and limits
-    setup/
-      ensure_setup.sh                    # Package installer, storage setup, and BTRFS migration
-      compat_check.sh                    # Validates host kernel modules, fuse, and overlayfs
-      update_engine.sh                   # Centralized atomic update & synchronization engine
-    vps/
-      create.sh                          # Provisioning, IP/Port assignment, and guest network config
-      reinstall.sh                       # Wipes rootfs while retaining container IP, limits, and SSH keys
-      ask_image.sh                       # Prompt logic to choose Ubuntu versions with translations
-      images.sh                          # Remote Incus listing (-c l), caching, and regex filtering
-      change_network.sh                  # Swapping IPs/ports, editing gateway configs
-      queries.sh                         # Helper functions to retrieve container states, IPs, and ports
-      repair.sh                          # Rebuilds connection, refreshes profile, network config, and restarts SSH
-    network/
-      guest_config.sh                    # Generates netplan/networkd config files inside guest rootfs
-      guest_check.sh                     # Verifies guest connectivity, DNS resolution, and routes
-      ssh_forwarding.sh                  # Rebuilds host iptables DNAT rules for SSH (port 22)
-    firewall/
-      rules.sh                           # iptables port-forward CRUD helper
-      rules_check.sh                     # Validates port conflicts and protocol mappings
-      metadata_sync.sh                   # Updates Caddy reverse proxy rules when guest IP changes
-    resources/
-      disk.sh                            # Retrieves guest disk space usage via python-assisted du
-      host_info.sh                       # Fetches host RAM, disk, CPU cores, and default interface name
-      traffic_quota.sh                   # Configures data quota tracking rules and queries byte count
+    common/                  # constants, small helpers (pause, ram_mb, is_valid_username)
+    vps/                     # create/ guest/ image/ network/ user/ ssh_port/ state/ preserve/ profile/ reinstall/ repair/
+    network/                 # host/ ip/ guest/ ssh/
+    firewall/                # rules/ persistence/ bulk/ display/ isolation/ metadata/
+    resources/               # cpu/ ram/ disk/ network/ traffic/ host/ allocation/ device/
+    selection/               # interactive/ numbering/ parser/
+    setup/                   # install/ storage/ compat/ kernel/ update/ preinstall/
+    proxy/caddy/             # Caddy install, validate-or-rollback, IP follow, conflict checks
+    backups/                 # list / delete / clean orphaned backups
+    incus/                   # keeps Incus healthy: pause updates, self-test, online repair
+    uninstall/               # vpsforge uninstall: puts the server back as it was
   dashboard/
-    interactive.sh                       # Main interactive menu dispatch loop (15 options)
-    dashboard.sh                         # The main dashboard interface showing live tables
-    dashboard_helper.py                  # High-performance Python helper to retrieve host and container stats
-    1-add/add_vps.sh                     # Single/Bulk creation wizard
-    2-delete/delete_vps.sh               # Stops containers, deletes snapshots, releases IPs/ports, clears iptables
-    11-port_forward/                     # Port Forward management menu
-    12-domains_reverse_proxy/            # Caddy proxy rules and Cloudflare setup menu
-    13-snapshots_backups/                # snapshot creation, restore, export backup (.tar.gz), import backup
-    14-settings/                         # Settings panel, version update checker
+    main/                    # dashboard table + main loop
+    1-add ... 14-settings/   # numbered menus; actions grouped in sub-folders (menu/, actions/, selection/ ...)
+    dashboard_helper.py      # Python helper that builds the stats table
 ```
+
+### Keeping the host clean
+- Deleting a VPS removes its snapshots, offers to delete its backups, removes its firewall rules and proxy config, and returns the freed space to the real disk (`reclaim_pool_space`; also automatic every Sunday).
+- `vpsforge uninstall` removes containers, snapshots, backups, the storage pool, bridge, firewall rules, proxy configs, cron/system files and VPSForge itself, and restores `ip_forward`. It also purges the packages VPSForge installed (using the record in `/opt/vpsforge/.pre_install`). Use `--dry-run` to preview, `--keep-backups` to keep backups.
+- `vpsforge tidy` additionally empties the apt cache and trims system logs.
 
 ---
 
@@ -529,18 +537,25 @@ Automate VPSForge or integrate it with external billing systems and web control 
 
 ```bash
 vpsforge                         # Launch the interactive terminal dashboard
-vpsforge --version               # Check the current version (v1.1.6)
+vpsforge --version               # Check the current version
 vpsforge list                    # View a formatted status table of all containers
 vpsforge details <vps>           # Print detailed resource, port, proxy, and snapshot metadata
-vpsforge start <vps>             # Start one or more containers (e.g. vpsforge start vps1,vps2)
-vpsforge stop <vps>              # Stop one or more containers
-vpsforge restart <vps>           # Restart one or more containers
+vpsforge start|stop|restart <vps>
 vpsforge ram <vps> <MB>          # Set container RAM limit (e.g. vpsforge ram vps1 1024)
-vpsforge snapshot <vps> <name>   # Create an instantaneous BTRFS snapshot
-vpsforge backup <vps>             # Export a full self-contained .tar.gz backup
+vpsforge snapshot <vps> <name>   # Create an instantaneous snapshot
+vpsforge backup <vps>            # Export a full self-contained backup (zstd compressed)
+vpsforge clone <vps> [new]       # Instant exact copy of a VPS (own IP and SSH port)
+vpsforge clean-backups           # List and delete backups whose VPS no longer exists
+vpsforge reclaim                 # Give space freed inside the VPS pool back to the real disk
+vpsforge tidy                    # reclaim + empty apt cache + trim system logs
 vpsforge quota-check             # Manually execute the traffic quota verification daemon
 vpsforge repair-all              # Rebuild all guest static network configs and SSH rules
-vpsforge port-forward            # Open the interactive CLI port-forwarding wizard
+vpsforge port-forward            # Port-forwarding CLI (add / delete / list ...)
+vpsforge setup                   # Force the full host setup again
+vpsforge update [latest|vX.Y.Z]  # Update from GitHub (or switch to a tagged release); --check / --list
+vpsforge selftest                # Check that the Incus commands VPSForge needs still work (run after an Incus update)
+vpsforge incus status|pin|unpin|repair   # Incus version, pause/allow its updates, repair it
+vpsforge uninstall               # Remove everything; --dry-run, --yes, --keep-backups
 ```
 
 ---

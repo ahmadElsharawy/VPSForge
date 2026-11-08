@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v1.1.7"
+VPSFORGE_VERSION="v2.0.0"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -38,33 +38,30 @@ if [ ! -d "$LIB_DIR" ]; then
   fi
 fi
 
-# Sourcing all module files dynamically
-if [ -d "$LIB_DIR" ]; then
-  # 1. Load direct files in core first (constants, helpers, etc.)
-  for core_file in "$LIB_DIR"/core/*.sh; do
-    [ -f "$core_file" ] && source "$core_file"
-  done
-
-  # 2. Load all nested core modules recursively
-  while read -r lib_file; do
-    source "$lib_file"
-  done < <(find "$LIB_DIR/core" -mindepth 2 -type f -name "*.sh" | sort)
-
-  # 3. Load all other sub-module files dynamically (like dashboard)
-  while read -r lib_file; do
-    source "$lib_file"
-  done < <(find "$LIB_DIR" -type f -name "*.sh" ! -path "*/core/*" | sort)
+# Load every library file (one function per file, any folder depth).
+if [ -f "$LIB_DIR/load_vpsforge_lib.sh" ]; then
+  source "$LIB_DIR/load_vpsforge_lib.sh"
+  load_vpsforge_lib "$LIB_DIR"
 fi
-
-# ── Root Check ───────────────────────────────────────────────────────────────
-
-if [ "$EUID" -ne 0 ]; then exec sudo "$0" "$@"; fi
 
 # ── Startup ──────────────────────────────────────────────────────────────────
 
 sync_active_from_repo 2>/dev/null || true
+if [ "${1:-}" = "setup" ]; then
+  ensure_setup force
+  echo "Setup completed."
+  exit 0
+fi
+if [ "${1:-}" = "uninstall" ]; then
+  shift
+  get_network_info 2>/dev/null || true
+  vpsforge_uninstall "$@"
+  exit $?
+fi
 ensure_setup
-get_network_info
+ensure_incus_alive || exit 1
+get_network_info || exit 1
+recover_interrupted_operations
 get_public_ip
 setup_inter_vps_isolation
 port_forward_load_rules_from_file "$PORT_FORWARD_RULES_FILE" >/dev/null 2>&1 || true
@@ -107,10 +104,34 @@ case "${1:-}" in
   snapshot)
     [ -n "${2:-}" ] && create_vps_snapshot "$2" "${3:-}" || echo "Usage: vpsforge snapshot vps1 [snapshot_name]"
     ;;
+  clone)
+    if [ -n "${2:-}" ]; then
+      clone_vps "$2" "${3:-${2}-clone}"
+    else
+      echo "Usage: vpsforge clone <vps> [new_name]"
+    fi
+    ;;
+  selftest)
+    incus_compat_check
+    ;;
+  incus)
+    shift
+    incus_cli "$@"
+    ;;
+  clean-backups)
+    clean_orphaned_backups
+    ;;
+  tidy)
+    host_tidy
+    ;;
+  reclaim)
+    reclaim_pool_space
+    echo "Freed disk space returned to the server."
+    ;;
   backup)
     [ -n "${2:-}" ] && export_vps_backup "$2" || echo "Usage: vpsforge backup vps1"
     ;;
   *)
-    echo "Usage: vpsforge [list|details vps1|start vps1|stop vps1|restart vps1|ram vps1 MB|snapshot vps1|backup vps1|repair-all|port-forward|update]"
+    echo "Usage: vpsforge [list|details vps1|start vps1|stop vps1|restart vps1|ram vps1 MB|snapshot vps1|backup vps1|repair-all|port-forward|update|clean-backups|reclaim|tidy|clone|selftest|incus|setup|uninstall]"
     ;;
 esac

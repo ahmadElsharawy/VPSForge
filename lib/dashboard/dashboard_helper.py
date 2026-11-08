@@ -58,11 +58,32 @@ def get_vps_disk_usage(name, status, pool_path):
 
     # 1. First, try checking host-side directory size of the container (extremely fast, works for RUNNING and STOPPED)
     container_found = False
-    for path in [
+
+    # 0. Fastest: ask Incus for the usage it already tracks (no directory walk).
+    #    Walking a container tree with du is slow on weak disks, so du is the fallback.
+    if status == "RUNNING":
+        try:
+            res = subprocess.run(
+                ["incus", "query", f"/1.0/instances/{name}/state"],
+                capture_output=True, text=True, timeout=2
+            )
+            if res.returncode == 0:
+                disk = json.loads(res.stdout).get("disk", {}) or {}
+                api_usage = max(
+                    (int(info.get("usage", 0) or 0) for info in disk.values() if isinstance(info, dict)),
+                    default=0,
+                )
+                if api_usage > 0:
+                    usage_gb = api_usage / (1024**3)
+                    container_found = True
+        except Exception:
+            pass
+
+    for path in ([] if container_found else [
         os.path.join(pool_path, "containers", name),
         f"/var/lib/incus/storage-pools/default/containers/{name}",
         f"/var/lib/lxd/storage-pools/default/containers/{name}"
-    ]:
+    ]):
         if os.path.exists(path):
             try:
                 res = subprocess.run(
@@ -136,7 +157,28 @@ def get_vps_disk_usage(name, status, pool_path):
 
     return usage_gb + snapshots_used_gb
 
+def get_pool_disk_gb():
+    """Real disk space (GB) taken on the server by the VPS storage pool image file(s)."""
+    total = 0
+    for folder in ("/var/lib/incus/disks", "/var/lib/lxd/disks"):
+        try:
+            for name in os.listdir(folder):
+                path = os.path.join(folder, name)
+                if os.path.isfile(path):
+                    total += os.stat(path).st_blocks * 512
+        except OSError:
+            continue
+    return total / (1024**3)
+
 def main():
+    # The table uses arrows/emoji; force UTF-8 so a C/POSIX locale (common over
+    # plain SSH or cron) does not crash with UnicodeEncodeError.
+    for stream in (sys.stdout, sys.stdin):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
     only_table = "--only-table" in sys.argv
 
     if not only_table and len(sys.argv) < 6:
@@ -315,12 +357,15 @@ def main():
     # Calculate remaining host RAM
     remaining_ram_mb = host_total_ram_mb - allocated_ram_mb
 
-    # Host OS usage is the remaining used space on the filesystem
+    # The VPS pool lives in one disk-image file. The real space it takes on the
+    # server is that file's allocated size (VPS data + cached images + free space
+    # not yet trimmed), so show THAT as "VPS DISK USED" and give the rest to the OS.
+    # Host OS = everything else, so the columns add up to the real disk.
     used_gb = disk_total_gb - disk_avail_gb
-    host_os_gb = used_gb - (disk_used_gb_total + backup_used_gb)
-    if host_os_gb < 0:
-        host_os_gb = max(0.0, used_gb - backup_used_gb)
-        disk_total_gb = host_os_gb + disk_used_gb_total + backup_used_gb + disk_avail_gb
+    pool_disk_gb = get_pool_disk_gb()
+    if pool_disk_gb > 0:
+        disk_used_gb_total = pool_disk_gb
+    host_os_gb = max(0.0, used_gb - disk_used_gb_total - backup_used_gb)
 
     # Print dashboard header
     if not only_table:

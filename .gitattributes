@@ -1,0 +1,6 @@
+# Shell and Python files must always use LF (they run on Linux).
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.bat text eol=crlf
