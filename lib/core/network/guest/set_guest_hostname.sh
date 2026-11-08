@@ -3,9 +3,10 @@ set_guest_hostname() {
   local name="${1:-}" old_name="${2:-}"
   [ -n "$name" ] || return 0
 
-  incus exec "$name" -- sh -c "
-    new_h='$name'
-    old_h='$old_name'
+  # The names travel as environment variables, never inside the script text.
+  incus exec "$name" --env NEW_H="$name" --env OLD_H="$old_name" -- sh -c "
+    new_h=\"\$NEW_H\"
+    old_h=\"\$OLD_H\"
 
     # 1. Update /etc/hostname
     echo \"\$new_h\" > /etc/hostname 2>/dev/null || true

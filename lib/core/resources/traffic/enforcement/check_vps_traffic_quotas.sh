@@ -20,8 +20,8 @@ check_vps_traffic_quotas() {
     result=$(incus query "/1.0/instances/$name/state" 2>/dev/null | python3 -c "
 import sys, json
 
-rx_lim_gb = $rx_lim_gb
-tx_lim_gb = $tx_lim_gb
+rx_lim_gb = int(sys.argv[1])
+tx_lim_gb = int(sys.argv[2])
 
 try:
     data = json.load(sys.stdin)
@@ -39,7 +39,7 @@ try:
         print('OK')
 except Exception:
     print('OK')
-" 2>/dev/null || echo "OK")
+" "$rx_lim_gb" "$tx_lim_gb" 2>/dev/null || echo "OK")
 
     if [ "$result" = "EXCEEDED" ]; then
       if [ "$action" = "stop" ]; then
