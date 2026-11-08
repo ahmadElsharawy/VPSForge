@@ -5,6 +5,8 @@
 #   delete_internal_backups <vps_name>
 delete_internal_backups() {
   local name="${1:?vps}" item
+  # Another export may be running: its temporary backup must not be deleted under it.
+  pgrep -a -x incus 2>/dev/null | grep -q ' export ' && return 0
   while read -r item; do
     [ -n "$item" ] || continue
     incus query -X DELETE "/1.0/instances/${name}/backups/${item}" >/dev/null 2>&1 || true
