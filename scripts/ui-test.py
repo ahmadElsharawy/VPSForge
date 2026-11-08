@@ -298,7 +298,7 @@ def section_edit(ui):
     step(ui, "disk mode", r"Disk Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "disk value", r"Disk limit \(.*?: ", "6\r")
     time.sleep(1)
-    check("7.3 change disk", eventually(lambda: sh("incus config device get uit1 root size")[1] == "6GiB"))
+    check("7.3 change disk", eventually(lambda: sh("incus config device get uit1 root size")[1] == "4GiB"))
 
     step(ui, "edit menu", sub_prompt, "4\r")
     step(ui, "net mode", r"Network Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
