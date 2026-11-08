@@ -160,6 +160,10 @@ def section_create(ui):
     print("== 1) Add ==")
     for leftover in NAMES + ["uitimp", "uit1r"]:      # start from a clean slate
         sh("incus delete %s --force" % leftover)
+    for _ in range(30):                               # let any delete still running in Incus finish
+        if "Deleting" not in sh("incus operation list --format csv")[1] and not [n for n in NAMES if exists(n)]:
+            break
+        time.sleep(2)
     sh("rm -f /opt/vpsforge/preferences.conf")        # remembered "last answers" start empty (tested separately)
     # --- one VPS, configured individually
     main_choice(ui, 1)
@@ -261,6 +265,19 @@ def edit_menu(ui, vps):
     step(ui, "select vps", r"Select VPS by number, name, or A for All.*?: ", vps + "\r")
 
 
+def eventually(fn, timeout=25):
+    """True as soon as fn() is true (the server may need a few seconds to apply a change)."""
+    end = time.time() + timeout
+    while time.time() < end:
+        try:
+            if fn():
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
+
+
 def section_edit(ui):
     print("== 7) Edit VPS (every sub-option) ==")
     sub_prompt = r"12\) Reinstall / Change OS Image.*?Choice \[0=Back, Enter=\d\]: "
@@ -270,24 +287,24 @@ def section_edit(ui):
     step(ui, "ram mode", r"RAM Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "ram value", r"RAM limit \(.*?: ", "512\r")
     time.sleep(1)
-    check("7.1 change RAM", sh("incus config get uit1 limits.memory")[1] == "512MiB")
+    check("7.1 change RAM", eventually(lambda: sh("incus config get uit1 limits.memory")[1] == "512MiB"))
 
     step(ui, "edit menu", sub_prompt, "2\r")
     step(ui, "cpu mode", r"CPU Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "1\r")
     time.sleep(1)
-    check("7.2 change CPU (unlimited)", sh("incus config get uit1 limits.cpu")[1] == "")
+    check("7.2 change CPU (unlimited)", eventually(lambda: sh("incus config get uit1 limits.cpu")[1] == ""))
 
     step(ui, "edit menu", sub_prompt, "3\r")
     step(ui, "disk mode", r"Disk Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "disk value", r"Disk limit \(.*?: ", "6\r")
     time.sleep(1)
-    check("7.3 change disk", sh("incus config device get uit1 root size")[1] == "6GiB")
+    check("7.3 change disk", eventually(lambda: sh("incus config device get uit1 root size")[1] == "6GiB"))
 
     step(ui, "edit menu", sub_prompt, "4\r")
     step(ui, "net mode", r"Network Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "net value", r"Network limit \(.*?: ", "100\r")
     time.sleep(1)
-    check("7.4 change network speed", sh("incus config device get uit1 eth0 limits.ingress")[1] == "100Mbit")
+    check("7.4 change network speed", eventually(lambda: sh("incus config device get uit1 eth0 limits.ingress")[1] == "100Mbit"))
 
     step(ui, "edit menu", sub_prompt, "5\r")
     step(ui, "traffic mode", r"Traffic Data Limit.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
@@ -489,7 +506,7 @@ def section_settings(ui):
 
 def section_websites(ui):
     print("== 12) Domains & Reverse Proxy ==")
-    sh("incus exec uit2 -- sh -c 'pgrep -f http.server >/dev/null || nohup python3 -m http.server 8088 >/dev/null 2>&1 &'")
+    sh("incus exec uit2 -- sh -c 'ss -lnt | grep -q :8088 || nohup python3 -m http.server 8088 >/dev/null 2>&1 &'")
     time.sleep(2)
     main_choice(ui, 12)
     step(ui, "menu", r"3\) Cloudflare real visitor IP.*?Choice \[0=Back, Enter=\d\]: ", "1\r")
@@ -705,6 +722,8 @@ def firewall_mentions(ip, port):
 def section_interrupt(ui):
     import signal
     print("== interruptions: nothing may be left behind ==")
+    sh("incus delete uitint --force")                       # leftover of an earlier run
+    sh("rm -f /opt/vpsforge/.pending/uitint")
     prefix = ".".join(ip_of("uit2").split(".")[:3])
     free_num = 40
     ip = "%s.%d" % (prefix, 100 + free_num - 1)

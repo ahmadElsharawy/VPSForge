@@ -5,6 +5,7 @@ _pf_step_ext_port() {
   last=$(pref_get pf_ext_port "")
   echo
   echo "Step 2 of 5 - Which port should be opened on the server?"
+  show_example "8080  -> people open http://YOUR-SERVER-IP:8080"
   while :; do
     read -r -p "External Port (e.g. 8080)${last:+ [Enter=$last]} [0=Back]: " port </dev/tty
     [ "$port" = "0" ] && return "$WIZARD_BACK"

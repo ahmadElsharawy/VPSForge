@@ -12,6 +12,10 @@ create_vps() {
     return 1
   fi
   [[ "$num" =~ ^[0-9]+$ ]] || { echo "ERROR: Invalid VPS number '$num'."; return 1; }
+  if incus info "$name" >/dev/null 2>&1; then
+    echo "ERROR: A VPS named '$name' already exists. Choose another name."
+    return 1
+  fi
 
   local ip="${NETWORK_PREFIX}.$((IP_START + num - 1))" port
   port=$(vps_fixed_port "$num")

@@ -6,6 +6,7 @@
 #   - half-written backup files, stale firewall rules
 recover_interrupted_operations() {
   local name state owner ip port original
+  recover_pending_operations
   local -a names=()
   mapfile -t names < <(incus list -c n --format csv 2>/dev/null | grep -v '^$')
 

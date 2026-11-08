@@ -5,6 +5,7 @@ proxy_wizard_step_domain() {
   last=$(pref_get proxy_domain "")
   echo
   echo "Step 3 of 5 - Your domain name"
+  show_example "app.mydomain.com  (first point its DNS A record to ${PUBLIC_IP:-this server})"
   while :; do
     read -r -p "Domain (example: app.mydomain.com)${last:+ [Enter=$last]} [0=Back]: " domain </dev/tty
     [ "$domain" = "0" ] && return "$WIZARD_BACK"

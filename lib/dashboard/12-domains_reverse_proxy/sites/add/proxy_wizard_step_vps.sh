@@ -2,6 +2,7 @@
 # Wizard step 1 of 5: which VPS runs the app.
 proxy_wizard_step_vps() {
   echo "Step 1 of 5 - Which VPS runs the app?"
+  show_example "the VPS where your web app (Node, PHP, nginx, 3x-ui...) is installed"
   select_vps || return "$WIZARD_BACK"
   PW_VPS="$SELECTED"
   PW_IP=$(get_ip "$PW_VPS")

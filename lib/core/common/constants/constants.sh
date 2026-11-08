@@ -23,3 +23,6 @@ VPSFORGE_PACKAGES="incus iptables iptables-persistent netfilter-persistent curl 
 # Incus major version VPSForge is tested with (Ubuntu 24.04 LTS ships 6.0.x).
 TESTED_INCUS_MAJOR=6
 SWAPFILE_PATH="/swapfile.vpsforge"
+
+# Operations that have started but not finished (one small file per VPS being created/imported/cloned).
+PENDING_DIR="/opt/vpsforge/.pending"

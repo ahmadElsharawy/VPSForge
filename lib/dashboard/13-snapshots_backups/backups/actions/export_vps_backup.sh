@@ -49,6 +49,7 @@ export_vps_backup() {
 
   mkdir -p "$BACKUP_DIR"
   default_name="${name}-backup-$(date +%Y%m%d-%H%M%S).tar"
+  show_example "web1-before-upgrade   (saved in $BACKUP_DIR)"
   read -r -p "Enter backup filename [default: $default_name]: " custom_name </dev/tty
   custom_name=$(echo "$custom_name" | tr ' ' '_' | sed 's/[^A-Za-z0-9_.-]//g')
   if [ -n "$custom_name" ]; then

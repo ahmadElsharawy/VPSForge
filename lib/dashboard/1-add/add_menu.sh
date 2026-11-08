@@ -171,6 +171,7 @@ add_menu() {
                 1)
                   echo "----------------------------------------------------------------"
                   echo "Resources for container $vps_i of $count"
+                  show_example "web1, test-ubuntu, game-server  (letters, digits, - _ .)"
                   read -r -p "Enter VPS Name [default: $cur_name, 0=Back]: " custom_name </dev/tty
                   if [ "$custom_name" = "0" ]; then
                     ind_step=0

@@ -7,6 +7,7 @@ edit_text_for_selection() {
   [ "$what" = "password" ] && silent="-s"
   edit_ask_scope || return
 
+  if [ "$what" = "username" ]; then show_example "admin  (a new login name with full sudo rights)"; else show_example "a long password, for example MyStr0ng-Pass  (not shown while typing)"; fi
   for n in "${SELECTED_VPS[@]}"; do
     if [ "$EDIT_SCOPE" = "2" ] && [ "$first" -eq 0 ]; then
       :  # same value as the first VPS

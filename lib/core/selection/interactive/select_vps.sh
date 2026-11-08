@@ -7,6 +7,7 @@ select_vps() {
   default=1
   [ -n "$last" ] && incus info "$last" >/dev/null 2>&1 && default="$last"
 
+  show_example "1 (the first VPS)   or its name, for example web1"
   read -r -p "Select VPS by number or name [0=Back, Enter=$default]: " SELECTED </dev/tty
   SELECTED="${SELECTED:-$default}"
   if [ "$SELECTED" = "0" ]; then

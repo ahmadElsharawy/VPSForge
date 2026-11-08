@@ -16,22 +16,22 @@ dashboard() {
 
   # Classic vertical menu
   local menu="
-1) Add
-2) Delete
-3) Start
-4) Stop
-5) Restart
-6) Reinstall
-7) Edit VPS
-8) Details
-9) Shell
-10) Connection
-11) Port Forward
-12) Domains & Reverse Proxy
-13) Snapshots & Backups
-14) Settings
+ 1) Add            create new VPSs                  e.g. 2 servers with 512MB RAM each
+ 2) Delete         remove a VPS completely          (disk, snapshots, firewall rules)
+ 3) Start          power on                         e.g. web1   or   1,3
+ 4) Stop           power off
+ 5) Restart        stop and start again
+ 6) Reinstall      wipe to a clean OS               keeps IP, port, limits and login
+ 7) Edit VPS       RAM, CPU, disk, network, SSH port, login, name, IP, OS
+ 8) Details        everything about a VPS           limits, ports, domains, backups
+ 9) Shell          open a terminal inside a VPS
+10) Connection     how to log in                    IP, port, user, password
+11) Port Forward   open a server port to a VPS      e.g. 8080 -> 80
+12) Domains & Reverse Proxy   https://app.mydomain.com -> an app inside a VPS
+13) Snapshots & Backups       save a VPS now, restore it later (e.g. before an update)
+14) Settings       refresh, network speed, updates, uninstall
 15) Exit
-16) Clone a VPS (instant copy to experiment on)"
+16) Clone a VPS    instant copy to experiment on"
 
   if [ "$mode" = "refresh" ]; then
     printf "\033[H%s\n%s\n\033[JChoice: " "$table_output" "$menu"

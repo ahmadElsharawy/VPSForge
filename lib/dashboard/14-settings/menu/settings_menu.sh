@@ -16,12 +16,12 @@ settings_menu() {
     echo "Current Version: $VPSFORGE_VERSION"
     echo
     echo "0) Back"
-    echo "1) Enable / Disable Auto Refresh"
-    echo "2) Change Refresh Interval"
-    echo "3) Repair Connection"
-    echo "4) Update / Change Version"
-    echo "5) Host Network Speed Configuration"
-    echo "6) Enable / Disable Auto Start on Login"
+    echo "1) Enable / Disable Auto Refresh   the dashboard updates by itself"
+    echo "2) Change Refresh Interval   e.g. every 10 seconds"
+    echo "3) Repair Connection   fixes SSH access and network of every VPS"
+    echo "4) Update / Change Version   get the newest VPSForge, or go back to an older one"
+    echo "5) Host Network Speed Configuration   e.g. 1000 = 1 Gbit/s"
+    echo "6) Enable / Disable Auto Start on Login   open VPSForge automatically when you log in by SSH"
     echo "7) Uninstall VPSForge (remove everything, server returns to clean)"
     echo
     read -r -p "Choice [0=Back, Enter=1]: " c
@@ -37,6 +37,7 @@ settings_menu() {
         save_settings
         ;;
       2)
+        show_example "10  (the dashboard refreshes every 10 seconds)"
         read -r -p "Enter new refresh interval in seconds (min 2s) [Enter = 10]: " new_interval
         new_interval="${new_interval:-10}"
         if [[ "$new_interval" =~ ^[0-9]+$ ]] && [ "$new_interval" -ge 2 ]; then
@@ -55,6 +56,7 @@ settings_menu() {
         update_menu
         ;;
       5)
+        show_example "1000 = a 1 Gbit/s server connection (used to show the speed limits)"
         read -r -p "Enter total network speed of host in Mbit (e.g. 1000, 10000): " new_speed
         if [[ "$new_speed" =~ ^[0-9]+$ ]] && [ "$new_speed" -ge 1 ]; then
           set_total_network_mbit "$new_speed"

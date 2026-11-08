@@ -4,6 +4,7 @@ rename_vps_container() {
   RENAMED_VPS_NAME=""
   [ -n "$old_name" ] || return 1
   if [ -z "$new_name" ]; then
+    show_example "web1  (letters, digits, - _ . and no spaces)"
     read -r -p "Enter new VPS name [current: $old_name, 0=Back]: " new_name </dev/tty
   fi
   [ "$new_name" = "0" ] && { echo "Rename cancelled."; return 0; }

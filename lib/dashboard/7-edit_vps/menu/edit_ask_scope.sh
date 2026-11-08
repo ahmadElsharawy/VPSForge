@@ -8,7 +8,7 @@ edit_ask_scope() {
   local mode last
   last=$(pref_get edit_scope 1)
   echo "0) Back"
-  echo "1) Configure each VPS individually$([ "$last" = "1" ] && echo '   <- last used')"
+  echo "1) Configure each VPS individually (you answer once per VPS)$([ "$last" = "1" ] && echo '   <- last used')"
   echo "2) Same setting for all selected VPS$([ "$last" = "2" ] && echo '   <- last used')"
   read -r -p "Choice [0=Back, Enter=$last]: " mode
   mode="${mode:-$last}"

@@ -5,6 +5,7 @@ _pf_step_protocol() {
   last=$(pref_get pf_protocol 1)
   echo
   echo "Step 4 of 5 - Protocol"
+  show_example "TCP for websites, SSH and most apps; UDP for games, VPN and DNS"
   echo "  1) TCP$([ "$last" = "1" ] && echo '   <- last used')"
   echo "  2) UDP$([ "$last" = "2" ] && echo '   <- last used')"
   echo "  3) BOTH (TCP + UDP)$([ "$last" = "3" ] && echo '   <- last used')"

@@ -7,6 +7,7 @@ proxy_wizard_step_port() {
 
   echo
   echo "Step 2 of 5 - Which port does the app use inside $PW_VPS?"
+  show_example "3000 for a Node app, 80 for nginx/Apache, 54321 for a panel"
   mapfile -t ports < <(list_vps_listening_ports "$PW_VPS")
   if [ "${#ports[@]}" -gt 0 ]; then
     default_port="${ports[0]}"

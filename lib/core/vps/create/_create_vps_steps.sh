@@ -13,6 +13,7 @@ _create_vps_steps() {
   image=$(normalize_image_alias "$image")
   port=$(vps_fixed_port "$num")
   check_fixed_port_available "$name" "$ip" "$port" || return 1
+  pending_operation_set "$name" "$ip" "$port"
 
   local ram_label cpu_label
   [ "$ram_mode" = "unlimited" ] && ram_label="Unlimited" || ram_label="${ram}MB"
@@ -139,4 +140,5 @@ _create_vps_steps() {
     echo "Done: VPS $name created (SSH external forwarding disabled, accessible via Shell / Internal IP $ip:22)"
   fi
   mark_vps_state "$name" ""
+  pending_operation_clear "$name"
 }

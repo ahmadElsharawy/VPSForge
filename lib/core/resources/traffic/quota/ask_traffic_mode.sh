@@ -22,6 +22,7 @@ ask_traffic_mode() {
         return 0
         ;;
       2)
+        show_example "100 = the VPS may download 100GB, then it is slowed or stopped"
         read -r -p "Download (Rx) Data Limit in GB [0=Unlimited, Enter=$last_rx]: " rx </dev/tty
         rx="${rx:-$last_rx}"; [[ "$rx" =~ ^[0-9]+$ ]] || rx=0
         read -r -p "Upload (Tx) Data Limit in GB [0=Unlimited, Enter=$last_tx]: " tx </dev/tty

@@ -15,6 +15,7 @@ ask_vps_selection() {
   fi
   prompt_text="${prompt_text//Enter=1/Enter=$default}"
 
+  show_example "1 (one VPS)   1,3 (several)   1-3 (a range)   web1 (by name)   A (all)"
   read -r -p "$prompt_text" raw </dev/tty
   raw="${raw:-$default}"
   if [ "$raw" = "0" ]; then

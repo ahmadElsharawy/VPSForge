@@ -5,6 +5,7 @@ _pf_step_target() {
   last=$(pref_get pf_target "")
   echo "Step 1 of 5 - Which VPS should receive the traffic?"
   list_available_vps || true
+  show_example "1 (first VPS), web1 (by name), or an IP such as 10.0.0.5"
   read -r -p "VPS number, name, or a custom IP address${last:+ [Enter=$last]} [0=Back]: " input </dev/tty
   [ "$input" = "0" ] && return "$WIZARD_BACK"
   input="${input:-$last}"

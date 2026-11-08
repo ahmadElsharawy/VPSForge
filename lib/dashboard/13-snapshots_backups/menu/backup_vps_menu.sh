@@ -10,17 +10,17 @@ backup_vps_menu() {
     echo "================================================"
     echo
     echo "0) Back"
-    echo "1) Create Snapshot"
+    echo "1) Create Snapshot       instant, e.g. before an update"
     echo "2) List Snapshots"
-    echo "3) Restore Snapshot"
+    echo "3) Restore Snapshot      go back to how the VPS was"
     echo "4) Delete Snapshot"
-    echo "5) Export Full Backup (tar)"
-    echo "6) Import Full Backup (tar/tar.gz)"
+    echo "5) Export Full Backup (tar)   a file you can keep or move to another server"
+    echo "6) Import Full Backup (tar/tar.gz)   bring a VPS back from a file"
     echo "7) Inspect Backup File Details"
-    echo "8) Update / Overwrite Existing Backup"
+    echo "8) Update / Overwrite Existing Backup   refresh a backup with the VPS as it is now"
     echo "9) Delete Backup File"
     echo "10) Rename Backup File"
-    echo "11) Clean Temp Backup"
+    echo "11) Clean Temp Backup    remove half-finished files"
     echo "12) Clean Orphaned Backups (VPS no longer exists)"
     echo
     read -r -p "Choice [0=Back, Enter=1]: " c
@@ -31,6 +31,7 @@ backup_vps_menu() {
         ask_vps_selection "VPS name or number [0=Back, Enter=1]: " single || continue
         [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Snapshot supports one VPS at a time."; pause; continue; }
         n="${SELECTED_VPS[0]}"
+        show_example "before-update  (a name to find this snapshot later)"
         read -r -p "Snapshot name [Enter = auto-timestamp]: " snap_name
         create_vps_snapshot "$n" "$snap_name"
         pause

@@ -5,6 +5,7 @@ _clone_vps_steps() {
   local src="$1" new="$2" num="$3" ip="$4" port="$5"
 
   check_fixed_port_available "$new" "$ip" "$port" || return 1
+  pending_operation_set "$new" "$ip" "$port"
   echo "Cloning $src -> $new (IP $ip, SSH port $port)..."
 
   incus copy "$src" "$new" --instance-only || { echo "ERROR: incus could not copy $src (see message above)."; return 1; }
@@ -36,5 +37,6 @@ _clone_vps_steps() {
   set_vps_saved_port "$new" "$port"
   sync_vps_metadata "$new"
   mark_vps_state "$new" ""
+  pending_operation_clear "$new"
   echo "Done: $new is a copy of $src:  ssh $(get_vps_user "$new")@$PUBLIC_IP -p $port"
 }

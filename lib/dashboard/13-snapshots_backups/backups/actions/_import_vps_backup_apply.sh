@@ -3,6 +3,7 @@
 # import_vps_backup (file_path, target_name, rules_to_apply, domains_to_apply,
 # caddy_conflicts_to_remove, proxy_decoded). Always call it through run_guarded.
 _import_vps_backup_apply() {
+  pending_operation_set "$target_name" "" ""
   incus import "$file_path" "$target_name" >/dev/null 2>&1 &
   local import_pid=$!
   local progress=0
@@ -107,5 +108,6 @@ _import_vps_backup_apply() {
   incus config set "$target_name" user.vpsforge.last_restore "$(date '+%Y-%m-%d %H:%M:%S UTC')" 2>/dev/null || true
 
   mark_vps_state "$target_name" ""
+  pending_operation_clear "$target_name"
   echo "[ 100% ] Success: $target_name restored at $new_ip (SSH Port $new_port)"
 }

@@ -5,6 +5,7 @@ proxy_wizard_step_path() {
   last=$(pref_get proxy_path_choice 1)
   echo
   echo "Step 4 of 5 - Which part of the domain goes to this app?"
+  show_example "whole domain: https://app.mydomain.com    one folder (/api): https://app.mydomain.com/api"
   echo "   1) The whole domain$([ "$last" = "1" ] && echo '   <- last used')"
   echo "   2) Only one folder, for example /api$([ "$last" = "2" ] && echo '   <- last used')"
   read -r -p "Choice [Enter=$last, 0=Back]: " choice </dev/tty

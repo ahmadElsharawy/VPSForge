@@ -5,6 +5,7 @@ _pf_step_int_port() {
   default=$(pref_get pf_int_port "$PF_EXT_PORT")
   echo
   echo "Step 3 of 5 - Which port inside the VPS?"
+  show_example "80  -> the port your app listens on inside the VPS (web servers use 80)"
   while :; do
     read -r -p "Internal Port [Enter = $default, 0=Back]: " port </dev/tty
     [ "$port" = "0" ] && return "$WIZARD_BACK"
