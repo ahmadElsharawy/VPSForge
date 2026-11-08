@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v2.0.1"
+VPSFORGE_VERSION="v2.0.2"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -58,6 +58,17 @@ if [ "${1:-}" = "uninstall" ]; then
   vpsforge_uninstall "$@"
   exit $?
 fi
+# Light commands: no full startup (the cron jobs run these every few minutes).
+case "${1:-}" in
+  quota-check) check_vps_traffic_quotas; exit 0;;
+  reclaim) reclaim_pool_space; exit 0;;
+  update|upgrade)
+    shift
+    get_network_info 2>/dev/null || true
+    vpsforge_perform_update "$@"
+    exit $?
+    ;;
+esac
 ensure_setup
 ensure_incus_alive || exit 1
 get_network_info || exit 1

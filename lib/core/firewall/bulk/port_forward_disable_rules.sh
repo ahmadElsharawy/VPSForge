@@ -8,6 +8,7 @@ port_forward_disable_rules() {
     port_forward_delete_rule "$proto" "$ext_ip" "$ext_port" "$int_ip" "$int_port"
   done < "$file"
 
+  touch "${file}.disabled"   # remembered, so listing the rules does not switch them on again
   save_iptables
   echo "Port forward rules disabled (kept in file)."
 }

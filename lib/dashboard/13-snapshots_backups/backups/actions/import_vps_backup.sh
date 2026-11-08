@@ -153,6 +153,11 @@ import_vps_backup() {
     fi
   fi
 
+  if ! [[ "$target_name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
+    echo "ERROR: '$target_name' is not a valid VPS name (letters, digits, dots, dashes, underscores)."
+    return 1
+  fi
+
   # Guarded: if the import stops half-way the new VPS is removed completely and the reason is shown.
-  run_guarded "cleanup_failed_import $target_name" _import_vps_backup_apply
+  run_guarded "cleanup_failed_import $(printf %q "$target_name")" _import_vps_backup_apply
 }

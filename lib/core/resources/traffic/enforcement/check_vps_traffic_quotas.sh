@@ -49,6 +49,10 @@ except Exception:
         incus config set "$name" user.vpsforge.traffic.status "EXCEEDED" 2>/dev/null || true
       else
         ensure_device_override "$name" eth0 >/dev/null 2>&1 || true
+        # Remember the real speed once, so it can be restored when the quota resets.
+        if [ -z "$(incus config get "$name" user.vpsforge.net_limit_orig 2>/dev/null)" ]; then
+          incus config set "$name" user.vpsforge.net_limit_orig "$(get_vps_network_limit_mbit "$name" 2>/dev/null || true)" 2>/dev/null || true
+        fi
         incus config device set "$name" eth0 limits.ingress "1Mbit" 2>/dev/null || true
         incus config device set "$name" eth0 limits.egress  "1Mbit" 2>/dev/null || true
         incus config set "$name" user.vpsforge.traffic.status "THROTTLED (1M)" 2>/dev/null || true

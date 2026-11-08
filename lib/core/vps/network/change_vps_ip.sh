@@ -3,6 +3,19 @@ change_vps_ip() {
   local name="$1" new_ip="$2" old_ip port
   [ -n "$name" ] && [ -n "$new_ip" ] || return 1
 
+  local last="${new_ip##*.}" other
+  if ! [[ "$new_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || [ "${new_ip%.*}" != "$NETWORK_PREFIX" ]      || [ "$last" -lt 2 ] || [ "$last" -gt 254 ]; then
+    echo "ERROR: The IP must look like ${NETWORK_PREFIX}.150 (last number 2-254)."
+    return 1
+  fi
+  for other in $(incus list -c n --format csv 2>/dev/null); do
+    [ "$other" = "$name" ] && continue
+    if [ "$(get_ip "$other" 2>/dev/null)" = "$new_ip" ]; then
+      echo "ERROR: $new_ip is already used by $other."
+      return 1
+    fi
+  done
+
   old_ip=$(get_ip "$name")
   port=$(get_port "$old_ip" 2>/dev/null || true)
   [ -n "$port" ] || port=$(get_vps_saved_port "$name")

@@ -328,9 +328,8 @@ add_menu() {
         "${ssh_forwards[$i]:-y}"; then
       ok=$((ok+1))
     else
-      echo "Creation failed for ${names[$i]}. Rolling back incomplete VPS..."
-      remove_port "${ports[$i]}" 2>/dev/null || true
-      incus delete "${names[$i]}" --force 2>/dev/null || true
+      # create_vps already removed everything the failed creation had reserved.
+      echo "Creation failed for ${names[$i]} (see the reason above)."
       failed=$((failed+1))
     fi
   done

@@ -5,6 +5,11 @@ uninstall_remove_containers() {
   local name
   UNINSTALL_FOREIGN_INSTANCES=0
   echo "[1/7] Removing VPS containers and their snapshots..."
+  # If Incus cannot list instances, stop: we could not tell which containers are foreign.
+  if ! incus list --all-projects -c n --format csv >/dev/null 2>&1; then
+    echo "ERROR: Incus does not answer, so VPSForge cannot tell which containers exist. Nothing was removed."
+    return 1
+  fi
   while read -r name; do
     [ -n "$name" ] || continue
     if [ -n "$(incus config get "$name" user.vpsforge.num 2>/dev/null)" ]; then

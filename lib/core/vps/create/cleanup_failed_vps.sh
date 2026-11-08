@@ -11,7 +11,8 @@ cleanup_failed_vps() {
     # During a reinstall the IP still belongs to the original VPS: keep its custom port-forwards.
     [ "${VPS_KEEP_FORWARDS:-0}" = "1" ] || { port_forward_delete_rules_for_ip "$ip"; remove_vps_forward_rules "$ip"; }
   fi
-  [ -n "$port" ] && remove_port "$port"
+  # Release the SSH port only when no other VPS owns it (a failed check must not cut someone else off).
+  if [ -n "$port" ] && check_fixed_port_available "$name" "${ip:-none}" "$port" >/dev/null 2>&1; then remove_port "$port"; fi
 
   # The server may still be creating it in the background even though the client was stopped.
   cancel_instance_creation "$name"

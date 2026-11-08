@@ -6,6 +6,9 @@ sweep_stale_forward_rules() {
   local -A owned=()
   [ -n "${NETWORK_PREFIX:-}" ] || return 0
 
+  # If Incus does not answer we cannot know who owns what: change nothing.
+  incus list -c n --format csv >/dev/null 2>&1 || return 0
+
   while read -r name; do
     [ -n "$name" ] || continue
     ip=$(incus config get "$name" user.vpsforge.ip 2>/dev/null || true)

@@ -66,7 +66,8 @@ vpsforge_perform_update() {
 
   # 3. Check for local unpushed commits and back them up
   local unpushed
-  unpushed=$(git -C "$repo_dir" log @{u}.. 2>/dev/null | grep '^commit ' | wc -l || echo 0)
+  unpushed=$(git -C "$repo_dir" rev-list --count '@{u}..HEAD' 2>/dev/null || true)
+  [[ "$unpushed" =~ ^[0-9]+$ ]] || unpushed=0
   if [ "$unpushed" -gt 0 ]; then
     local backup_branch="backup-local-$(date +%Y%m%d_%H%M%S)"
     echo "Notice: $unpushed local commit(s) found. Creating backup branch '$backup_branch'..."

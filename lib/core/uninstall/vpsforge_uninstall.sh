@@ -27,7 +27,7 @@ vpsforge_uninstall() {
     [ "$answer" = "UNINSTALL" ] || { echo "Cancelled."; return 1; }
   fi
 
-  uninstall_remove_containers
+  uninstall_remove_containers || return 1
   uninstall_remove_firewall
   uninstall_remove_storage
   uninstall_remove_system_files

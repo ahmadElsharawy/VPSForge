@@ -4,6 +4,7 @@
 migrate_default_pool_to_btrfs() {
   # Migrate existing containers to BTRFS safely. Only one migration may run at a time
   # (a second VPSForge started meanwhile must not touch the VPSs being moved).
+  local run_inst
   local failed_marker="/opt/vpsforge/.pool_migration_failed"
   if [ -f "$failed_marker" ]; then
     return 0   # a previous attempt could not move a VPS: do not retry (and stop VPSs) on every start
@@ -54,6 +55,22 @@ migrate_default_pool_to_btrfs() {
 
     # 3. Delete old dir default pool and recreate as BTRFS
     incus storage delete default >/dev/null 2>&1 || true
+    if incus storage show default 2>/dev/null | grep -q 'driver: dir'; then
+      # The old pool could not be deleted (it holds something else): put everything back and stop trying.
+      echo "WARNING: the old storage pool could not be replaced. Everything was put back; migration cancelled." >&2
+      for prof in "${profiles[@]}"; do
+        [ -n "$prof" ] || continue
+        incus profile device add "$prof" root disk path=/ pool=default >/dev/null 2>&1 || true
+      done
+      for inst in "${instances[@]}"; do
+        [ -n "$inst" ] || continue
+        incus move "$inst" "$inst" -s default >/dev/null 2>&1 || true
+      done
+      incus storage delete temp-btrfs >/dev/null 2>&1 || true
+      for run_inst in "${state_map[@]}"; do incus start "$run_inst" >/dev/null 2>&1 || true; done
+      touch "$failed_marker"
+      return 0
+    fi
     create_storage_pool default || true
 
     # 4. Restore root device to profiles pointing to new default pool
@@ -72,7 +89,6 @@ migrate_default_pool_to_btrfs() {
     incus storage delete temp-btrfs >/dev/null 2>&1 || true
 
     # 7. Start instances that were previously running
-    local run_inst
     for run_inst in "${state_map[@]}"; do
       incus start "$run_inst" >/dev/null 2>&1 || true
     done

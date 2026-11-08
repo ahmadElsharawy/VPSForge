@@ -31,6 +31,8 @@ port_forward_auto_sync_active_rules() {
     int_port="${dest##*:}"
 
     [ -n "$int_ip" ] && [ -n "$int_port" ] || continue
+    # Only forwards into the VPS network are ours; the owner's other DNAT rules are left alone.
+    [[ "$int_ip" == "${NETWORK_PREFIX:-@none@}."* ]] || continue
 
     local entry="${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}"
     if ! grep -Fxq "$entry" "$tmpf" 2>/dev/null; then
@@ -55,8 +57,8 @@ port_forward_auto_sync_active_rules() {
     fi
   done
 
-  # 3. Apply all rules from tmpf into iptables
-  while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
+  # 3. Apply all rules from tmpf into iptables (not while the owner has them disabled)
+  [ -f "${file}.disabled" ] || while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
     [ -n "$proto" ] && [ -n "$ext_port" ] && [ -n "$int_ip" ] && [ -n "$int_port" ] || continue
     port_forward_apply_rule "$proto" "${ext_ip:-0.0.0.0}" "$ext_port" "$int_ip" "$int_port"
   done < "$tmpf"

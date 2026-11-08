@@ -31,7 +31,7 @@ uninstall_remove_packages() {
   while read -r removed; do
     [ -n "$removed" ] || continue
     printf '%s\n' "${to_remove[@]}" | grep -qxF "$removed" || extras+=("$removed")
-  done < <(apt-get -s purge "${to_remove[@]}" 2>/dev/null | awk '/^Remv /{print $2}')
+  done < <(apt-get -s purge "${to_remove[@]}" 2>/dev/null | awk '/^(Remv|Purg) /{print $2}')
   if [ "${#extras[@]}" -gt 0 ]; then
     echo "  Not removed: other packages you installed later depend on them (${extras[*]})."
     return 0
@@ -42,7 +42,17 @@ uninstall_remove_packages() {
     return 0
   fi
 
-  systemctl disable --now caddy incus incus.socket >/dev/null 2>&1 || true
+  # Stop only the services whose package we are removing (Caddy may have been the owner's before us).
+  local unit
+  for unit in caddy incus; do
+    printf '%s
+' "${to_remove[@]}" | grep -qx "$unit" || continue
+    if [ "$unit" = "incus" ]; then
+      systemctl disable --now incus incus.socket >/dev/null 2>&1 || true
+    else
+      systemctl disable --now caddy >/dev/null 2>&1 || true
+    fi
+  done
   DEBIAN_FRONTEND=noninteractive apt-get purge -y "${to_remove[@]}" >/dev/null 2>&1 || true
 
   if printf '%s\n' "${to_remove[@]}" | grep -qx incus; then

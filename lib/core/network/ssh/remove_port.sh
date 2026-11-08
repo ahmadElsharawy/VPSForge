@@ -7,7 +7,7 @@ remove_port() {
       awk -v p="$port" '
         {
           for (i = 1; i <= NF; i++) {
-            if ($i == "dpt:" p || $i ~ ("^dpt:" p "$")) {
+            if (($i == "dpt:" p || $i ~ ("^dpt:" p "$")) && $0 ~ /to:[0-9.]+:22([^0-9]|$)/) {
               print $1;
               exit;
             }
@@ -19,7 +19,7 @@ remove_port() {
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmpf
     tmpf=$(mktemp)
-    awk -F'|' -v p="$port" '$3 != p' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
+    awk -F'|' -v p="$port" '!($3 == p && $5 == "22")' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
     mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
   fi
 }

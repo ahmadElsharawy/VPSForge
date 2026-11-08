@@ -21,7 +21,7 @@ update_vps_backup() {
 
       echo "Exporting fresh backup for $name to temporary storage..."
       backup_space_check "$name" || return 1
-      if run_guarded "cleanup_partial_backup $name $tmp_file_path" _export_instance "$name" "$tmp_file_path"; then
+      if run_guarded "cleanup_partial_backup $(printf %q "$name") $(printf %q "$tmp_file_path")" _export_instance "$name" "$tmp_file_path"; then
         rm -f "$SELECTED_BACKUP_FILE"
         if mv "$tmp_file_path" "$SELECTED_BACKUP_FILE"; then
           echo "Backup updated successfully: $SELECTED_BACKUP_FILE"

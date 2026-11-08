@@ -4,9 +4,9 @@ check_fixed_port_available() {
   # POSIX awk only (Ubuntu ships mawk, which has no 3-arg match()).
   owner_ip=$(iptables -t nat -L PREROUTING -n 2>/dev/null | awk -v p="$port" '
     $0 ~ ("dpt:" p "([^0-9]|$)") {
-      if (match($0, /to:[0-9.]+:22/)) {
+      if (match($0, /to:[0-9.]+:[0-9]+/)) {
         s = substr($0, RSTART + 3, RLENGTH - 3)
-        sub(/:22$/, "", s)
+        sub(/:[0-9]+$/, "", s)
         print s
       }
       exit

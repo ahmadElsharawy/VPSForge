@@ -6,6 +6,8 @@ clean_orphaned_backups() {
   local -a orphans=()
 
   [ -d "$BACKUP_DIR" ] || { echo "No backup folder yet."; return 0; }
+  # If Incus does not answer, every backup would look orphaned: do nothing.
+  incus list -c n --format csv >/dev/null 2>&1 || { echo "Incus does not answer; nothing was changed."; return 0; }
 
   while read -r file; do
     [ -n "$file" ] || continue

@@ -4,7 +4,8 @@
 interactive() {
   # Enter alternate screen buffer & trap exit/interrupt to restore terminal state
   printf "\033[?1049h"
-  trap 'printf "\033[?1049l"' EXIT INT TERM
+  trap 'printf "\033[?1049l"' EXIT
+  trap 'exit 130' INT TERM
 
   local c
   local is_refresh=0

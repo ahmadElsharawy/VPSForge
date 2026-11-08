@@ -16,5 +16,11 @@ uninstall_remove_storage() {
   uninstall_run incus profile device remove default eth0
   uninstall_run incus storage delete default
   uninstall_run incus network delete incusbr0
-  [ "${UNINSTALL_DRY_RUN:-0}" = "1" ] || rm -f /var/lib/incus/disks/default.img
+  [ "${UNINSTALL_DRY_RUN:-0}" = "1" ] && return 0
+  # Delete the disk file only when Incus really let go of the pool (never under live data).
+  if incus storage show default >/dev/null 2>&1; then
+    echo "  ! the storage pool could not be deleted (it still holds data): its disk file was kept"
+    return 0
+  fi
+  rm -f /var/lib/incus/disks/default.img
 }
