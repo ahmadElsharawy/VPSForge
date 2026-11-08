@@ -4,7 +4,10 @@
 migrate_default_pool_to_btrfs() {
   # Migrate existing containers to BTRFS safely. Only one migration may run at a time
   # (a second VPSForge started meanwhile must not touch the VPSs being moved).
-  if pgrep -a -x incus 2>/dev/null | grep -q ' move '; then
+  local failed_marker="/opt/vpsforge/.pool_migration_failed"
+  if [ -f "$failed_marker" ]; then
+    return 0   # a previous attempt could not move a VPS: do not retry (and stop VPSs) on every start
+  elif pgrep -a -x incus 2>/dev/null | grep -q ' move '; then
     echo "A storage migration is already running; skipping." >&2
   elif incus storage create temp-btrfs btrfs size=$(default_pool_size_gib)GiB >/dev/null 2>&1 || incus storage show temp-btrfs >/dev/null 2>&1; then
     echo "Storage pool 'default' is using 'dir' driver. Automating migration to BTRFS..." >&2
@@ -30,6 +33,7 @@ migrate_default_pool_to_btrfs() {
       fi
       if ! incus move "$inst" "$inst" -s temp-btrfs >/dev/null 2>&1; then
         echo "WARNING: could not move '$inst' to the temporary pool. Storage migration cancelled; nothing was deleted." >&2
+        touch "$failed_marker"
         local back
         for back in "${instances[@]}"; do
           [ "$back" = "$inst" ] && break
