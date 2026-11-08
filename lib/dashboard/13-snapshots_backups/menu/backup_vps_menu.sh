@@ -22,6 +22,7 @@ backup_vps_menu() {
     echo "10) Rename Backup File"
     echo "11) Clean Temp Backup    remove half-finished files"
     echo "12) Clean Orphaned Backups (VPS no longer exists)"
+    echo "13) Clone a VPS          instant copy to experiment on (own IP and SSH port)"
     echo
     read -r -p "Choice [0=Back, Enter=1]: " c
     c="${c:-1}"
@@ -98,6 +99,10 @@ backup_vps_menu() {
         ;;
       12)
         clean_orphaned_backups
+        pause
+        ;;
+      13)
+        clone_vps_menu
         pause
         ;;
       0) return;;

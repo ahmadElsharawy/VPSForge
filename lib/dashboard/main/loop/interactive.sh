@@ -83,7 +83,6 @@ interactive() {
       12) proxy_menu;;
       13) backup_vps_menu;;
       14) settings_menu;;
-      16) clone_vps_menu;;
       15)
         printf "\033[?1049l"
         echo "Goodbye!"

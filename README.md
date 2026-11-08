@@ -23,7 +23,7 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 - **The last answer is the default** in every prompt (RAM/CPU/disk/network/traffic, OS, ports, domain, protocol, selection...), so *Enter, Enter, Enter* repeats what you did before. **`0` goes back one step**, not to the start.
 - **One edit menu** for one, several or all VPSs. **More operating systems**: Ubuntu, Debian, Alpine (about 10MB RAM, ideal for weak servers), Rocky, Alma, Fedora, Arch, CentOS.
 - **Domains made simple** (menu 12, Domains & Reverse Proxy): add a domain in 5 guided steps, see all domains in one list, test or remove them; Caddy changes are validated and rolled back if invalid.
-- **Clone a VPS** (menu 16): an instant exact copy to experiment on.
+- **Clone a VPS** (menu 13, option 13): an instant exact copy to experiment on.
 - **Protected against Incus updates**: the tested Incus is paused from updating, `vpsforge selftest` checks that every Incus command VPSForge needs still works, and Incus is repaired automatically if it breaks or disappears.
 - **Faster and lighter**: cached public IP, one-time setup, BTRFS pool sized to the server (with a directory-pool fallback), swap for very small servers, backups compressed with zstd.
 - **Every function is its own file**, grouped in topic folders, with offline tests (`scripts/test.sh`), real-server tests (`scripts/e2e.sh`, `scripts/ui-test.py`) and a loader (`lib/load_vpsforge_lib.sh`).

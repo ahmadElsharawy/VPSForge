@@ -1,5 +1,5 @@
 #!/bin/bash
-# Menu 16: clone a VPS (an instant copy to experiment on).
+# Menu 13 > option 13: clone a VPS (an instant copy to experiment on).
 clone_vps_menu() {
   local src default_name new answer
   echo "----------------------------------------------------------------"

@@ -28,10 +28,9 @@ dashboard() {
 10) Connection     how to log in                    IP, port, user, password
 11) Port Forward   open a server port to a VPS      e.g. 8080 -> 80
 12) Domains & Reverse Proxy   https://app.mydomain.com -> an app inside a VPS
-13) Snapshots & Backups       save a VPS now, restore it later (e.g. before an update)
+13) Snapshots & Backups       save a VPS now, restore it later, or clone it (instant copy)
 14) Settings       refresh, network speed, updates, uninstall
-15) Exit
-16) Clone a VPS    instant copy to experiment on"
+15) Exit"
 
   if [ "$mode" = "refresh" ]; then
     printf "\033[H%s\n%s\n\033[JChoice: " "$table_output" "$menu"
