@@ -570,18 +570,33 @@ def section_websites(ui):
     step(ui, "confirm", r"Create it\? \[Y/n, 0=Back\]: ", "\r")
     ok = ui.expect(r"DONE\. Now connect from your computer", 120)
     check("12.4 tunnel created", ok, ui.tail())
-    step(ui, "connect menu", r"Which computer runs your site.*?Choice \[0=Done\]: ", "4\r")
+    step(ui, "connect menu", r"Which computer runs your site.*?Choice \[0=Done\]: ", "3\r")
+    step(ui, "more menu", r"Choice \[0=Back\]: ", "1\r")
     check("12.4 the command to run on the computer is shown", ui.expect(r"ssh -N .*?-R 0\.0\.0\.0:9080:localhost:3000", 10), ui.tail())
     step(ui, "connect menu", r"Choice \[0=Done\]: ", "1\r")
-    check("12.4 the Windows setup block is framed and complete", ui.expect(r"COPY FROM HERE.*?\$id = '[0-9_]+'.*?UNTIL HERE", 10), ui.tail())
+    ok = ui.expect(r"Paste this ONE line.*?-p \d+ vftun9080@\S+ \| Out-String \| iex.*?password, type:\s+\S+", 60)
+    check("12.4 one short line is shown to install on Windows", ok, ui.tail())
+    pws = re.findall(r"password, type:\s+(\S+)", ui.buf[max(0, ui.pos - 300):ui.pos])
+    pw = pws[-1] if pws else "none"
     step(ui, "connect menu", r"Choice \[0=Done\]: ", "0\r")
     pause(ui)
     ip2 = ip_of("uit2")
     check("12.4 the VPS accepts tunnels (GatewayPorts)", "gatewayports yes" in sh("incus exec uit2 -- sshd -T")[1].lower())
     check("12.4 the port appears in Port Forward (menu 11) automatically", "9080|" in sh("cat /opt/vpsforge/port-forwards.conf")[1] and ip2 + ":9080" in sh("iptables -t nat -S PREROUTING")[1])
-    sh("rm -f /tmp/tk /tmp/tk.pub; ssh-keygen -q -t ed25519 -N '' -f /tmp/tk")
-    sh("incus exec uit2 -- sh -c 'mkdir -p /root/.ssh; cat >> /root/.ssh/authorized_keys' < /tmp/tk.pub")
-    sh("ssh -f -N -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes -i /tmp/tk -R 0.0.0.0:9080:localhost:3000 root@" + ip2)
+    with open("/tmp/askpass.sh", "w") as f:
+        f.write("#!/bin/sh\necho \"$VFPW\"\n")
+    os.chmod("/tmp/askpass.sh", 0o755)
+    got = sh("VFPW='" + pw + "' SSH_ASKPASS=/tmp/askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PreferredAuthentications=password -o ConnectTimeout=15 vftun9080@" + ip2)[1]
+    check("12.4 the limited login downloads the setup script", "-R 0.0.0.0:9080:localhost:3000" in got and "Register-ScheduledTask" in got, got[:300])
+    kb = re.search(r"\$kt = @'\n(.*?)\n'@", got, re.S)
+    with open("/tmp/tk", "w") as f:
+        f.write((kb.group(1) if kb else "") + "\n")
+    os.chmod("/tmp/tk", 0o600)
+    o = sh("ssh -i /tmp/tk -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 vftun9080@" + ip2 + " id")[1]
+    check("12.4 the limited login gives no shell on the VPS", "uid=" not in o, o[:200])
+    rc = sh("ssh -N -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 -i /tmp/tk -R 0.0.0.0:9999:localhost:3000 vftun9080@" + ip2, 30)[0]
+    check("12.4 the limited login cannot open any other port", rc != 0)
+    sh("ssh -f -N -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes -o BatchMode=yes -i /tmp/tk -R 0.0.0.0:9080:localhost:3000 vftun9080@" + ip2)
     time.sleep(3)
     check("12.4 the site on 'my computer' answers through the VPS tunnel", "FROM-MY-PC" in sh("curl -s -m 10 http://" + ip2 + ":9080/")[1])
 
@@ -609,9 +624,10 @@ def section_websites(ui):
     check("12.5 delete a tunnel", ui.expect(r"Deleted\.", 60) and "--dport 9080" not in sh("iptables -t nat -S PREROUTING")[1]
           and sh("incus config get uit2 user.vpsforge.tunnels")[1] == "", ui.tail())
     pause(ui)
+    check("12.5 the limited login is removed with the tunnel", sh("incus exec uit2 -- id vftun9080")[0] != 0)
     check("12.5 the list is empty afterwards", ui.expect(r"No tunnels yet", 30), ui.tail())
     pause(ui)
-    sh("pkill -f '[s]sh -f -N -o StrictHostKeyChecking=no'; pkill -f '[h]ttp.server 3000'; rm -rf /tmp/pcsite /tmp/tk /tmp/tk.pub")
+    sh("pkill -f '[s]sh -f -N -o StrictHostKeyChecking=no'; pkill -f '[h]ttp.server 3000'; rm -rf /tmp/pcsite /tmp/tk /tmp/askpass.sh")
     step(ui, "tunnel menu", TM, "0\r")
     step(ui, "proxy menu", r"3\) Cloudflare real visitor IP.*?Choice \[0=Back, Enter=\d\]: ", "0\r")
     check("12.0 back to the main menu", to_menu(ui))

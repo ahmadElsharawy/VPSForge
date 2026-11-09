@@ -7,5 +7,6 @@ tunnel_delete() {
   [ -n "$rec" ] || return 0
   IFS='|' read -r _ lport ext domain state <<< "$rec"
   tunnel_public_stop "$vps" "$tport" "$ext" "$domain"
+  tunnel_access_remove "$vps" "$tport"
   tunnel_record_delete "$vps" "$tport"
 }

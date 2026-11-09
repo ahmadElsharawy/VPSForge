@@ -26,12 +26,15 @@ tunnel_edit() {
   if [ "$was_active" -eq 0 ]; then
     # A stopped tunnel is not open to the internet: only the saved record changes.
     tunnel_record_delete "$vps" "$tport"
+    [ "$TW_TPORT" = "$tport" ] || tunnel_access_remove "$vps" "$tport"
     tunnel_record_set "$vps" "$TW_TPORT" "$TW_LPORT" "$TW_EXTPORT" "$TW_DOMAIN" stopped
     echo "Saved."
     return 0
   fi
 
-  tunnel_delete "$vps" "$tport"
+  tunnel_public_stop "$vps" "$tport" "$ext" "$domain"
+  tunnel_record_delete "$vps" "$tport"
+  [ "$TW_TPORT" = "$tport" ] || tunnel_access_remove "$vps" "$tport"
   if ! tunnel_create "$vps" "$TW_TPORT" "$TW_LPORT" "$TW_EXTPORT" "$TW_DOMAIN"; then
     echo "ERROR: the new settings could not be applied. Putting the old tunnel back..."
     tunnel_record_set "$vps" "$tport" "$lport" "$ext" "$domain" stopped
@@ -40,4 +43,5 @@ tunnel_edit() {
     return 1
   fi
   echo "Saved."
+  [ "$TW_LPORT" = "$lport" ] && [ "$TW_TPORT" = "$tport" ] || echo "NOTE: on the computer, choose \"Show the command\" > 1 and run it again so it uses the new ports."
 }

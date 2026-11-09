@@ -46,6 +46,7 @@ reinstall_single_vps_core() {
     if [ -n "$PRESERVED_TUNNELS" ]; then
       incus config set "$n" user.vpsforge.tunnels "$PRESERVED_TUNNELS"
       enable_vps_tunnel_access "$n" || echo "NOTE: could not re-enable tunnels inside $n; start them again from menu 12 > 4."
+      echo "NOTE: the tunnel logins were reset by the reinstall. On each computer run menu 12 > 4 > Show the command > 1 again."
     fi
     incus delete "$old" --force >/dev/null 2>&1 || true
     reclaim_pool_space

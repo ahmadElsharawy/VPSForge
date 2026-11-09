@@ -273,11 +273,17 @@ rm -f "$tunnel_store"
 
 # Windows tunnel block: names are unique per server, nothing is left unreplaced, here-string closer at column 0
 t "windows id: server + ports" "1_2_3_4_9001_5789" "$(tunnel_windows_id 1.2.3.4 9001 5789)"
-win_block=$(print_windows_tunnel_setup root 1.2.3.4 9001 5789 3000)
-t "windows block: no placeholder left" 0 "$(grep -c '@[A-Z]*@' <<< "$win_block")"
-t "windows block: here-string closer at column 0" 1 "$(grep -c "^'@ | Set-Content" <<< "$win_block")"
-t "windows block: whole block is one script block" "& {" "$(head -n 1 <<< "$win_block")"
-t "windows block: host and ports are filled in" 1 "$(grep -c -- '-R 0.0.0.0:5789:localhost:3000 -p 9001 root@1.2.3.4' <<< "$win_block" | awk '{ print ($1 >= 1) ? 1 : 0 }')"
+fake_key=$(mktemp); printf -- '-----BEGIN FAKE KEY-----\nABC123\n-----END FAKE KEY-----\n' > "$fake_key"
+win_block=$(tunnel_access_script vftun5789 1.2.3.4 9001 5789 3000 "$fake_key")
+rm -f "$fake_key"
+t "tunnel login name: one per tunnel port" "vftun5789" "$(tunnel_access_user 5789)"
+t "windows script: no placeholder left" 0 "$(grep -c '@[A-Z]*@' <<< "$win_block")"
+t "windows script: key here-string closed at column 0" 1 "$(grep -c "^'@$" <<< "$win_block")"
+t "windows script: toggle here-string closed at column 0" 1 "$(grep -c "^'@ | Set-Content" <<< "$win_block")"
+t "windows script: the key is inside" 1 "$(grep -c 'ABC123' <<< "$win_block")"
+t "windows script: whole script is one block" "& {" "$(head -n 1 <<< "$win_block")"
+t "windows script: no password and no root login" 0 "$(grep -ci 'root@' <<< "$win_block")"
+t "windows script: only that tunnel port is forwarded" 1 "$(grep -c -- '-R 0.0.0.0:5789:localhost:3000 -p 9001 vftun5789@1.2.3.4' <<< "$win_block" | awk '{ print ($1 >= 1) ? 1 : 0 }')"
 
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

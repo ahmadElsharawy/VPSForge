@@ -15,5 +15,5 @@ tunnel_show_connect() {
     echo "Open:  http://${PUBLIC_IP:-SERVER-IP}:$ext"
     echo "Note: your cloud provider's firewall (Oracle: VCN security list, Google: VPC rule) must also allow TCP port $ext."
   fi
-  tunnel_connect_menu "$user" "${PUBLIC_IP:-SERVER-IP}" "$(get_vps_saved_port "$vps")" "$tport" "$lport"
+  tunnel_connect_menu "$user" "${PUBLIC_IP:-SERVER-IP}" "$(get_vps_saved_port "$vps")" "$tport" "$lport" "$vps"
 }

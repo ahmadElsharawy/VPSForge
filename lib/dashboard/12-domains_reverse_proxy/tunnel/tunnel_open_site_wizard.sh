@@ -18,6 +18,7 @@ tunnel_open_site_wizard() {
              tunnel_wizard_step_confirm || return
 
   echo "Creating the tunnel..."
+  tunnel_access_remove "$TW_VPS" "$TW_TPORT"   # leftovers of an older tunnel on this port must not come back
   if ! tunnel_create "$TW_VPS" "$TW_TPORT" "$TW_LPORT" "$TW_EXTPORT" "$TW_DOMAIN"; then
     echo "ERROR: the tunnel could not be created. Nothing was changed on the server."
     pause; return
