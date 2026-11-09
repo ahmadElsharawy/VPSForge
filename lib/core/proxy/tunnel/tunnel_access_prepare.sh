@@ -36,9 +36,9 @@ tunnel_access_prepare() {
   ' >/dev/null 2>&1 || { rm -rf "$dir"; return 1; }
 
   # 2) the key and the setup script (readable only by root and by this login)
-  incus exec "$vps" --env TPORT="$tport" --env TUSER="$user" -- sh -c 'cat > "/etc/vpsforge-tunnel/$TPORT.key" && chmod 600 "/etc/vpsforge-tunnel/$TPORT.key"' < "$dir/k" || { rm -rf "$dir"; return 1; }
+  incus exec "$vps" --env TPORT="$tport" --env TUSER="$user" -- sh -c 'cat > "/etc/vpsforge-tunnel/$TPORT.key" && chmod 600 "/etc/vpsforge-tunnel/$TPORT.key"' < "$dir/k" 2>/dev/null || { rm -rf "$dir"; return 1; }
   tunnel_access_script "$user" "$host" "$sshport" "$tport" "$lport" "$dir/k" > "$dir/script.ps1"
-  incus exec "$vps" --env TPORT="$tport" --env TUSER="$user" -- sh -c 'f="/etc/vpsforge-tunnel/$TPORT.ps1"; cat > "$f" && chown "root:$TUSER" "$f" && chmod 640 "$f"' < "$dir/script.ps1" || { rm -rf "$dir"; return 1; }
+  incus exec "$vps" --env TPORT="$tport" --env TUSER="$user" -- sh -c 'f="/etc/vpsforge-tunnel/$TPORT.ps1"; cat > "$f" && chown "root:$TUSER" "$f" && chmod 640 "$f"' < "$dir/script.ps1" 2>/dev/null || { rm -rf "$dir"; return 1; }
 
   # 3) the ssh rules. If they are not accepted, the whole login is removed again (never leave a half-limited one).
   incus exec "$vps" --env TUSER="$user" --env TPORT="$tport" -- sh -c '

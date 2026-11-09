@@ -10,7 +10,7 @@ tunnel_connect_show_line() {
   fi
   echo "  Paste this ONE line in PowerShell on the Windows computer:"
   echo
-  echo "  ssh -o StrictHostKeyChecking=accept-new -p ${sshport} ${TUNNEL_ACCESS_USER}@${host} | Out-String | iex"
+  echo "  ssh -T -o LogLevel=ERROR -o StrictHostKeyChecking=accept-new -p ${sshport} ${TUNNEL_ACCESS_USER}@${host} | Out-String | iex"
   echo
   echo "  When it asks for a password, type:   ${TUNNEL_ACCESS_PASS}"
   echo
