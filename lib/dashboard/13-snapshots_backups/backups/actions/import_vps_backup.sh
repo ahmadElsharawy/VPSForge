@@ -1,8 +1,15 @@
 #!/bin/bash
 
 import_vps_backup() {
-  local file_path="$1" name="${2:-}" target_name c new_num new_ip new_port
+  local file_path="$1" name="${2:-}" target_name c new_num new_ip new_port old_ip="" old_port="" hold_name="" caddy_bak="" rc
   [ -f "$file_path" ] || { echo "File not found: $file_path"; return 1; }
+
+  # A damaged backup is useless and would only waste disk: say so and delete it (nothing else is touched).
+  if command -v zstd >/dev/null 2>&1 && ! tar -tf "$file_path" >/dev/null 2>&1; then
+    echo "ERROR: the backup file is damaged or unreadable. It was deleted: $(basename "$file_path")"
+    rm -f "$file_path" "${file_path}.info"
+    return 1
+  fi
 
   inspect_backup_file "$file_path"
 
@@ -45,20 +52,13 @@ import_vps_backup() {
         fi
         ;;
       2)
-        # Check the backup file first: a broken file must never cost the user the working VPS.
-        if ! tar -tf "$file_path" >/dev/null 2>&1; then
-          echo "ERROR: the backup file is damaged or unreadable. Nothing was changed."
-          return 1
-        fi
         read -r -p "This DELETES the current '$target_name' and replaces it with the backup. Type YES to continue: " c </dev/tty || c=""
         [ "$c" = "YES" ] || { echo "Import cancelled."; return 0; }
-        echo "Deleting current $target_name..."
-        local old_ip old_port
+        echo "Putting the current $target_name aside (it is deleted only after the import succeeds)..."
         old_ip=$(get_ip "$target_name"); old_port=$(get_port "$old_ip")
-        remove_ip "$old_ip"; [ -n "$old_port" ] && remove_port "$old_port"
-        [ -n "$old_ip" ] && port_forward_delete_rules_for_ip "$old_ip"
-        rm -f "/etc/caddy/vpsforge/${target_name}.caddy"
-        incus delete "$target_name" --force >/dev/null 2>&1 || true
+        hold_name="${target_name}-replaced-$$"
+        caddy_bak="/opt/vpsforge/.replaced-${hold_name}.caddy"
+        hold_vps_for_replace "$target_name" "$hold_name" "$caddy_bak" || { echo "ERROR: could not put '$target_name' aside. Nothing was changed."; return 1; }
         ;;
       *)
         echo "Import cancelled."
@@ -168,5 +168,14 @@ import_vps_backup() {
   fi
 
   # Guarded: if the import stops half-way the new VPS is removed completely and the reason is shown.
-  run_guarded "cleanup_failed_import $(printf %q "$target_name")" _import_vps_backup_apply
+  local cleanup_cmd="cleanup_failed_import $(printf %q "$target_name")"
+  if [ -n "$hold_name" ]; then
+    cleanup_cmd="$cleanup_cmd; restore_replaced_vps $(printf %q "$target_name") $(printf %q "$hold_name") $(printf %q "$caddy_bak")"
+  fi
+  run_guarded "$cleanup_cmd" _import_vps_backup_apply
+  rc=$?
+  if [ -n "$hold_name" ] && [ "$rc" -eq 0 ]; then
+    finalize_replaced_vps "$hold_name" "$old_ip" "$old_port" "$caddy_bak"
+  fi
+  return "$rc"
 }

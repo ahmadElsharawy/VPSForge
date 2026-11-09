@@ -9,13 +9,14 @@ sweep_stale_forward_rules() {
   # If Incus does not answer we cannot know who owns what: change nothing.
   incus list -c n --format csv >/dev/null 2>&1 || return 0
 
-  while read -r name; do
+  local port inventory
+  # A VPS whose address is not known yet (still being created) must not look "unowned": stop then.
+  inventory=$(vps_inventory) || return 0
+  while IFS='|' read -r name ip port; do
     [ -n "$name" ] || continue
-    ip=$(incus config get "$name" user.vpsforge.ip 2>/dev/null || true)
-    [ -n "$ip" ] && owned["$ip"]=1
-    ip=$(get_ip "$name" 2>/dev/null || true)
-    [ -n "$ip" ] && owned["$ip"]=1
-  done < <(incus list -c n --format csv 2>/dev/null)
+    [ -n "$ip" ] || return 0
+    owned["$ip"]=1
+  done <<< "$inventory"
 
   while read -r ip; do
     [ -n "$ip" ] || continue

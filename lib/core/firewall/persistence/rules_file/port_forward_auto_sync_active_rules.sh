@@ -41,21 +41,17 @@ port_forward_auto_sync_active_rules() {
   done
 
   # 2. Also ensure each container's SSH port from metadata exists in tmpf if active/saved
-  local -a inst_list=()
-  mapfile -t inst_list < <(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)
   local inst inst_ip inst_port
-  for inst in "${inst_list[@]}"; do
+  while IFS='|' read -r inst inst_ip inst_port; do
     [ -n "$inst" ] || continue
-    inst_ip=$(get_ip "$inst" 2>/dev/null || true)
-    inst_port=$(get_vps_saved_port "$inst" 2>/dev/null || true)
     [ -z "$inst_port" ] && inst_port=$(get_port "$inst_ip" 2>/dev/null || true)
-    if [ -n "$inst_ip" ] && [ "$inst_ip" != "-" ] && [ -n "$inst_port" ] && [[ "$inst_port" =~ ^[0-9]+$ ]]; then
+    if [ -n "$inst_ip" ] && [ "$inst_ip" != "-" ] && [[ "$inst_port" =~ ^[0-9]+$ ]]; then
       local ssh_entry="tcp|0.0.0.0|${inst_port}|${inst_ip}|22"
       if ! grep -Fxq "$ssh_entry" "$tmpf" 2>/dev/null; then
         echo "$ssh_entry" >> "$tmpf"
       fi
     fi
-  done
+  done < <(vps_inventory)
 
   # 3. Apply all rules from tmpf into iptables (not while the owner has them disabled)
   [ -f "${file}.disabled" ] || while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do

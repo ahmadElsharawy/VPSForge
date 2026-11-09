@@ -218,5 +218,27 @@ caddy_unlink_domain "$cf" b.com
 t "caddy unlink: file removed when no domain is left" deleted "$r"
 rm -f "$cf"
 
+# several site blocks in one file
+printf 'a.com {
+  reverse_proxy 1.1.1.1:80
+}
+b.com, c.com {
+  reverse_proxy 1.1.1.1:81
+}
+' > "$cf"
+caddy_unlink_domain "$cf" c.com
+t "caddy unlink: domain in a later block" "b.com {" "$(sed -n 4p "$cf")"
+caddy_unlink_domain "$cf" a.com
+t "caddy unlink: first block removed whole" "b.com {" "$(head -n 1 "$cf")"
+t "caddy unlink: its body is gone" 0 "$(grep -c '1.1.1.1:80' "$cf")"
+rm -f "$cf"
+
+# one json call answers the name-by-ip lookup (fake incus, no server needed)
+incus() { echo '[{"name":"v1","config":{"user.vpsforge.ip":"10.0.0.5","user.vpsforge.ssh_port":"9001"}},{"name":"v2","config":{},"state":{"network":{"eth0":{"addresses":[{"family":"inet","address":"10.0.0.6"}]}}}}]'; }
+t "inventory: saved ip + port" "v1|10.0.0.5|9001" "$(vps_inventory | head -n 1)"
+t "inventory: live ip fallback" "v2|10.0.0.6|" "$(vps_inventory | tail -n 1)"
+t "name by ip" v2 "$(get_vps_name_by_ip 10.0.0.6)"
+unset -f incus
+
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

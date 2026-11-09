@@ -1,14 +1,13 @@
 #!/bin/bash
+# Print the name of the VPS that owns an IP (one Incus call in total).
 get_vps_name_by_ip() {
-  local target_ip="$1" n ip
+  local target_ip="$1" n ip port
   [ -z "$target_ip" ] && return 1
-  while read -r n; do
-    [ -z "$n" ] && continue
-    ip=$(get_ip "$n" 2>/dev/null || true)
-    if [ "$ip" = "$target_ip" ]; then
+  while IFS='|' read -r n ip port; do
+    if [ -n "$n" ] && [ "$ip" = "$target_ip" ]; then
       echo "$n"
       return 0
     fi
-  done < <(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)
+  done < <(vps_inventory)
   return 1
 }

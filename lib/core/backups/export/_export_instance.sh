@@ -11,6 +11,11 @@ _export_instance() {
   err=$(mktemp)
   if incus export "$name" "$file" "${compress_args[@]}" 2>"$err"; then
     rm -f "$err"
+    # A file that cannot be read back is useless: fail so the guard deletes it.
+    if command -v zstd >/dev/null 2>&1 && ! tar -tf "$file" >/dev/null 2>&1; then
+      echo "ERROR: the backup file came out damaged, so it was deleted"
+      return 1
+    fi
     return 0
   fi
   reason=$(tr '\r' '\n' < "$err" | grep -v '^ *$' | grep -vi 'backing up\|exporting' | tail -n 1)

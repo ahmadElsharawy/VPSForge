@@ -615,6 +615,22 @@ def section_snapshots(ui):
     check("13.6 import backup under a new name", ok and running("uitimp"), ui.tail())
     pause(ui)
 
+    # overwrite: the old VPS is set aside, deleted only after the import worked
+    step(ui, "menu", menu, "6\r")
+    step(ui, "filter", r"2\) List all backup files.*?" + sel, "2\r")
+    step(ui, "pick", r"Select backup file to import: ", "\r")
+    step(ui, "conflict", r"Choice \[0=Cancel, 1-2, Enter=0\]: ", "2\r")
+    step(ui, "sure", r"Type YES to continue: ", "YES\r")
+    ok = ui.expect(r"Success: uit2 restored", 400)
+    left = "1"
+    for _ in range(30):                       # the old VPS is deleted right after the success line
+        _, left = sh("incus list -c n --format csv | grep -c -- '-replaced-'")
+        if left.strip() == "0":
+            break
+        time.sleep(2)
+    check("13.6b overwrite import: replaced, nothing left aside", ok and running("uit2") and left.strip() == "0", ui.tail())
+    pause(ui)
+
     step(ui, "menu", menu, "8\r")
     step(ui, "which vps", r"Select VPS container to update backup for: ", "uit2\r")
     step(ui, "filter", r"2\) List all backup files.*?" + sel, "2\r")
