@@ -198,5 +198,18 @@ t "incus: pin function exists" function "$(type -t incus_pin)"
 t "incus: health check exists" function "$(type -t ensure_incus_alive)"
 t "image names resolve" "images:ubuntu/noble" "$(resolve_image_candidates images:ubuntu/noble | head -1)"
 
+# --- Caddy: taking over one domain keeps the other domains of that VPS ---
+cf=$(mktemp)
+printf 'a.com, b.com {
+  reverse_proxy 1.2.3.4:80
+}
+' > "$cf"
+caddy_unlink_domain "$cf" a.com
+t "caddy unlink: other domain stays" "b.com {" "$(head -n 1 "$cf")"
+caddy_unlink_domain "$cf" b.com
+[ -f "$cf" ] && r=kept || r=deleted
+t "caddy unlink: file removed when no domain is left" deleted "$r"
+rm -f "$cf"
+
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

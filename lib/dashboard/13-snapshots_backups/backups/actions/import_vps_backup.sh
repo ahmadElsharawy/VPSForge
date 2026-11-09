@@ -128,10 +128,11 @@ import_vps_backup() {
         dom=${dom%,}
         [ -n "$dom" ] || continue
         
-        conflict_file=$(grep -rl "$dom" "$CADDY_CONF_DIR" 2>/dev/null || true)
+        local conflicting_vps
+        conflicting_vps=$(domain_used_by_other_vps "$dom" "$target_name" || true)
+        conflict_file=""
+        [ -n "$conflicting_vps" ] && conflict_file="$CADDY_CONF_DIR/${conflicting_vps}.caddy"
         if [ -n "$conflict_file" ]; then
-          local conflicting_vps
-          conflicting_vps=$(basename "$conflict_file" .caddy)
           echo
           echo "⚠️  DOMAIN CONFLICT detected for Domain [ $dom ]"
           echo "   Domain '$dom' is already linked to VPS '$conflicting_vps'."
@@ -141,7 +142,7 @@ import_vps_backup() {
           choice="${choice:-1}"
           if [ "$choice" = "2" ]; then
             echo "   Will take over domain '$dom' (unlinking from '$conflicting_vps')..."
-            caddy_conflicts_to_remove+=("$conflict_file")
+            caddy_conflicts_to_remove+=("$conflict_file|$dom")
             domains_to_apply+=("$dom")
           else
             echo "   Skipped domain '$dom'."

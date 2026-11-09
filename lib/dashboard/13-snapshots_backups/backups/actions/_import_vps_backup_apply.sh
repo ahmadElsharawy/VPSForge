@@ -78,9 +78,13 @@ _import_vps_backup_apply() {
   # Apply resolved Caddy proxy configurations
   echo "[  98% ] Restoring proxy configurations..."
   if [ "${#domains_to_apply[@]}" -gt 0 ]; then
-    local conf
-    for conf in "${caddy_conflicts_to_remove[@]}"; do
-      rm -f "$conf"
+    # Keep a copy of every Caddy file: if the result does not validate, everything goes back.
+    local conf_backup entry
+    conf_backup=$(mktemp -d)
+    mkdir -p "$CADDY_CONF_DIR"
+    cp -a "$CADDY_CONF_DIR"/. "$conf_backup"/ 2>/dev/null || true
+    for entry in "${caddy_conflicts_to_remove[@]}"; do
+      caddy_unlink_domain "${entry%%|*}" "${entry#*|}"   # only the taken-over domain leaves the other VPS
     done
     
     local conf_file="$CADDY_CONF_DIR/${target_name}.caddy"
@@ -99,9 +103,11 @@ _import_vps_backup_apply() {
       systemctl reload-or-restart caddy >/dev/null 2>&1 || true
       echo "   SUCCESS: Linked domains ($joined_domains) restored."
     else
-      echo "   ERROR: Caddy validation failed. Restoring proxy cancelled."
-      rm -f "$conf_file"
+      echo "   ERROR: Caddy validation failed. Restoring proxy cancelled; nothing was changed."
+      rm -f "$CADDY_CONF_DIR"/*.caddy
+      cp -a "$conf_backup"/. "$CADDY_CONF_DIR"/ 2>/dev/null || true
     fi
+    rm -rf "$conf_backup"
   fi
 
   sync_vps_metadata "$target_name" || true
