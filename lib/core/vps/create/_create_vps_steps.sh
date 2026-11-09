@@ -113,6 +113,13 @@ _create_vps_steps() {
     return 1
   }
 
+  # Some systems (Alpine's dhcpcd) rewrite DNS a moment after boot: re-apply it a few times before giving up.
+  local net_try=0
+  until guest_network_config_ok "$name" "$ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || [ "$net_try" -ge 4 ]; do
+    net_try=$((net_try + 1))
+    sleep 3
+    configure_guest_dns "$name" >/dev/null 2>&1 || true
+  done
   if ! guest_network_config_ok "$name" "$ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}"; then
     echo "ERROR: Guest network still looks incomplete after guest network setup."
     diagnose_guest_network "$name" "$ip"
