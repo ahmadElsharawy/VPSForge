@@ -70,6 +70,7 @@ import_vps_backup() {
   # --- PRE-IMPORT CONFLICT RESOLUTION PHASE ---
   local index_content rules proxy_b64
   index_content=$(cat "${file_path}.info" 2>/dev/null || true)
+  [ -n "$index_content" ] || index_content=$(tar -xf "$file_path" backup/index.yaml -O 2>/dev/null || true)
   rules=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.port_forwards\.rules:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "")
   proxy_b64=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.proxy:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "")
 
@@ -171,7 +172,7 @@ import_vps_backup() {
   # Guarded: if the import stops half-way the new VPS is removed completely and the reason is shown.
   get_next_available_vps_ip_and_num
   new_num="$NEXT_AVAIL_NUM"; new_ip="$NEXT_AVAIL_IP"; new_port=$(vps_fixed_port "$new_num")
-  local cleanup_cmd="cleanup_failed_vps $(printf %q "$target_name") $(printf %q "$new_ip") $(printf %q "$new_port")"
+  local cleanup_cmd="cleanup_failed_vps $(printf %q "$target_name") $(printf %q "$new_ip") $(printf %q "$new_port"); restore_caddy_after_import $(printf %q "$target_name")"
   if [ -n "$hold_name" ]; then
     cleanup_cmd="$cleanup_cmd; restore_replaced_vps $(printf %q "$target_name") $(printf %q "$hold_name") $(printf %q "$caddy_bak")"
   fi
