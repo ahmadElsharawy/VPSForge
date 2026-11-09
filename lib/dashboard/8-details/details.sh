@@ -93,7 +93,7 @@ details() {
     b_size=$(du -h "$b_file" 2>/dev/null | awk '{print $1}')
     b_mtime=$(stat -c "%y" "$b_file" 2>/dev/null | cut -d'.' -f1 || echo "-")
     backup_list+=("$(basename "$b_file") [$b_size | $b_mtime]")
-  done < <(find "${BACKUP_DIR:-/opt/vpsforge-backups}" -maxdepth 1 -type f \( -name "${name}-backup-*.tar.gz" -o -name "${name}-backup-*.tar" -o -name "${name}_*.tar.gz" -o -name "${name}_*.tar" \) 2>/dev/null | sort -r || true)
+  done < <(find "${BACKUP_DIR:-/opt/vpsforge-backups}" -maxdepth 1 -type f \( -name "${name}-backup-*.tar.gz" -o -name "${name}-backup-*.tar" \) 2>/dev/null | sort -r || true)
 
   local traffic_status
   traffic_status=$(incus config get "$name" user.vpsforge.traffic.status 2>/dev/null || true)

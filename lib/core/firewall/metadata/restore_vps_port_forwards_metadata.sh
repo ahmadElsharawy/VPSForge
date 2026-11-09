@@ -20,7 +20,7 @@ restore_vps_port_forwards_metadata() {
       port_forward_apply_rule "$proto" "$ext_ip" "$ext_port" "$ip" "$int_port"
       
       # Also add it to our rules file if not already present
-      if ! grep -q "${proto}|${ext_ip}|${ext_port}|${ip}|${int_port}" "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
+      if ! grep -Fxq "${proto}|${ext_ip}|${ext_port}|${ip}|${int_port}" "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
         echo "${proto}|${ext_ip}|${ext_port}|${ip}|${int_port}" >> "$PORT_FORWARD_RULES_FILE"
       fi
     done

@@ -15,7 +15,7 @@ delete_vps_backups_prompt() {
   list_backups_for_vps "$name" | while read -r file; do
     echo "    - $(basename "$file") ($(du -h "$file" | cut -f1))"
   done
-  read -r -p "  Delete these backups too? [Y/n]: " answer </dev/tty
+  read -r -p "  Delete these backups too? [Y/n]: " answer </dev/tty || return 0
   if [[ "${answer,,}" =~ ^n ]]; then
     echo "  Backups kept (remove later with: vpsforge clean-backups)."
   else

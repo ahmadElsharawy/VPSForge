@@ -48,6 +48,8 @@ backup_vps_menu() {
         [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
         n="${SELECTED_VPS[0]}"
         if select_vps_snapshot "$n" "Snapshot number or name to restore: "; then
+          read -r -p "Restore '$n' to '$SELECTED_SNAPSHOT'? Changes made after it are lost. [y/N]: " _c </dev/tty || _c=n
+          [[ "${_c,,}" =~ ^y ]] || { echo "Cancelled."; pause; continue; }
           restore_vps_snapshot "$n" "$SELECTED_SNAPSHOT"
           pause
         fi

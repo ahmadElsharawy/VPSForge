@@ -578,6 +578,7 @@ def section_snapshots(ui):
     step(ui, "menu", menu, "3\r")
     step(ui, "which vps", r"VPS name or number.*?: ", "uit2\r")
     step(ui, "which snap", r"Snapshot number or name to restore: ", "\r")
+    step(ui, "confirm restore", r"Changes made after it are lost", "y\r")
     ok = ui.expect(r"restored successfully", 180)
     time.sleep(8)
     rc, _ = sh("incus exec uit2 -- test -e /root/after_snapshot")
