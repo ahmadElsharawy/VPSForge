@@ -18,6 +18,13 @@ t "ram MiB"  512  "$(ram_mb 512MiB)"
 t "ram GiB"  2048 "$(ram_mb 2GiB)"
 t "ram unlimited" 0 "$(ram_mb Unlimited)"
 
+# forward rules read from backups must be safe
+is_valid_port_forward_rule tcp "" 8080 80 && r=ok || r=bad; t "rule ok" ok "$r"
+is_valid_port_forward_rule tcp "" 22 22 && r=ok || r=bad; t "rule host ssh port refused" bad "$r"
+is_valid_port_forward_rule tcp "1.2.3.4 -j ACCEPT" 8080 80 && r=ok || r=bad; t "rule ip injection refused" bad "$r"
+is_valid_port_forward_rule icmp "" 8080 80 && r=ok || r=bad; t "rule bad proto refused" bad "$r"
+is_valid_port_forward_rule udp 0.0.0.0 70000 80 && r=ok || r=bad; t "rule port range" bad "$r"
+
 # usernames
 is_valid_username "alice"     && r=ok || r=bad; t "user alice" ok "$r"
 is_valid_username "a'; rm -rf" && r=ok || r=bad; t "user injection" bad "$r"

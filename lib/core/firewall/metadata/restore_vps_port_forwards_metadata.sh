@@ -15,6 +15,7 @@ restore_vps_port_forwards_metadata() {
       IFS='|' read -r proto ext_ip ext_port int_port <<< "$rule"
       # Skip empty values
       [ -n "$proto" ] && [ -n "$ext_port" ] || continue
+      is_valid_port_forward_rule "$proto" "$ext_ip" "$ext_port" "$int_port" || continue
       
       # Apply custom rule with the container's current IP
       port_forward_apply_rule "$proto" "$ext_ip" "$ext_port" "$ip" "$int_port"

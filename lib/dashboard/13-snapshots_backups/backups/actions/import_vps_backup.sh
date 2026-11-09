@@ -45,6 +45,13 @@ import_vps_backup() {
         fi
         ;;
       2)
+        # Check the backup file first: a broken file must never cost the user the working VPS.
+        if ! tar -tf "$file_path" >/dev/null 2>&1; then
+          echo "ERROR: the backup file is damaged or unreadable. Nothing was changed."
+          return 1
+        fi
+        read -r -p "This DELETES the current '$target_name' and replaces it with the backup. Type YES to continue: " c </dev/tty || c=""
+        [ "$c" = "YES" ] || { echo "Import cancelled."; return 0; }
         echo "Deleting current $target_name..."
         local old_ip old_port
         old_ip=$(get_ip "$target_name"); old_port=$(get_port "$old_ip")
@@ -76,6 +83,7 @@ import_vps_backup() {
       [ -n "$rule" ] || continue
       IFS='|' read -r proto ext_ip ext_port int_port <<< "$rule"
       [ -n "$proto" ] && [ -n "$ext_port" ] || continue
+      is_valid_port_forward_rule "$proto" "$ext_ip" "$ext_port" "$int_port" || { echo "Skipped unsafe or invalid forward rule: $rule"; continue; }
       # The SSH forward (port -> 22) is not restored: the import gives the new VPS its own SSH port,
       # so asking about a conflict with the old VPS's SSH port would be pointless.
       [ "$int_port" = "22" ] && continue
