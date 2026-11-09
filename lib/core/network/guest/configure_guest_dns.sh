@@ -12,6 +12,12 @@ configure_guest_dns() {
       if command -v rc-service >/dev/null 2>&1; then rc-service dhcpcd restart >/dev/null 2>&1 || true; fi
       sleep 1
     fi
+    # dhcpcd copies resolv.conf.head to the top of whatever it writes: our DNS survives even if it rewrites the file
+    if command -v dhcpcd >/dev/null 2>&1 || [ -f /etc/dhcpcd.conf ]; then
+      printf "nameserver 1.1.1.1
+nameserver 8.8.8.8
+" > /etc/resolv.conf.head
+    fi
     rm -f /etc/resolv.conf
     cat > /etc/resolv.conf <<EOF
 nameserver 1.1.1.1
