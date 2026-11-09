@@ -19,7 +19,7 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 ## ✨ What's new in v2.1
 
 - **Sites from MY computer** (menu 12 > 4): open a site that runs on your own PC to the internet through a VPS, **without opening any port on your router**. Your PC connects *out* to the VPS and visitors come in through the same connection. Add several tunnels per VPS, then list, start, stop, edit or delete each one (or all of them) from one table. A port tunnel appears in Port Forward (menu 11) by itself and disappears when you stop it. See [6.6b](#66b-sites-from-my-computer-reverse-tunnels-menu-12--4).
-- **One line on Windows.** The menu shows a single line to paste in PowerShell plus a password. It downloads the setup from the VPS and installs it: an SSH key, a hidden task that starts at every login and reconnects by itself, and a desktop on/off icon. Linux and macOS get a one-line loop too.
+- **One line on Windows.** The menu shows a single line to paste in PowerShell plus a password. It downloads the setup from the VPS and installs it: an SSH key, a hidden task that starts at every login and reconnects by itself, and a desktop icon that opens a small window showing ON or OFF with **On / Off / Delete** buttons (Delete removes the tunnel from that computer and its icon). Linux and macOS get a one-line loop too.
 - **Safe to give to a friend.** Each tunnel gets its own limited login (`vftun<port>`): it can open that one port and nothing else (no shell, no other forwards, no unix sockets, no password use elsewhere). "New key" takes access back from anyone; deleting one tunnel leaves the others untouched.
 - **The main server stays clean by itself.** A weekly tidy (cron) trims the system journal (200 MB cap), removes old kernels, clears the apt cache and deletes damaged or half-written backups. Deleting a VPS returns its space to the real disk, and `vpsforge uninstall` also restores the firewall rules it added.
 - **Damaged backups and snapshots never stay.** Every export and snapshot is verified right after it is made; a bad one is deleted at once with the reason shown. Importing a backup over an existing VPS keeps the old one aside until the new one is complete.
@@ -386,7 +386,7 @@ flowchart LR
 
 | Choice | What you get |
 |---|---|
-| Windows | One line + a password. Paste it once in PowerShell: it installs the key, a hidden auto-start task and a desktop on/off icon. |
+| Windows | One line + a password. Paste it once in PowerShell: it installs the key, a hidden auto-start task and a desktop icon (window with On / Off / Delete and the current state). |
 | Linux / macOS | A one-line loop that reconnects by itself. |
 | More | Try once, create a **new key** (takes access back), or remove a Windows setup. |
 

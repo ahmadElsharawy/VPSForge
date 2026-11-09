@@ -14,7 +14,7 @@ tunnel_connect_show_line() {
   echo
   echo "  When it asks for a password, type:   ${TUNNEL_ACCESS_PASS}"
   echo
-  echo "  It installs the tunnel: hidden, starts at every login, with a desktop on/off icon."
+  echo "  It installs the tunnel: hidden, starts at every login, with a desktop icon (a small window with On, Off and Delete and the current state)."
   echo "  SAFE TO SHARE: this login can only open port ${tport} on this VPS (no shell, no other access)."
   [ "$renew" = "renew" ] && echo "  Older setups no longer work."
   return 0
