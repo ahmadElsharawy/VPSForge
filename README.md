@@ -16,6 +16,18 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 
 ---
 
+## ✨ What's new in v2.1
+
+- **Sites from MY computer** (menu 12 > 4): open a site that runs on your own PC to the internet through a VPS, **without opening any port on your router**. Your PC connects *out* to the VPS and visitors come in through the same connection. Add several tunnels per VPS, then list, start, stop, edit or delete each one (or all of them) from one table. A port tunnel appears in Port Forward (menu 11) by itself and disappears when you stop it. See [6.6b](#66b-sites-from-my-computer-reverse-tunnels-menu-12--4).
+- **One line on Windows.** The menu shows a single line to paste in PowerShell plus a password. It downloads the setup from the VPS and installs it: an SSH key, a hidden task that starts at every login and reconnects by itself, and a desktop on/off icon. Linux and macOS get a one-line loop too.
+- **Safe to give to a friend.** Each tunnel gets its own limited login (`vftun<port>`): it can open that one port and nothing else (no shell, no other forwards, no unix sockets, no password use elsewhere). "New key" takes access back from anyone; deleting one tunnel leaves the others untouched.
+- **The main server stays clean by itself.** A weekly tidy (cron) trims the system journal (200 MB cap), removes old kernels, clears the apt cache and deletes damaged or half-written backups. Deleting a VPS returns its space to the real disk, and `vpsforge uninstall` also restores the firewall rules it added.
+- **Damaged backups and snapshots never stay.** Every export and snapshot is verified right after it is made; a bad one is deleted at once with the reason shown. Importing a backup over an existing VPS keeps the old one aside until the new one is complete.
+- **Fewer Incus calls** (one `incus list --format json` instead of one call per VPS), so menus stay fast on weak servers. Caddy domain removal handles every site block of a file, and port-forward rules are validated (protocol, IPv4, port range, reserved ports 22/80/443).
+- **Reviewed and tested.** Offline tests (`scripts/test.sh`, 98 checks) and real-server UI tests cover the tunnel feature, including "add two tunnels, delete one, the other keeps working".
+
+---
+
 ## ✨ What's new in v2.0.0
 
 - **Nothing is ever left half-done.** Creating, importing, cloning, backing up, snapshotting and reinstalling are guarded: if anything fails or is stopped (error, Ctrl-C, closed terminal, even `kill -9` or a power cut), the half-made VPS is removed completely (disk, RAM limits, IP, SSH port, firewall rules, proxy config) and you are told why. A reinstall keeps the original aside and puts it back if the new one cannot be finished.
@@ -44,6 +56,7 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
    - [6.4 Resource Tuning & Live Modifications (Menu 7)](#64-resource-tuning--live-modifications-menu-7)
    - [6.5 Port Forwarding & Conflict Detection (Menu 11)](#65-port-forwarding--conflict-detection-menu-11)
    - [6.6 Domain Reverse Proxy & Auto-SSL via Caddy (Menu 12)](#66-domain-reverse-proxy--auto-ssl-via-caddy-menu-12)
+   - [6.6b Sites from MY computer: reverse tunnels (Menu 12 > 4)](#66b-sites-from-my-computer-reverse-tunnels-menu-12--4)
    - [6.7 Snapshots & Compressed Backups (Menu 13)](#67-snapshots--compressed-backups-menu-13)
 7. [⚙️ Engineering Secrets & Core Algorithms](#7-️-engineering-secrets--core-algorithms)
    - [7.1 BTRFS Copy-on-Write & Instant Snapshots](#71-btrfs-copy-on-write--instant-snapshots)
@@ -358,6 +371,31 @@ flowchart TD
 
 ---
 
+### 6.6b Sites from MY computer: reverse tunnels (Menu 12 > 4)
+Your PC has no public address and the router blocks incoming connections. A reverse tunnel solves it: the PC opens a connection **out** to a VPS (allowed everywhere), and the server sends visitors back through it.
+
+```mermaid
+flowchart LR
+    Visitor["Visitor on the internet"] -->|"http://SERVER-IP:5789"| Host["Main server: port forward (menu 11)"]
+    Host --> VPS["Your VPS: tunnel port 5789"]
+    PC["Your PC: site on port 5789"] -->|"ssh -R, opened from the PC"| VPS
+    VPS -.->|"same connection"| PC
+```
+
+**Steps (menu 12 > 4 > Add a tunnel):** choose the VPS, the port to open on the VPS and the port of your site on the PC, then either a **domain** (HTTPS by Caddy) or a **public port** on the server. Then pick your computer:
+
+| Choice | What you get |
+|---|---|
+| Windows | One line + a password. Paste it once in PowerShell: it installs the key, a hidden auto-start task and a desktop on/off icon. |
+| Linux / macOS | A one-line loop that reconnects by itself. |
+| More | Try once, create a **new key** (takes access back), or remove a Windows setup. |
+
+**Who can do what.** The line and password belong to a limited login that exists only for that tunnel port. It cannot open a shell, cannot open any other port and cannot reach other services in the VPS, so it is safe to hand to a friend whose site cannot be exposed otherwise. Cloud firewalls (Oracle VCN, Google VPC) are yours: open the public TCP port there yourself.
+
+**Manage them** in *My tunnels*: one table with each tunnel's state (`ACTIVE - connected`, `ACTIVE - waiting for your PC`, `STOPPED`), and start / stop / edit / delete for one tunnel or for all tunnels of a VPS.
+
+---
+
 ### 6.7 Snapshots & Compressed Backups (Menu 13)
 ```mermaid
 flowchart TD
@@ -513,7 +551,7 @@ lib/
 ### Keeping the host clean
 - Deleting a VPS removes its snapshots, offers to delete its backups, removes its firewall rules and proxy config, and returns the freed space to the real disk (`reclaim_pool_space`; also automatic every Sunday).
 - `vpsforge uninstall` removes containers, snapshots, backups, the storage pool, bridge, firewall rules, proxy configs, cron/system files and VPSForge itself, and restores `ip_forward`. It also purges the packages VPSForge installed (using the record in `/opt/vpsforge/.pre_install`). Use `--dry-run` to preview, `--keep-backups` to keep backups.
-- `vpsforge tidy` additionally empties the apt cache and trims system logs.
+- `vpsforge tidy` additionally empties the apt cache, trims the system journal (200 MB cap), removes old kernels and deletes damaged backups. It also runs by itself every week (cron).
 
 ---
 
