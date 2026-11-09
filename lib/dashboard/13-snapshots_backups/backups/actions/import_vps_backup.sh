@@ -88,7 +88,7 @@ import_vps_backup() {
       # so asking about a conflict with the old VPS's SSH port would be pointless.
       [ "$int_port" = "22" ] && continue
       
-      other_vps=$(awk -F'|' -v p="$proto" -v port="$ext_port" '$1 == p && $3 == port { print $4; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null || true)
+      other_vps=$(awk -F'|' -v p="$proto" -v port="$ext_port" -v oldip="$old_ip" '$1 == p && $3 == port && $4 != oldip { print $4; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null || true)
       if [ -n "$other_vps" ]; then
         echo
         echo "⚠️  PORT FORWARD CONFLICT detected for Rule [ $proto:$ext_port -> $int_port ]"
@@ -101,7 +101,7 @@ import_vps_backup() {
           while :; do
             read -r -p "   Enter new external port for $proto: " new_ext_port </dev/tty
             if [[ "$new_ext_port" =~ ^[0-9]+$ ]] && [ "$new_ext_port" -gt 0 ] && [ "$new_ext_port" -lt 65536 ]; then
-              if ! awk -F'|' -v p="$proto" -v port="$new_ext_port" 'BEGIN { f=0 } $1 == p && $3 == port { f=1; exit } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
+              if ! awk -F'|' -v p="$proto" -v port="$new_ext_port" -v oldip="$old_ip" 'BEGIN { f=0 } $1 == p && $3 == port && $4 != oldip { f=1; exit } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
                 ext_port="$new_ext_port"
                 break
               else
@@ -121,7 +121,7 @@ import_vps_backup() {
     done
   fi
 
-  local domains_to_apply=()
+  local domains_to_apply=() domains_skipped=()
   local caddy_conflicts_to_remove=()
   local proxy_decoded=""
   if [ -n "$proxy_b64" ] && [ "$proxy_b64" != "-" ]; then
@@ -129,7 +129,7 @@ import_vps_backup() {
     echo "Scanning Reverse Proxy (Caddy) domains for conflicts..."
     proxy_decoded=$(echo "$proxy_b64" | base64 -d 2>/dev/null || true)
     local domains_str domain_arr dom conflict_file choice
-    domains_str=$(echo "$proxy_decoded" | grep -v '^[[:space:]]*$' | grep -v '^[[:space:]]*#' | head -n 1 | sed 's/{//g' | tr ',' ' ' | xargs)
+    domains_str=$(caddy_site_domains <<< "$proxy_decoded" | sort -u | tr '\n' ' ')
     if [ -n "$domains_str" ]; then
       IFS=' ' read -ra domain_arr <<< "$domains_str"
       for dom in "${domain_arr[@]}"; do
@@ -154,6 +154,7 @@ import_vps_backup() {
             domains_to_apply+=("$dom")
           else
             echo "   Skipped domain '$dom'."
+            domains_skipped+=("$dom")
           fi
         else
           domains_to_apply+=("$dom")
@@ -168,7 +169,9 @@ import_vps_backup() {
   fi
 
   # Guarded: if the import stops half-way the new VPS is removed completely and the reason is shown.
-  local cleanup_cmd="cleanup_failed_import $(printf %q "$target_name")"
+  get_next_available_vps_ip_and_num
+  new_num="$NEXT_AVAIL_NUM"; new_ip="$NEXT_AVAIL_IP"; new_port=$(vps_fixed_port "$new_num")
+  local cleanup_cmd="cleanup_failed_vps $(printf %q "$target_name") $(printf %q "$new_ip") $(printf %q "$new_port")"
   if [ -n "$hold_name" ]; then
     cleanup_cmd="$cleanup_cmd; restore_replaced_vps $(printf %q "$target_name") $(printf %q "$hold_name") $(printf %q "$caddy_bak")"
   fi

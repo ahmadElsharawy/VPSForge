@@ -285,5 +285,18 @@ t "windows script: whole script is one block" "& {" "$(head -n 1 <<< "$win_block
 t "windows script: no password and no root login" 0 "$(grep -ci 'root@' <<< "$win_block")"
 t "windows script: only that tunnel port is forwarded" 1 "$(grep -c -- '-R 0.0.0.0:5789:localhost:3000 -p 9001 vftun5789@1.2.3.4' <<< "$win_block" | awk '{ print ($1 >= 1) ? 1 : 0 }')"
 
+# every site block of a saved Caddy file is read, not only the first line
+caddy_text=$(printf 'a.com, b.com {
+  reverse_proxy http://1.2.3.4:80
+}
+c.com {
+  handle /x {
+    respond ok
+  }
+}
+')
+t "caddy_site_domains: all blocks" "a.com b.com c.com" "$(caddy_site_domains <<< "$caddy_text" | tr '
+' ' ' | sed 's/ $//')"
+
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

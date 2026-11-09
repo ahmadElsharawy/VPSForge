@@ -30,10 +30,12 @@ _import_vps_backup_apply() {
 
   mark_vps_state "$target_name" importing
 
-  get_next_available_vps_ip_and_num
-  new_num="$NEXT_AVAIL_NUM"
-  new_ip="$NEXT_AVAIL_IP"
-  new_port=$(vps_fixed_port "$new_num")
+  # The address was decided before the import (see import_vps_backup). The login saved in the backup is kept;
+  # the old address and port stored in it are not ours any more.
+  local kept_user kept_pw
+  kept_user=$(get_vps_user "$target_name"); kept_pw=$(get_vps_password "$target_name")
+  incus config unset "$target_name" user.vpsforge.ip >/dev/null 2>&1 || true
+  incus config unset "$target_name" user.vpsforge.ssh_port >/dev/null 2>&1 || true
 
   echo "[  75% ] Applying Incus compatibility & basic network..."
   incus config unset "$target_name" volatile.eth0.hwaddr >/dev/null 2>&1 || true
@@ -61,8 +63,8 @@ _import_vps_backup_apply() {
   # Apply resolved Port Forwarding rules
   echo "[  95% ] Restoring port forwarding rules..."
   add_forward_rule "$new_ip" "$new_port" >/dev/null 2>&1 || true
-  set_vps_user "$target_name" "root"
-  set_vps_password "$target_name" "$ROOT_PASSWORD"
+  set_vps_user "$target_name" "${kept_user:-root}"
+  set_vps_password "$target_name" "${kept_pw:-$ROOT_PASSWORD}"
   set_vps_saved_port "$target_name" "$new_port"
 
   if [ "${#rules_to_apply[@]}" -gt 0 ]; then
@@ -83,20 +85,24 @@ _import_vps_backup_apply() {
     conf_backup=$(mktemp -d)
     mkdir -p "$CADDY_CONF_DIR"
     cp -a "$CADDY_CONF_DIR"/. "$conf_backup"/ 2>/dev/null || true
+    local loser
     for entry in "${caddy_conflicts_to_remove[@]}"; do
       caddy_unlink_domain "${entry%%|*}" "${entry#*|}"   # only the taken-over domain leaves the other VPS
+      loser=$(basename "${entry%%|*}" .caddy)
+      sync_vps_metadata "$loser" || true
+      tunnel_reconcile_import "$loser" "$(get_ip "$loser")" "$(get_vps_saved_port "$loser")"
     done
     
-    local conf_file="$CADDY_CONF_DIR/${target_name}.caddy"
+    local conf_file="$CADDY_CONF_DIR/${target_name}.caddy" skipped_dom
     mkdir -p "$CADDY_CONF_DIR"
     local joined_domains
     joined_domains=$(local IFS=", "; echo "${domains_to_apply[*]}")
-    
-    local body
-    body=$(echo "$proxy_decoded" | sed -n '/{/,$p')
-    echo "$joined_domains $body" > "$conf_file"
-    
-    update_vps_proxy_ip "$target_name" "$new_ip"
+
+    printf '%s\n' "$proxy_decoded" > "$conf_file"
+    for skipped_dom in "${domains_skipped[@]}"; do
+      caddy_unlink_domain "$conf_file" "$skipped_dom"
+    done
+    [ -f "$conf_file" ] && update_vps_proxy_ip "$target_name" "$new_ip"
     
     caddy validate --config "$MAIN_CADDYFILE" >/dev/null 2>&1
     if [ $? -eq 0 ]; then
@@ -110,6 +116,7 @@ _import_vps_backup_apply() {
     rm -rf "$conf_backup"
   fi
 
+  tunnel_reconcile_import "$target_name" "$new_ip" "$new_port" renew   # its tunnels must match what really came back
   sync_vps_metadata "$target_name" || true
   incus config set "$target_name" user.vpsforge.last_restore "$(date '+%Y-%m-%d %H:%M:%S UTC')" 2>/dev/null || true
 

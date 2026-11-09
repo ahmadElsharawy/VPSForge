@@ -16,6 +16,7 @@ _clone_vps_steps() {
   incus config unset "$new" volatile.eth0.host_name >/dev/null 2>&1 || true
   incus config device unset "$new" eth0 hwaddr >/dev/null 2>&1 || true
   incus config unset "$new" user.vpsforge.proxy >/dev/null 2>&1 || true
+  incus config unset "$new" user.vpsforge.tunnels >/dev/null 2>&1 || true   # the copy must not claim the source's tunnels
   incus config unset "$new" user.vpsforge.last_restore >/dev/null 2>&1 || true
   incus config unset "$new" user.vpsforge.port_forwards.count >/dev/null 2>&1 || true
   incus config unset "$new" user.vpsforge.port_forwards.summary >/dev/null 2>&1 || true
@@ -28,6 +29,11 @@ _clone_vps_steps() {
   wait_ready "$new" || { echo "ERROR: the copy $new did not become ready."; return 1; }
   incus exec "$new" -- rm -f /.dockerenv >/dev/null 2>&1 || true
   wait_guest_eth0 "$new" || { echo "ERROR: the network of $new did not come up."; return 1; }
+
+  local tport
+  while IFS='|' read -r tport _; do                       # the source's limited tunnel logins must not live on in the copy
+    [ -n "$tport" ] && tunnel_access_remove "$new" "$tport"
+  done < <(tunnel_get_records "$src")
 
   apply_guest_static_network "$new" "$ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || { echo "ERROR: could not set the IP inside $new."; return 1; }
   configure_guest_dns "$new" >/dev/null 2>&1 || true

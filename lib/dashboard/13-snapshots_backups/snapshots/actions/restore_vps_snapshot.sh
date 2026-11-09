@@ -30,6 +30,7 @@ restore_vps_snapshot() {
     echo "Snapshot '$snap_name' restored successfully."
     incus config set "$name" user.vpsforge.last_restore "$(date '+%Y-%m-%d %H:%M:%S UTC')" 2>/dev/null || true
     restore_vps_port_forwards_metadata "$name"
+    tunnel_reconcile_import "$name" "$(get_ip "$name")" "$(get_vps_saved_port "$name")"
     if [ "$was_running" = true ]; then
       echo "Restarting container $name..."
       incus start "$name" 2>/dev/null || true
