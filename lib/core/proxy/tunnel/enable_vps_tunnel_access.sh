@@ -9,8 +9,8 @@ enable_vps_tunnel_access() {
     mkdir -p /etc/ssh/sshd_config.d
     grep -qs "sshd_config.d" /etc/ssh/sshd_config || echo "Include /etc/ssh/sshd_config.d/*.conf" >> /etc/ssh/sshd_config
     printf "GatewayPorts yes\nAllowTcpForwarding yes\nClientAliveInterval 30\nClientAliveCountMax 3\n" > /etc/ssh/sshd_config.d/99-vpsforge-tunnel.conf
-    sshd -t || exit 1
-    systemctl reload ssh || systemctl reload sshd || service ssh reload || rc-service sshd reload || exit 1
+    sshd -t || { rm -f /etc/ssh/sshd_config.d/99-vpsforge-tunnel.conf; exit 1; }
+    systemctl try-reload-or-restart ssh || systemctl try-reload-or-restart sshd || service ssh reload || rc-service sshd reload || exit 1
   ' </dev/null 2>&1) || { echo "$out" | tail -n 2; return 1; }
   # (read the whole output first: grep -q ending early would break the pipe under pipefail)
   cfg=$(incus exec "$vps" -- sshd -T </dev/null 2>/dev/null)

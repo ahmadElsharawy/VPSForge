@@ -12,7 +12,7 @@ tunnel_wizard_step_address() {
   if [ "$domain" = "-" ]; then domain=""; elif [ -z "$domain" ]; then domain="$current"; fi
 
   if [ -n "$domain" ]; then
-    if ! [[ "$domain" =~ ^[a-z0-9]([a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$ ]]; then
+    if ! [[ "$domain" =~ ^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$ ]]; then
       echo "ERROR: '$domain' is not a valid domain name."; return 1
     fi
     if [ "$domain" != "$TW_EDIT_DOMAIN" ] && proxy_route_exists "$domain" ""; then

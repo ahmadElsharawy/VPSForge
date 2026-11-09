@@ -25,4 +25,5 @@ preserve_vps_settings() {
 
   PRESERVED_USER=$(get_vps_user "$name")
   PRESERVED_PASSWORD=$(get_vps_password "$name")
+  PRESERVED_TUNNELS=$(incus config get "$name" user.vpsforge.tunnels 2>/dev/null || true)
 }

@@ -2,13 +2,18 @@
 # Make a tunnel reachable from the internet: a Caddy route (domain) or a port forward (server port).
 #   tunnel_public_start <vps> <tunnel_port> <public_port|""> <domain|"">
 tunnel_public_start() {
-  local vps="${1:?vps}" tport="${2:?tunnel port}" ext="${3:-}" domain="${4:-}" ip
+  local vps="${1:?vps}" tport="${2:?tunnel port}" ext="${3:-}" domain="${4:-}" ip route
   ip=$(get_ip "$vps")
   [ -n "$ip" ] || { echo "ERROR: $vps has no IP address."; return 1; }
 
   if [ -n "$domain" ]; then
     ensure_caddy_installed || return 1
-    proxy_route_exists "$domain" "" && return 0
+    route=$(list_proxy_routes 2>/dev/null | awk -F'|' -v d="$domain" '$2 == d && $3 == "/" { print $1 "|" $4; exit }')
+    if [ -n "$route" ]; then
+      [[ "$route" == "$vps|"*":$tport" ]] && return 0
+      echo "ERROR: $domain is already linked somewhere else (menu 12 > My domains). Remove that first or use another domain."
+      return 1
+    fi
     add_proxy_route "$vps" "$ip" "$domain" "" "$tport" "http"
     return $?
   fi

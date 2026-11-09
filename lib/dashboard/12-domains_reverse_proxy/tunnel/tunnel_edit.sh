@@ -23,11 +23,21 @@ tunnel_edit() {
   fi
   TW_EDIT_TPORT=""; TW_EDIT_EXT=""; TW_EDIT_DOMAIN=""
 
+  if [ "$was_active" -eq 0 ]; then
+    # A stopped tunnel is not open to the internet: only the saved record changes.
+    tunnel_record_delete "$vps" "$tport"
+    tunnel_record_set "$vps" "$TW_TPORT" "$TW_LPORT" "$TW_EXTPORT" "$TW_DOMAIN" stopped
+    echo "Saved."
+    return 0
+  fi
+
   tunnel_delete "$vps" "$tport"
   if ! tunnel_create "$vps" "$TW_TPORT" "$TW_LPORT" "$TW_EXTPORT" "$TW_DOMAIN"; then
-    echo "ERROR: the new settings could not be applied. The old tunnel was removed; add it again from the menu."
+    echo "ERROR: the new settings could not be applied. Putting the old tunnel back..."
+    tunnel_record_set "$vps" "$tport" "$lport" "$ext" "$domain" stopped
+    tunnel_start "$vps" "$tport" || echo "The old tunnel is saved but stopped; start it from the list."
+    TW_TPORT="$tport"
     return 1
   fi
-  [ "$was_active" -eq 1 ] || tunnel_stop "$vps" "$TW_TPORT"
   echo "Saved."
 }

@@ -43,6 +43,10 @@ reinstall_single_vps_core() {
     unset VPS_KEEP_FORWARDS VPS_FORCE_IP VPS_FORCE_PORT
     [ "$PRESERVED_USER" = "root" ] || change_vps_username "$n" "$PRESERVED_USER"
     change_vps_password "$n" "$PRESERVED_PASSWORD"
+    if [ -n "$PRESERVED_TUNNELS" ]; then
+      incus config set "$n" user.vpsforge.tunnels "$PRESERVED_TUNNELS"
+      enable_vps_tunnel_access "$n" || echo "NOTE: could not re-enable tunnels inside $n; start them again from menu 12 > 4."
+    fi
     incus delete "$old" --force >/dev/null 2>&1 || true
     reclaim_pool_space
     echo "Reinstall completed for $n with image $image."

@@ -3,14 +3,12 @@
 # Only this tunnel's domain or port is touched; the VPS's other routes and forwards stay.
 #   tunnel_public_stop <vps> <tunnel_port> <public_port|""> <domain|"">
 tunnel_public_stop() {
-  local vps="${1:?vps}" tport="${2:?tunnel port}" ext="${3:-}" domain="${4:-}" ip
+  local vps="${1:?vps}" tport="${2:?tunnel port}" ext="${3:-}" domain="${4:-}" ip line
   ip=$(get_ip "$vps")
 
   if [ -n "$domain" ]; then
-    caddy_unlink_domain "$CADDY_CONF_DIR/${vps}.caddy" "$domain"
-    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
-    remove_domain_from_guest_hosts "$vps" "$domain" 2>/dev/null || true
-    sync_vps_metadata "$vps"
+    line=$(list_proxy_routes 2>/dev/null | awk -F'|' -v v="$vps" -v d="$domain" -v p=":$tport"       '$1 == v && $2 == d && $3 == "/" && substr($4, length($4) - length(p) + 1) == p { print $5; exit }')
+    [ -n "$line" ] && delete_proxy_route "$vps" "$line"
     return 0
   fi
 
