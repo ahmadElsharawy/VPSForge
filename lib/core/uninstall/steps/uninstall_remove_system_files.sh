@@ -14,6 +14,8 @@ uninstall_remove_system_files() {
     [ "${UNINSTALL_DRY_RUN:-0}" = "1" ] || sed -i "\|$SWAPFILE_PATH|d" /etc/fstab 2>/dev/null || true
   fi
 
+  uninstall_restore_ufw
+
   [ -f "$PRE_INSTALL_DIR/ip_forward" ] && original_forward=$(cat "$PRE_INSTALL_DIR/ip_forward")
   if [[ "$original_forward" =~ ^[01]$ ]]; then
     uninstall_run sysctl -w "net.ipv4.ip_forward=$original_forward"

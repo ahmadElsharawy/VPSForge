@@ -9,6 +9,11 @@ capture_pre_install_state() {
   iptables-save > "$PRE_INSTALL_DIR/iptables.rules" 2>/dev/null || true
   sysctl -n net.ipv4.ip_forward > "$PRE_INSTALL_DIR/ip_forward" 2>/dev/null || true
 
+  # Remember whether ufw already allowed 80/443, so uninstall removes only what we added.
+  if command -v ufw >/dev/null 2>&1; then
+    ufw status 2>/dev/null > "$PRE_INSTALL_DIR/ufw.status" || true
+  fi
+
   dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' 2>/dev/null | awk '$1=="ii"{print $2}' | sort > "$PRE_INSTALL_DIR/packages_all.txt"
 
   local pkg
