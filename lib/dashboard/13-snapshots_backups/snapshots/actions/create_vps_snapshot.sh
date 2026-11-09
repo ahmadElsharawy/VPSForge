@@ -17,5 +17,5 @@ create_vps_snapshot() {
     echo "ERROR: A snapshot named '$snap_name' already exists for $name."
     return 1
   fi
-  run_guarded "cleanup_partial_snapshot $name $snap_name" _snapshot_create "$name" "$snap_name"     && echo "Snapshot '$snap_name' created successfully."
+  run_guarded "cleanup_partial_snapshot $(printf %q "$name") $(printf %q "$snap_name")" _snapshot_create "$name" "$snap_name"     && echo "Snapshot '$snap_name' created successfully."
 }

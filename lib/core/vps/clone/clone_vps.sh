@@ -17,5 +17,10 @@ clone_vps() {
   ip="${NETWORK_PREFIX}.$((IP_START + num - 1))"
   port=$(vps_fixed_port "$num")
 
+  if vps_inventory 2>/dev/null | awk -F'|' -v ip="$ip" '$2 == ip { f = 1 } END { exit !f }'; then
+    echo "ERROR: the address $ip is already used by another VPS. Nothing was cloned."
+    return 1
+  fi
+
   run_guarded "cleanup_failed_vps $new $ip $port" _clone_vps_steps "$src" "$new" "$num" "$ip" "$port"
 }

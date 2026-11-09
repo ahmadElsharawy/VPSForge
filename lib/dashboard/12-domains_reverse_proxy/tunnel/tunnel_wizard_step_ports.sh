@@ -20,6 +20,12 @@ tunnel_wizard_step_ports() {
     echo "ERROR: $TW_VPS already has a tunnel on port $tport."; return 1
   fi
 
+  local busy
+  busy=$(list_vps_listening_ports "$TW_VPS" 2>/dev/null || true)
+  if [ "$tport" != "$TW_EDIT_TPORT" ] && grep -qx "$tport" <<< "$busy"; then
+    echo "ERROR: port $tport is already used by a service inside $TW_VPS. Choose another."; return 1
+  fi
+
   read -r -p "Port of your site on your computer [Enter=$lport, 0=Back]: " answer </dev/tty
   [ "$answer" = "0" ] && return "$WIZARD_BACK"
   [ -n "$answer" ] && lport="$answer"

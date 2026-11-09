@@ -12,11 +12,11 @@ _pf_interactive_add() {
 
   local proto conflict conflict_vps
   for proto in $(resolve_protocols "$PF_PROTOCOL"); do
-    conflict=$(awk -v p="$proto" -v eip="$PF_EXT_IP" -v eport="$PF_EXT_PORT" -v intip="$PF_INTERNAL_IP" -F'|' '
+    conflict=$(awk -v p="$proto" -v eip="$PF_EXT_IP" -v eport="$PF_EXT_PORT" -v intip="$PF_INTERNAL_IP" -v intport="$PF_INT_PORT" -F'|' '
       BEGIN { if (eip == "" || eip == "any") eip = "0.0.0.0" }
       {
         r_eip = $2; if (r_eip == "" || r_eip == "any") r_eip = "0.0.0.0";
-        if ($1 == p && r_eip == eip && $3 == eport && $4 != intip) {
+        if ($1 == p && r_eip == eip && $3 == eport && !($4 == intip && $5 == intport)) {
           print $4 "|" $5; exit
         }
       }

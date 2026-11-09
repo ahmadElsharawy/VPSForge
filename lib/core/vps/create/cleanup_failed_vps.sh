@@ -22,7 +22,7 @@ cleanup_failed_vps() {
   # one more look: an operation that finished just now could still have produced the instance
   sleep 1
   incus info "$name" >/dev/null 2>&1 && incus delete "$name" --force >/dev/null 2>&1
-  rm -f "$CADDY_CONF_DIR/${name}.caddy" 2>/dev/null || true
+  [ "${VPS_KEEP_FORWARDS:-0}" = "1" ] || rm -f "$CADDY_CONF_DIR/${name}.caddy" 2>/dev/null || true   # during a reinstall the file is the original's
   pending_operation_clear "$name"
   save_iptables 2>/dev/null || true
   reclaim_pool_space

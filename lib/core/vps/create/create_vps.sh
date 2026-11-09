@@ -21,5 +21,11 @@ create_vps() {
   local ip="${VPS_FORCE_IP:-${NETWORK_PREFIX}.$((IP_START + num - 1))}" port
   port="${VPS_FORCE_PORT:-$(vps_fixed_port "$num")}"
 
+  # A reinstall keeps its own address; every other create must pick one nobody holds (one look at Incus).
+  if [ -z "${VPS_FORCE_IP:-}" ] && vps_inventory 2>/dev/null | awk -F'|' -v ip="$ip" '$2 == ip { f = 1 } END { exit !f }'; then
+    echo "ERROR: the address $ip is already used by another VPS. Nothing was created."
+    return 1
+  fi
+
   run_guarded "cleanup_failed_vps $name $ip $port" _create_vps_steps "$@"
 }

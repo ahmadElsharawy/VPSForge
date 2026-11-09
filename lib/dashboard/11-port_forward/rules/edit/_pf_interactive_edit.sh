@@ -59,6 +59,14 @@ _pf_interactive_edit() {
   read -r -p "External IP [Enter = ${old_ext_ip:-0.0.0.0}]: " new_ext_ip
   [ -n "$new_ext_ip" ] || new_ext_ip="${old_ext_ip:-0.0.0.0}"
 
+  # Check the new values first: nothing is deleted unless the new rule is valid.
+  local chk_proto
+  for chk_proto in $(resolve_protocols "$(printf '%s' "$new_proto" | tr '[:upper:]' '[:lower:]')"); do
+    is_valid_port_forward_rule "$chk_proto" "$new_ext_ip" "$new_ext_port" "$new_int_port" || {
+      echo "ERROR: the new rule is not valid (protocol tcp/udp/both, IPv4, ports 1-65535, not 22/80/443). Nothing was changed."; return 1; }
+  done
+  [[ "$new_int_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "ERROR: the target has no IP address (is the VPS running?). Nothing was changed."; return 1; }
+
   # Remove old rule & add new rule
   port_forward_cli delete "$old_proto" "$old_ext_ip" "$old_ext_port" "$old_int_ip" "$old_int_port"
   port_forward_cli add "$new_proto" "$new_ext_ip" "$new_ext_port" "$new_int_ip" "$new_int_port"

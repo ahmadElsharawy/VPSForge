@@ -1,7 +1,13 @@
 #!/bin/bash
 cleanup_stale_rules() {
-  local line port ip removed=0
+  local line port ip removed=0 inv
   echo "Scanning VPSForge port-forwarding rules..."
+  # One look at Incus. If it does not answer, or a VPS has no known address, nothing is removed.
+  inv=$(vps_inventory 2>/dev/null || true)
+  [ -n "$inv" ] || { echo "Incus did not answer: nothing was removed."; return 1; }
+  if awk -F'|' '$2 == "" { f = 1 } END { exit !f }' <<< "$inv"; then
+    echo "A VPS has no known address: nothing was removed."; return 1
+  fi
 
   while read -r line; do
     [ -z "$line" ] && continue
@@ -14,12 +20,8 @@ cleanup_stale_rules() {
     [ "$port" -ge $((SSH_PORT_BASE + 1)) ] || continue
     [[ "$ip" == "${NETWORK_PREFIX}."* ]] || continue
 
-    local found=0 n current_ip
-    while read -r n; do
-      [ -z "$n" ] && continue
-      current_ip=$(get_ip "$n")
-      if [ "$current_ip" = "$ip" ]; then found=1; break; fi
-    done < <(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)
+    local found=0
+    awk -F'|' -v ip="$ip" '$2 == ip { f = 1 } END { exit !f }' <<< "$inv" && found=1
 
     if [ "$found" -eq 0 ]; then
       echo "Removing stale rule: port $port -> $ip:22"

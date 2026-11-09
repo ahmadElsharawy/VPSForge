@@ -296,7 +296,16 @@ def main():
         # 2. CPU cores
         cpu_limit = config.get('limits.cpu', '') or expanded_config.get('limits.cpu', '')
         if cpu_limit:
-            vps_cpu = int(cpu_limit)
+            try:
+                vps_cpu = int(cpu_limit)
+            except ValueError:
+                vps_cpu = 0
+                for part in str(cpu_limit).split(','):
+                    lo, _, hi = part.partition('-')
+                    try:
+                        vps_cpu += (int(hi) - int(lo) + 1) if hi else 1
+                    except ValueError:
+                        pass
             rem_cpu = max(0, host_cpu_count - vps_cpu)
             cpu_unit = "Core" if host_cpu_count == 1 else "Cores"
             cpu_str = f"{vps_cpu} / {rem_cpu} / {host_cpu_count} {cpu_unit}"
@@ -321,8 +330,8 @@ def main():
         rx = int(counters.get('bytes_received', 0) or 0)
         tx = int(counters.get('bytes_sent', 0) or 0)
 
-        rx_lim = int(config.get('user.vpsforge.traffic.rx_limit_gb', 0) or 0)
-        tx_lim = int(config.get('user.vpsforge.traffic.tx_limit_gb', 0) or 0)
+        rx_lim = int(float(config.get('user.vpsforge.traffic.rx_limit_gb', 0) or 0))
+        tx_lim = int(float(config.get('user.vpsforge.traffic.tx_limit_gb', 0) or 0))
         t_status = config.get('user.vpsforge.traffic.status', '')
 
         rx_str = human_bytes(rx) + (f"/{rx_lim}G" if rx_lim > 0 else "")

@@ -21,7 +21,11 @@ reinstall_single_vps_core() {
 
   print_preserved_settings "$n" "$port"
 
-  # Keep the original aside instead of deleting it.
+  # Keep the original aside instead of deleting it. A VPS that already has the aside name is deleted only if it is a leftover of THIS reinstall.
+  if incus info "$old" >/dev/null 2>&1 && [ "$(incus config get "$old" user.vpsforge.reinstall_of 2>/dev/null || true)" != "$n" ]; then
+    echo "ERROR: a VPS named '$old' already exists and is not a leftover of this reinstall. Rename or delete it first. Nothing was changed."
+    return 1
+  fi
   incus delete "$old" --force >/dev/null 2>&1 || true
   incus stop "$n" --force >/dev/null 2>&1 || true
   if ! incus rename "$n" "$old"; then
@@ -39,10 +43,11 @@ reinstall_single_vps_core() {
       "$PRESERVED_RAM_MODE" "$PRESERVED_CPU_MODE" "$PRESERVED_CPU_LIMIT" \
       "$PRESERVED_DISK_MODE" "$PRESERVED_DISK_LIMIT" \
       "$PRESERVED_NETWORK_MODE" "$PRESERVED_NETWORK_LIMIT" \
-      "$image"; then
+      "$image" "$PRESERVED_TRAFFIC_MODE" "$PRESERVED_TRAFFIC_RX" "$PRESERVED_TRAFFIC_TX" "$PRESERVED_OPEN_SSH"; then
     unset VPS_KEEP_FORWARDS VPS_FORCE_IP VPS_FORCE_PORT
     [ "$PRESERVED_USER" = "root" ] || change_vps_username "$n" "$PRESERVED_USER"
     change_vps_password "$n" "$PRESERVED_PASSWORD"
+    [ -n "$PRESERVED_TRAFFIC_ACTION" ] && incus config set "$n" "user.vpsforge.traffic.action=$PRESERVED_TRAFFIC_ACTION" >/dev/null 2>&1
     if [ -n "$PRESERVED_TUNNELS" ]; then
       incus config set "$n" user.vpsforge.tunnels "$PRESERVED_TUNNELS"
       enable_vps_tunnel_access "$n" || echo "NOTE: could not re-enable tunnels inside $n; start them again from menu 12 > 4."

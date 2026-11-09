@@ -25,5 +25,12 @@ preserve_vps_settings() {
 
   PRESERVED_USER=$(get_vps_user "$name")
   PRESERVED_PASSWORD=$(get_vps_password "$name")
+  PRESERVED_OPEN_SSH="y"
+  [ "$(incus config get "$name" user.vpsforge.ssh_forward 2>/dev/null || true)" = "n" ] && PRESERVED_OPEN_SSH="n"
+  PRESERVED_TRAFFIC_RX=$(get_vps_traffic_rx_limit_gb "$name" 2>/dev/null || echo 0)
+  PRESERVED_TRAFFIC_TX=$(get_vps_traffic_tx_limit_gb "$name" 2>/dev/null || echo 0)
+  PRESERVED_TRAFFIC_ACTION=$(incus config get "$name" user.vpsforge.traffic.action 2>/dev/null || true)
+  PRESERVED_TRAFFIC_MODE="unlimited"
+  { [ "$PRESERVED_TRAFFIC_RX" -gt 0 ] || [ "$PRESERVED_TRAFFIC_TX" -gt 0 ]; } && PRESERVED_TRAFFIC_MODE="limited"
   PRESERVED_TUNNELS=$(incus config get "$name" user.vpsforge.tunnels 2>/dev/null || true)
 }

@@ -15,7 +15,10 @@ tunnel_connect_more_menu() {
       echo "  Paste this in a terminal or PowerShell (it needs the root login of the VPS):"
       echo "  ssh -N -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes -R 0.0.0.0:${tport}:localhost:${lport} -p ${sshport} ${user}@${host}"
       ;;
-    2) tunnel_connect_show_line "$vps" "$host" "$sshport" "$tport" "$lport" renew ;;
+    2)
+      read -r -p "This cuts off every Windows setup already installed for this tunnel. Continue? [y/N]: " choice </dev/tty || choice=n
+      if [[ "${choice,,}" =~ ^y ]]; then tunnel_connect_show_line "$vps" "$host" "$sshport" "$tport" "$lport" renew; else echo "Cancelled."; fi
+      ;;
     3)
       echo
       echo "  Paste this line in PowerShell on that computer:"

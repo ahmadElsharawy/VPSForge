@@ -24,7 +24,8 @@ repair_vps_connection() {
   configure_guest_dns "$name" || true
   set_guest_hostname "$name"
 
-  port=$(vps_fixed_port "$(get_num "$name")")
+  port=$(get_vps_saved_port "$name" 2>/dev/null || true)   # keep a port the owner changed
+  [[ "$port" =~ ^[0-9]+$ ]] || port=$(vps_fixed_port "$(get_num "$name")")
   check_fixed_port_available "$name" "$ip" "$port" || return 1
   set_vps_saved_port "$name" "$port"
 

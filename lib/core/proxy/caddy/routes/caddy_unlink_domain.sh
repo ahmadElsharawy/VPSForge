@@ -27,6 +27,9 @@ caddy_unlink_domain() {
     END { exit (kept > 0 ? 0 : 3) }
   ' "$file" > "$tmp"
   rc=$?
-  if [ "$rc" -eq 3 ]; then rm -f "$file" "$tmp"; else mv -f "$tmp" "$file"; fi
+  if [ "$rc" -eq 3 ]; then rm -f "$file" "$tmp"
+  elif [ "$rc" -eq 0 ]; then mv -f "$tmp" "$file"
+  else rm -f "$tmp"   # awk failed: the file is left untouched
+  fi
   return 0
 }

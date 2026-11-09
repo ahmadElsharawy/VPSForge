@@ -6,8 +6,12 @@ import_vps_backup() {
 
   # A damaged backup is useless and would only waste disk: say so and delete it (nothing else is touched).
   if command -v zstd >/dev/null 2>&1 && ! tar -tf "$file_path" >/dev/null 2>&1; then
-    echo "ERROR: the backup file is damaged or unreadable. It was deleted: $(basename "$file_path")"
-    rm -f "$file_path" "${file_path}.info"
+    if [[ "$file_path" == "${BACKUP_DIR:-/opt/vpsforge-backups}"/* ]]; then
+      echo "ERROR: the backup file is damaged or unreadable. It was deleted: $(basename "$file_path")"
+      rm -f "$file_path" "${file_path}.info"
+    else
+      echo "ERROR: the file looks damaged or unreadable. It is outside the backup folder, so it was NOT deleted: $file_path"
+    fi
     return 1
   fi
 
@@ -58,7 +62,6 @@ import_vps_backup() {
         old_ip=$(get_ip "$target_name"); old_port=$(get_port "$old_ip")
         hold_name="${target_name}-replaced-$$"
         caddy_bak="/opt/vpsforge/.replaced-${hold_name}.caddy"
-        hold_vps_for_replace "$target_name" "$hold_name" "$caddy_bak" || { echo "ERROR: could not put '$target_name' aside. Nothing was changed."; return 1; }
         ;;
       *)
         echo "Import cancelled."
@@ -78,7 +81,7 @@ import_vps_backup() {
   if [ -n "$rules" ]; then
     echo
     echo "Scanning Port Forwarding rules for conflicts..."
-    local rules_arr rule proto ext_ip ext_port int_port conflict_line action new_ext_port
+    local rules_arr rule proto ext_ip ext_port int_port conflict_line action new_ext_port host_check
     IFS=';' read -ra rules_arr <<< "$rules"
     for rule in "${rules_arr[@]}"; do
       [ -n "$rule" ] || continue
@@ -102,7 +105,13 @@ import_vps_backup() {
           while :; do
             read -r -p "   Enter new external port for $proto: " new_ext_port </dev/tty
             if [[ "$new_ext_port" =~ ^[0-9]+$ ]] && [ "$new_ext_port" -gt 0 ] && [ "$new_ext_port" -lt 65536 ]; then
-              if ! awk -F'|' -v p="$proto" -v port="$new_ext_port" -v oldip="$old_ip" 'BEGIN { f=0 } $1 == p && $3 == port && $4 != oldip { f=1; exit } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
+              host_check=0
+              port_forward_host_conflict "$new_ext_port" "$proto" >/dev/null 2>&1 || host_check=$?
+              if ! is_valid_port_forward_rule "$proto" "$ext_ip" "$new_ext_port" "$int_port"; then
+                echo "   ERROR: that port is not allowed (22, 80 and 443 are reserved)."
+              elif [ "$host_check" -eq 1 ]; then
+                echo "   ERROR: the host itself uses port $new_ext_port. Try another one."
+              elif ! awk -F'|' -v p="$proto" -v port="$new_ext_port" -v oldip="$old_ip" 'BEGIN { f=0 } $1 == p && $3 == port && $4 != oldip { f=1; exit } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
                 ext_port="$new_ext_port"
                 break
               else
@@ -170,8 +179,12 @@ import_vps_backup() {
   fi
 
   # Guarded: if the import stops half-way the new VPS is removed completely and the reason is shown.
+  if [ -n "$hold_name" ]; then
+    hold_vps_for_replace "$target_name" "$hold_name" "$caddy_bak" || { echo "ERROR: could not put '$target_name' aside. Nothing was changed."; return 1; }
+  fi
   get_next_available_vps_ip_and_num
   new_num="$NEXT_AVAIL_NUM"; new_ip="$NEXT_AVAIL_IP"; new_port=$(vps_fixed_port "$new_num")
+  rm -rf "/opt/vpsforge/.import-caddy-${target_name}"   # a leftover copy of an earlier crashed import must not be restored by this one
   local cleanup_cmd="cleanup_failed_vps $(printf %q "$target_name") $(printf %q "$new_ip") $(printf %q "$new_port"); restore_caddy_after_import $(printf %q "$target_name")"
   if [ -n "$hold_name" ]; then
     cleanup_cmd="$cleanup_cmd; restore_replaced_vps $(printf %q "$target_name") $(printf %q "$hold_name") $(printf %q "$caddy_bak")"

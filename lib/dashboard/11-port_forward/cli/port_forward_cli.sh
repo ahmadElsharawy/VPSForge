@@ -22,7 +22,10 @@ port_forward_cli() {
 
       local proto target_vps
       for proto in $(resolve_protocols "$protocol"); do
-        port_forward_apply_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
+        is_valid_port_forward_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port" || { echo "ERROR: invalid rule (IPv4, ports 1-65535, not 22/80/443)."; return 1; }
+      done
+      for proto in $(resolve_protocols "$protocol"); do
+        port_forward_apply_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port" || { echo "ERROR: iptables refused the rule."; return 1; }
         port_forward_append_rule_to_file "$target_file" "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
       done
       save_iptables

@@ -26,7 +26,7 @@ ensure_ssh_ready() {
 
     if [ -d /etc/ssh/sshd_config.d ]; then
       mkdir -p /etc/ssh/sshd_config.d
-      printf "PermitRootLogin yes\nPasswordAuthentication yes\n" > /etc/ssh/sshd_config.d/99-root-login.conf
+      printf "PermitRootLogin yes\nPasswordAuthentication yes\n" > /etc/ssh/sshd_config.d/00-vpsforge-root-login.conf
     else
       mkdir -p /etc/ssh
       touch /etc/ssh/sshd_config

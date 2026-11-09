@@ -22,7 +22,7 @@ _install_ssh() {
       elif command -v yum >/dev/null 2>&1; then
         yum install -y openssh-server
       else
-        echo "Unknown package manager."
+        echo "Unknown package manager."; exit 1
       fi
     '; then
       ssh_install_ok=1
@@ -38,13 +38,13 @@ _install_ssh() {
     return 1
   }
 
-  printf 'root:%s\n' "$ROOT_PASSWORD" | incus exec "$name" -- chpasswd
+  printf 'root:%s\n' "$ROOT_PASSWORD" | incus exec "$name" -- chpasswd || echo "WARNING: could not set the root password in $name."
 
   incus exec "$name" -- sh -c '
     set -e
     if [ -d /etc/ssh/sshd_config.d ]; then
       mkdir -p /etc/ssh/sshd_config.d
-      printf "PermitRootLogin yes\nPasswordAuthentication yes\n" > /etc/ssh/sshd_config.d/99-root-login.conf
+      printf "PermitRootLogin yes\nPasswordAuthentication yes\n" > /etc/ssh/sshd_config.d/00-vpsforge-root-login.conf
     else
       mkdir -p /etc/ssh
       touch /etc/ssh/sshd_config

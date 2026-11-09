@@ -14,7 +14,8 @@ details() {
   host_cpus=$(get_host_cpu_count 2>/dev/null || echo 1)
   raw_cpu=$(incus config get "$name" limits.cpu 2>/dev/null || true)
   if [ -n "$raw_cpu" ]; then
-    local rem_cpu=$((host_cpus - raw_cpu))
+    local rem_cpu=0
+    [[ "$raw_cpu" =~ ^[0-9]+$ ]] && rem_cpu=$((host_cpus - raw_cpu))
     [ "$rem_cpu" -lt 0 ] && rem_cpu=0
     cpu="${raw_cpu} / ${rem_cpu} / ${host_cpus} Core$([ "$host_cpus" = "1" ] || echo s)"
   else

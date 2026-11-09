@@ -4,8 +4,10 @@ add_forward_rule() {
   remove_port "$port"
   remove_ip "$ip"
   iptables -t nat -A PREROUTING -p tcp ! -i incusbr0 --dport "$port" -j DNAT --to-destination "${ip}:22"
-  iptables -C FORWARD -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null || \
-    iptables -I FORWARD 1 -p tcp -d "$ip" --dport 22 -j ACCEPT
+  # only traffic that comes from outside the bridge: a VPS must not reach another VPS's ssh port directly
+  iptables -C FORWARD ! -i incusbr0 -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null || \
+    iptables -I FORWARD 1 ! -i incusbr0 -p tcp -d "$ip" --dport 22 -j ACCEPT
+  while iptables -D FORWARD -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null; do :; done   # the old rule without the restriction
   save_iptables
 
   mkdir -p "$(dirname "$PORT_FORWARD_RULES_FILE")" 2>/dev/null || true

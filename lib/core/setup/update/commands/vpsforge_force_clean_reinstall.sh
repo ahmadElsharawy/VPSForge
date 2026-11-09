@@ -20,11 +20,19 @@ vpsforge_force_clean_reinstall() {
 
   # 2. Re-clone repository fresh
   echo "Fetching fresh repository from $repo_url..."
-  rm -rf "$repo_dir"
-  if ! git clone "$repo_url" "$repo_dir"; then
-    echo "ERROR: Failed to clone fresh repository from $repo_url." >&2
+  if [ "$(readlink -f "$repo_dir")" = "$(readlink -f "$app_dir")" ]; then
+    echo "ERROR: the repository folder is the installation folder itself; refusing to delete it." >&2
     return 1
   fi
+  local fresh_dir="${repo_dir}.new"
+  rm -rf "$fresh_dir"
+  if ! git clone "$repo_url" "$fresh_dir"; then
+    echo "ERROR: Failed to clone fresh repository from $repo_url. The current copy was kept." >&2
+    rm -rf "$fresh_dir"
+    return 1
+  fi
+  rm -rf "$repo_dir"
+  mv "$fresh_dir" "$repo_dir"
 
   # 3. Synchronize cleanly to active installation
   short_sha=$(git -C "$repo_dir" rev-parse --short HEAD 2>/dev/null || echo "unknown")

@@ -60,6 +60,10 @@ export_vps_backup() {
   else
     file_path="${BACKUP_DIR}/${default_name}"
   fi
+  if [ -e "$file_path" ]; then
+    echo "ERROR: a backup named '$(basename "$file_path")' already exists. Choose another name (nothing was changed)."
+    return 1
+  fi
   local tmp_dir="${BACKUP_DIR}/.tmp"
   mkdir -p "$tmp_dir"
   local tmp_file_path="${tmp_dir}/$(basename "$file_path")"
@@ -71,7 +75,7 @@ export_vps_backup() {
   echo "Exporting backup for $name to temporary storage..."
   backup_space_check "$name" || return 1
   # Guarded: if the export fails or is stopped, the half-written file is deleted and the space returned.
-  if run_guarded "cleanup_partial_backup $name $tmp_file_path" _export_instance "$name" "$tmp_file_path"; then
+  if run_guarded "cleanup_partial_backup $(printf %q "$name") $(printf %q "$tmp_file_path")" _export_instance "$name" "$tmp_file_path"; then
     if mv "$tmp_file_path" "$file_path"; then
       echo "Backup saved: $file_path"
       incus config show "$name" --expanded > "${file_path}.info" 2>/dev/null || true

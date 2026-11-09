@@ -59,6 +59,8 @@ backup_vps_menu() {
         [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
         n="${SELECTED_VPS[0]}"
         if select_vps_snapshots "$n" "Snapshot number(s) to delete (e.g. 1, 1,2, 1-3, or A for All, 0=Cancel): "; then
+          read -r -p "Delete ${#SELECTED_SNAPSHOTS[@]} snapshot(s) of '$n' (${SELECTED_SNAPSHOTS[*]})? This cannot be undone. [y/N]: " _c </dev/tty || _c=n
+          [[ "${_c,,}" =~ ^y ]] || { echo "Cancelled."; pause; continue; }
           for snap_name in "${SELECTED_SNAPSHOTS[@]}"; do
             delete_vps_snapshot "$n" "$snap_name"
           done

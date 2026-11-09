@@ -15,6 +15,7 @@ if [ ! -d "$PRE" ]; then
   mkdir -p "$PRE"
   command -v iptables-save >/dev/null 2>&1 && iptables-save > "$PRE/iptables.rules" 2>/dev/null || true
   sysctl -n net.ipv4.ip_forward > "$PRE/ip_forward" 2>/dev/null || true
+  command -v ufw >/dev/null 2>&1 && ufw status > "$PRE/ufw.status" 2>/dev/null || true
   dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' 2>/dev/null | awk '$1=="ii"{print $2}' | sort > "$PRE/packages_all.txt" || true
   : > "$PRE/packages_present.txt"
   for pkg in incus iptables iptables-persistent netfilter-persistent curl git python3 zstd pigz psmisc btrfs-progs caddy; do
@@ -47,7 +48,7 @@ if [ -z "${VPSFORGE_REPO_URL:-}" ] && [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/
   cp "$SCRIPT_DIR/vpsforge.sh" "$APP_DIR/vpsforge.sh"
   rm -rf "$APP_DIR/lib"
   cp -r "$SCRIPT_DIR/lib" "$APP_DIR/lib"
-  if [ -d "$SCRIPT_DIR/.git" ]; then
+  if [ -d "$SCRIPT_DIR/.git" ] && [ "$(readlink -f "$SCRIPT_DIR")" != "$(readlink -f "$APP_DIR/repo")" ]; then
     rm -rf "$APP_DIR/repo"
     git clone "$SCRIPT_DIR" "$APP_DIR/repo" 2>/dev/null || cp -r "$SCRIPT_DIR" "$APP_DIR/repo"
   fi

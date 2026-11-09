@@ -142,7 +142,7 @@ _create_vps_steps() {
   else
     set_vps_user "$name" "root"
     set_vps_password "$name" "$ROOT_PASSWORD"
-    set_vps_saved_port "$name" "$port"
+    incus config set "$name" user.vpsforge.ssh_forward=n   # remembered: no public SSH forward is added later
     sync_vps_metadata "$name"
     echo "Done: VPS $name created (SSH external forwarding disabled, accessible via Shell / Internal IP $ip:22)"
   fi

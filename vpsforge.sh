@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v2.1.15"
+VPSFORGE_VERSION="v2.1.16"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -61,6 +61,7 @@ fi
 # Light commands: no full startup (the cron jobs run these every few minutes).
 case "${1:-}" in
   quota-check) check_vps_traffic_quotas; exit 0;;
+  tidy) get_network_info 2>/dev/null || true; host_tidy; exit 0;;
   reclaim) reclaim_pool_space; echo "Freed disk space returned to the server."; exit 0;;
   update|upgrade)
     shift

@@ -3,12 +3,16 @@
 rename_backup_file() {
   if select_backup_file "Select backup file to RENAME: "; then
     local old_file="$SELECTED_BACKUP_FILE"
-    local old_name
+    local old_name new_name
     old_name=$(basename "$old_file")
     
     echo "Current backup file: $old_name"
     read -r -p "Enter new backup filename [e.g. custom-backup.tar]: " new_name </dev/tty
     [ -n "$new_name" ] || { echo "Rename cancelled."; return 0; }
+    if [[ "$new_name" == */* || "$new_name" == .* ]]; then
+      echo "ERROR: use a plain file name (no '/' and not starting with a dot)."
+      return 1
+    fi
 
     if [[ "$new_name" != *.tar && "$new_name" != *.tar.gz ]]; then
       new_name="${new_name}.tar"

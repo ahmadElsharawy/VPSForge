@@ -8,8 +8,10 @@ tunnel_actions_menu() {
     [ -n "$rec" ] || return 0
     IFS='|' read -r _ lport ext domain state <<< "$rec"
     clear
+    local addr
+    if [ -n "$domain" ]; then addr="https://$domain"; else addr="http://${PUBLIC_IP:-IP}:$ext"; fi
     echo "================================================================"
-    echo "   TUNNEL: ${domain:+https://$domain}${domain:-http://${PUBLIC_IP:-IP}:$ext}  ->  $vps:$tport  ->  my PC:$lport"
+    echo "   TUNNEL: $addr  ->  $vps:$tport  ->  my PC:$lport"
     echo "   State: ${state^^}"
     echo "================================================================"
     echo "1) Start        open it to the internet"
@@ -18,7 +20,7 @@ tunnel_actions_menu() {
     echo "4) Delete       remove it completely"
     echo "5) Show the command to run on my computer"
     echo "0) Back"
-    read -r -p "Choice [0=Back]: " choice
+    read -r -p "Choice [0=Back]: " choice </dev/tty
     case "$choice" in
       0|"") return ;;
       1) tunnel_start "$vps" "$tport" && echo "Started." ; pause ;;

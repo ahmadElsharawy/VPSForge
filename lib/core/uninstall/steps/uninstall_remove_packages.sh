@@ -8,6 +8,7 @@ uninstall_remove_packages() {
   local pkg removed mount
   local -a to_remove=() extras=()
   echo "[6/7] Removing packages installed by VPSForge..."
+  apt-mark unhold incus incus-base incus-client >/dev/null 2>&1 || true   # the update hold was ours
 
   if [ ! -s "$record" ]; then
     echo "  (no record of installed packages: this server was set up by an older VPSForge, none removed)"

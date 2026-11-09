@@ -7,7 +7,8 @@ clean_stale_temp_backups() {
     local f
     for f in "$tmp_dir"/*; do
       [ -f "$f" ] || continue
-      if ! fuser "$f" >/dev/null 2>&1; then
+      # a file touched in the last 10 minutes may be a finished export that another session is about to move
+      if [ -n "$(find "$f" -mmin +10 2>/dev/null)" ] && ! fuser "$f" >/dev/null 2>&1; then
         rm -f "$f"
       fi
     done

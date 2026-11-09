@@ -22,8 +22,7 @@ update_vps_backup() {
       echo "Exporting fresh backup for $name to temporary storage..."
       backup_space_check "$name" || return 1
       if run_guarded "cleanup_partial_backup $(printf %q "$name") $(printf %q "$tmp_file_path")" _export_instance "$name" "$tmp_file_path"; then
-        rm -f "$SELECTED_BACKUP_FILE"
-        if mv "$tmp_file_path" "$SELECTED_BACKUP_FILE"; then
+        if mv -f "$tmp_file_path" "$SELECTED_BACKUP_FILE"; then   # replaces the old file in one step: it is never deleted before the new one is in place
           echo "Backup updated successfully: $SELECTED_BACKUP_FILE"
           incus config show "$name" --expanded > "${SELECTED_BACKUP_FILE}.info" 2>/dev/null || true
         else
