@@ -15,7 +15,7 @@ New-Item -ItemType Directory -Force $d | Out-Null
 $kt = @'
 @KEY@
 '@
-Remove-Item $k -Force -ErrorAction SilentlyContinue
+if (Test-Path $k) { icacls $k /grant:r "$($env:USERNAME):(F)" | Out-Null }
 [IO.File]::WriteAllText($k, (($kt -replace "`r", "").Trim() + "`n"))
 icacls $k /inheritance:r /grant:r "$($env:USERNAME):(R)" | Out-Null
 $r = "$d\vpsforge_tunnel_$id.ps1"
