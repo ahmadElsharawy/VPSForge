@@ -23,7 +23,7 @@ proxy_menu() {
     echo "1) Add a domain       e.g. app.mydomain.com -> VPS web1, port 3000"
     echo "2) My domains        see them all, test that they work, remove one"
     echo "3) Cloudflare real visitor IP   optional: show visitors' real IPs when you use Cloudflare"
-    echo "4) Open a site from MY computer   no router access needed: a tunnel through a VPS"
+    echo "4) Sites from MY computer   no router access needed: tunnels through a VPS (add, list, start, stop)"
     echo "0) Back"
     echo "================================================================"
     read -r -p "Choice [0=Back, Enter=1]: " choice
@@ -33,7 +33,7 @@ proxy_menu() {
       1) proxy_add_site_wizard ;;
       2) proxy_my_sites_menu ;;
       3) configure_cloudflare_realip ;;
-      4) tunnel_open_site_wizard ;;
+      4) tunnel_menu ;;
       *) echo "Invalid option."; sleep 1 ;;
     esac
   done

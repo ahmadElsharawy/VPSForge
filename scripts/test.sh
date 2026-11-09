@@ -248,5 +248,28 @@ t "old kernels selected" "linux-modules-7.0.0-1011-oracle linux-modules-extra-6.
 t "no kernels: nothing" "" "$(printf 'bash
 ' | select_old_kernel_packages 7.0.0-1-oracle)"
 
+# tunnel records (fake incus keeps the metadata in a file)
+tunnel_store=$(mktemp)
+incus() {
+  case "$1 $2" in
+    "config get") cat "$tunnel_store";;
+    "config set") printf '%s' "$5" > "$tunnel_store";;
+    "config unset") : > "$tunnel_store";;
+  esac
+}
+tunnel_record_set v1 8080 3000 8080 "" active
+tunnel_record_set v1 9090 4000 "" test.example.com stopped
+t "tunnel records: two saved" 2 "$(tunnel_get_records v1 | wc -l)"
+t "tunnel records: first one" "8080|3000|8080||active" "$(tunnel_get_records v1 | head -n 1)"
+tunnel_record_set v1 8080 3001 8080 "" stopped
+t "tunnel records: same port replaces" "8080|3001|8080||stopped" "$(tunnel_get_records v1 | tail -n 1)"
+t "tunnel records: still two" 2 "$(tunnel_get_records v1 | wc -l)"
+tunnel_record_delete v1 8080
+t "tunnel records: delete one" "9090|4000||test.example.com|stopped" "$(tunnel_get_records v1)"
+tunnel_record_delete v1 9090
+t "tunnel records: none left" 0 "$(tunnel_get_records v1 | wc -l)"
+unset -f incus
+rm -f "$tunnel_store"
+
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

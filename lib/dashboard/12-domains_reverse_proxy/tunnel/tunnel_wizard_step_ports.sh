@@ -16,6 +16,9 @@ tunnel_wizard_step_ports() {
   fi
   sshport=$(get_vps_saved_port "$TW_VPS")
   [ "$tport" = "$sshport" ] && { echo "ERROR: that is the SSH port of $TW_VPS."; return 1; }
+  if [ "$tport" != "$TW_EDIT_TPORT" ] && tunnel_get_records "$TW_VPS" | awk -F'|' -v p="$tport" '$1 == p { f = 1 } END { exit !f }'; then
+    echo "ERROR: $TW_VPS already has a tunnel on port $tport."; return 1
+  fi
 
   read -r -p "Port of your site on your computer [Enter=$lport, 0=Back]: " answer </dev/tty
   [ "$answer" = "0" ] && return "$WIZARD_BACK"
