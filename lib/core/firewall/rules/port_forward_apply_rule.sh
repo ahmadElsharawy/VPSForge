@@ -10,9 +10,9 @@ port_forward_apply_rule() {
       --dport "$external_port" -j DNAT --to-destination "$internal_ip:$internal_port"
   fi
 
-  iptables -C FORWARD -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
+  iptables -C FORWARD ! -i incusbr0 -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
     -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || \
-    iptables -A FORWARD -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
+    iptables -A FORWARD ! -i incusbr0 -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
       -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
 
   iptables -C FORWARD -p "$protocol" -s "$internal_ip" --sport "$internal_port" \

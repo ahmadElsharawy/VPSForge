@@ -16,8 +16,10 @@ port_forward_delete_rule() {
       --dport "$external_port" -j DNAT --to-destination "$internal_ip:$internal_port" 2>/dev/null || true
   fi
 
-  iptables -D FORWARD -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
+  iptables -D FORWARD ! -i incusbr0 -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
     -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
+  iptables -D FORWARD -p "$protocol" -d "$internal_ip" --dport "$internal_port" \
+    -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true   # the older rule without the restriction
   iptables -D FORWARD -p "$protocol" -s "$internal_ip" --sport "$internal_port" \
     -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null || true
   iptables -D FORWARD -p "$protocol" -d "$internal_ip" --dport "$internal_port" -j ACCEPT 2>/dev/null || true

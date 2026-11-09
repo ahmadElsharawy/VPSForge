@@ -32,6 +32,12 @@ setup_inter_vps_isolation() {
   iptables -C FORWARD -s "$subnet" -d "$subnet" -j DROP 2>/dev/null || \
     iptables -A FORWARD -s "$subnet" -d "$subnet" -j DROP
 
+  local legacy_rule
+  while read -r legacy_rule; do
+    [ -n "$legacy_rule" ] || continue
+    iptables ${legacy_rule/-A/-D} 2>/dev/null || true
+  done < <(iptables -S FORWARD 2>/dev/null | grep -E "^-A FORWARD -d ${NETWORK_PREFIX//./\\.}\.[0-9]+/32 -p (tcp|udp) -m (tcp|udp) --dport [0-9]+( -m state --state NEW,RELATED,ESTABLISHED)? -j ACCEPT$" || true)
+
   purge_invalid_dnat_rules
   save_iptables
 }
