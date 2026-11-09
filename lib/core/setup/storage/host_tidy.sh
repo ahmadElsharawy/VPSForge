@@ -1,6 +1,6 @@
 #!/bin/bash
-# Optional deep clean of the SERVER itself (not the VPSs): returns trapped pool
-# space, empties the apt download cache, and trims huge system logs.
+# Deep clean of the SERVER itself (not the VPSs): returns trapped pool space, empties the
+# apt download cache, trims system logs and removes old kernels. Runs weekly by cron.
 #   vpsforge tidy
 host_tidy() {
   local before after
@@ -17,6 +17,13 @@ host_tidy() {
     echo "  - trimming system logs to 200MB"
     journalctl --vacuum-size=200M >/dev/null 2>&1 || true
   fi
+
+  echo "  - removing damaged or half-written backup files"
+  clean_stale_temp_backups
+  delete_damaged_backups
+
+  remove_old_kernels
+  limit_system_journal
 
   after=$(df -m --output=used / | tail -1 | tr -d ' ')
   echo "Done. Used after: ${after}MB (freed $((before - after))MB)."

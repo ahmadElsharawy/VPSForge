@@ -8,6 +8,8 @@ install_quota_cron() {
 */5 * * * * root /usr/local/bin/vpsforge quota-check >/dev/null 2>&1
 # VPSForge weekly space reclaim (Sunday 04:00): returns freed pool space to the server
 0 4 * * 0 root /usr/local/bin/vpsforge reclaim >/dev/null 2>&1
+# VPSForge weekly server tidy (Sunday 04:30): old kernels, logs and apt cache never fill the disk
+30 4 * * 0 root /usr/local/bin/vpsforge tidy >/dev/null 2>&1
 EOF
   chmod 0644 /etc/cron.d/vpsforge-quota 2>/dev/null || true
 }

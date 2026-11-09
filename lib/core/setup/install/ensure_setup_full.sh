@@ -67,6 +67,7 @@ ensure_setup_full() {
   # Nothing downloaded for the install stays on the disk: empty the package cache,
   # and let cached OS images expire after 1 day instead of 10.
   apt-get clean >/dev/null 2>&1 || true
+  limit_system_journal
   incus config set images.remote_cache_expiry 1 >/dev/null 2>&1 || true
 
   # Ensure vpsforge symlink in PATH

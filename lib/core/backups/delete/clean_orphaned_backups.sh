@@ -10,15 +10,7 @@ clean_orphaned_backups() {
   local existing
   existing=$(incus list -c n --format csv 2>/dev/null) || { echo "Incus does not answer; nothing was changed."; return 0; }
 
-  # A backup that cannot be read back is useless: delete it (with its .info) and say so.
-  # Only when zstd is installed: without it a good compressed backup would look damaged.
-  command -v zstd >/dev/null 2>&1 && while read -r file; do
-    [ -n "$file" ] || continue
-    if ! tar -tf "$file" >/dev/null 2>&1; then
-      echo "  DAMAGED backup deleted: $(basename "$file")"
-      rm -f "$file" "${file}.info"
-    fi
-  done < <(find "$BACKUP_DIR" -maxdepth 1 -type f \( -name '*.tar' -o -name '*.tar.gz' \) | sort)
+  delete_damaged_backups
 
   while read -r file; do
     [ -n "$file" ] || continue

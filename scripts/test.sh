@@ -240,5 +240,13 @@ t "inventory: live ip fallback" "v2|10.0.0.6|" "$(vps_inventory | tail -n 1)"
 t "name by ip" v2 "$(get_vps_name_by_ip 10.0.0.6)"
 unset -f incus
 
+# old kernels: keep the running one and the newest, list the rest
+old=$(printf '%s
+' linux-image-7.0.0-1013-oracle linux-modules-7.0.0-1011-oracle linux-modules-7.0.0-1012-oracle linux-modules-extra-6.17.0-1020-oracle linux-modules-7.0.0-1013-oracle bash incus | select_old_kernel_packages 7.0.0-1012-oracle | tr '
+' ' ')
+t "old kernels selected" "linux-modules-7.0.0-1011-oracle linux-modules-extra-6.17.0-1020-oracle " "$old"
+t "no kernels: nothing" "" "$(printf 'bash
+' | select_old_kernel_packages 7.0.0-1-oracle)"
+
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]
