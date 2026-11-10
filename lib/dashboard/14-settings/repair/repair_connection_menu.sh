@@ -19,14 +19,14 @@ repair_connection_menu() {
   for n in "${repair_list[@]}"; do
     num=$(get_num "$n")
     ip=$(get_ip "$n")
-    preferred=$(vps_fixed_port "$num")
+    preferred=$(get_vps_saved_port "$n" 2>/dev/null || true)   # keep a port the owner changed
+    [[ "$preferred" =~ ^[0-9]+$ ]] || preferred=$(vps_fixed_port "$num")
     if ! check_fixed_port_available "$n" "$ip" "$preferred"; then
       echo "FAILED: $n requires fixed port $preferred."
       failed=$((failed+1))
       echo
       continue
     fi
-    set_vps_saved_port "$n" "$preferred"
 
     if repair_vps_connection "$n" "$preferred" </dev/null; then
       set_vps_saved_port "$n" "$preferred"

@@ -22,8 +22,9 @@ port_forward_cli() {
 
       local proto target_vps
       for proto in $(resolve_protocols "$protocol"); do
-        is_valid_port_forward_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port" || { echo "ERROR: invalid rule (IPv4, ports 1-65535, not 22/80/443)."; return 1; }
+        is_valid_port_forward_rule "$proto" "$external_ip" "$external_port" "$internal_port" || { echo "ERROR: invalid rule (IPv4, ports 1-65535, not 22/80/443)."; return 1; }
       done
+      [[ "$internal_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || { echo "ERROR: the internal address must be an IPv4 address."; return 1; }
       for proto in $(resolve_protocols "$protocol"); do
         port_forward_apply_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port" || { echo "ERROR: iptables refused the rule."; return 1; }
         port_forward_append_rule_to_file "$target_file" "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
@@ -44,6 +45,10 @@ port_forward_cli() {
       [[ "$internal_port" =~ ^[0-9]+$ ]]    || { echo "Internal port must be numeric."; return 1; }
 
       local proto target_vps
+      for proto in $(resolve_protocols "$protocol"); do
+        is_valid_port_forward_rule "$proto" "$external_ip" "$external_port" "$internal_port" || { echo "ERROR: invalid rule (IPv4, ports 1-65535, not 22/80/443)."; return 1; }
+      done
+      [[ "$internal_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || { echo "ERROR: the internal address must be an IPv4 address."; return 1; }
       for proto in $(resolve_protocols "$protocol"); do
         port_forward_delete_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
         port_forward_remove_rule_from_file "$target_file" "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
