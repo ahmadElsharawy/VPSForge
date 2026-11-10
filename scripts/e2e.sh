@@ -38,7 +38,7 @@ ssh_pw() { # user pass host cmd
   local u="$1" p="$2" h="$3"; shift 3
   printf '#!/bin/sh\necho "%s"\n' "$p" > /tmp/e2e_askpass.sh; chmod 700 /tmp/e2e_askpass.sh
   SSH_ASKPASS=/tmp/e2e_askpass.sh SSH_ASKPASS_REQUIRE=force setsid \
-    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password \
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password \
         -o PubkeyAuthentication=no -o ConnectTimeout=10 "$u@$h" "$@"
 }
 cfg() { incus config get "$T" "$1"; }

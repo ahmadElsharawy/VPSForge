@@ -136,7 +136,7 @@ def login(user, password, ip):
     os.chmod("/tmp/ui_askpass.sh", 0o700)
     # a freshly changed network or password may need a few seconds: try up to 6 times
     for attempt in range(6):
-        rc, _ = sh("SSH_ASKPASS=/tmp/ui_askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no "
+        rc, _ = sh("SSH_ASKPASS=/tmp/ui_askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "
                    "-o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password -o PubkeyAuthentication=no "
                    "-o ConnectTimeout=10 %s@%s true" % (user, ip), 30)
         if rc == 0:
@@ -458,7 +458,10 @@ def section_portforward(ui):
         ui.send("4\r")
         step(ui, "delete all", r"delete ALL port-forward rules\? \(y/N\): ", "y\r")
         ok = ui.expect(r"All port forward rules deleted", 30)
-        left = sh("iptables -t nat -S PREROUTING | grep -c DNAT")[1]
+        # count only forwards to the test VPSs: tunnels and VPSs the test did not make keep their own rules
+        ips = sh("incus list --format csv -c n4 | awk -F, '$1 ~ /^uit/ {split($2, a, \" \"); print a[1]}'")[1].split()
+        left = str(sum(1 for line in sh("iptables -t nat -S PREROUTING")[1].splitlines()
+                       if "DNAT" in line and any(("--to-destination %s:" % ip) in line for ip in ips if ip)))
         check("11.4 delete ALL rules", ok and left in ("0", ""), left + " " + ui.tail())
         pause(ui)
     main_choice_inside()
@@ -493,13 +496,15 @@ def section_settings(ui):
     time.sleep(3)
     check("14.5 host network speed", open("/opt/vpsforge/network_speed_mbit").read().strip() == "2000")
 
+    # option 6 toggles: the server may start with auto-start ON or OFF, so check that each press flips it
+    before = os.path.exists("/etc/profile.d/vpsforge-autostart.sh")
     step(ui, "menu", settings, "6\r")
     time.sleep(2)
-    on = os.path.exists("/etc/profile.d/vpsforge-autostart.sh")
+    flipped = os.path.exists("/etc/profile.d/vpsforge-autostart.sh") != before
     step(ui, "menu", settings, "6\r")
     time.sleep(2)
-    off = not os.path.exists("/etc/profile.d/vpsforge-autostart.sh")
-    check("14.6 auto-start on login on/off", on and off)
+    back = os.path.exists("/etc/profile.d/vpsforge-autostart.sh") == before
+    check("14.6 auto-start on login on/off", flipped and back)
 
     step(ui, "menu", settings, "4\r")
     step(ui, "update menu", r"4\) Check Update & Synchronization Status.*?Choice \[0=Cancel, Enter=1\]: ", "4\r")
@@ -596,17 +601,17 @@ def section_websites(ui):
     with open("/tmp/askpass.sh", "w") as f:
         f.write("#!/bin/sh\necho \"$VFPW\"\n")
     os.chmod("/tmp/askpass.sh", 0o755)
-    got = sh("VFPW='" + pw + "' SSH_ASKPASS=/tmp/askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no -o PubkeyAuthentication=no -o PreferredAuthentications=password -o ConnectTimeout=15 vftun9080@" + ip2)[1]
+    got = sh("VFPW='" + pw + "' SSH_ASKPASS=/tmp/askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no -o PreferredAuthentications=password -o ConnectTimeout=15 vftun9080@" + ip2)[1]
     check("12.4 the limited login downloads the setup script", "-R 0.0.0.0:9080:localhost:3000" in got and "Register-ScheduledTask" in got, got[:300])
     kb = re.search(r"\$kt = @'\n(.*?)\n'@", got, re.S)
     with open("/tmp/tk", "w") as f:
         f.write((kb.group(1) if kb else "") + "\n")
     os.chmod("/tmp/tk", 0o600)
-    o = sh("ssh -i /tmp/tk -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 vftun9080@" + ip2 + " id")[1]
+    o = sh("ssh -i /tmp/tk -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=15 vftun9080@" + ip2 + " id")[1]
     check("12.4 the limited login gives no shell on the VPS", "uid=" not in o, o[:200])
-    rc = sh("ssh -N -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=15 -i /tmp/tk -R 0.0.0.0:9999:localhost:3000 vftun9080@" + ip2, 30)[0]
+    rc = sh("ssh -N -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o BatchMode=yes -o ConnectTimeout=15 -i /tmp/tk -R 0.0.0.0:9999:localhost:3000 vftun9080@" + ip2, 30)[0]
     check("12.4 the limited login cannot open any other port", rc != 0)
-    sh("ssh -f -N -o StrictHostKeyChecking=no -o ExitOnForwardFailure=yes -o BatchMode=yes -i /tmp/tk -R 0.0.0.0:9080:localhost:3000 vftun9080@" + ip2)
+    sh("ssh -f -N -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ExitOnForwardFailure=yes -o BatchMode=yes -i /tmp/tk -R 0.0.0.0:9080:localhost:3000 vftun9080@" + ip2)
     time.sleep(3)
     check("12.4 the site on 'my computer' answers through the VPS tunnel", "FROM-MY-PC" in sh("curl -s -m 10 http://" + ip2 + ":9080/")[1])
 
@@ -635,8 +640,16 @@ def section_websites(ui):
           and sh("incus config get uit2 user.vpsforge.tunnels")[1] == "", ui.tail())
     pause(ui)
     check("12.5 the limited login is removed with the tunnel", sh("incus exec uit2 -- id vftun9080")[0] != 0)
-    check("12.5 the list is empty afterwards", ui.expect(r"No tunnels yet", 30), ui.tail())
-    pause(ui)
+    # Other VPSs on the server may have their own tunnels: only the deleted one must be gone.
+    start = ui.pos
+    shown = ui.expect(r"No tunnels yet|Type a number to manage", 30)
+    screen = ui.buf[start:ui.pos]
+    check("12.5 the deleted tunnel is gone from the list", shown and not re.search(r"uit2 .*9080", screen), ui.tail())
+    if "No tunnels yet" in screen:
+        pause(ui)
+    else:
+        ui.expect(r": ", 10)
+        ui.send("0\r")
     sh("pkill -f '[s]sh -f -N -o StrictHostKeyChecking=no'; pkill -f '[h]ttp.server 3000'; rm -rf /tmp/pcsite /tmp/tk /tmp/askpass.sh")
     step(ui, "tunnel menu", TM, "0\r")
     step(ui, "proxy menu", r"3\) Cloudflare real visitor IP.*?Choice \[0=Back, Enter=\d\]: ", "0\r")
@@ -673,6 +686,7 @@ def section_snapshots(ui):
     step(ui, "menu", menu, "4\r")
     step(ui, "which vps", r"VPS name or number.*?: ", "uit2\r")
     step(ui, "which snap", r"Snapshot number\(s\) to delete.*?: ", "A\r")
+    step(ui, "confirm delete", r"This cannot be undone\. \[y/N\]: ", "y\r")
     ok = ui.expect(r"Snapshot 'snapA' deleted", 60)
     check("13.4 delete snapshot", ok and sh("incus snapshot list uit2 --format csv")[1] == "", ui.tail())
     pause(ui)
