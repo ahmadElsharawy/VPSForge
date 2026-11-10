@@ -283,7 +283,8 @@ t "windows script: toggle here-string closed at column 0" 1 "$(grep -c "^'@ | Se
 t "windows script: the key is inside" 1 "$(grep -c 'ABC123' <<< "$win_block")"
 t "windows script: whole script is one block" "& {" "$(head -n 1 <<< "$win_block")"
 t "windows script: no password and no root login" 0 "$(grep -ci 'root@' <<< "$win_block")"
-t "windows script: only that tunnel port is forwarded" 1 "$(grep -c -- '-R 0.0.0.0:5789:localhost:3000 -p 9001 vftun5789@1.2.3.4' <<< "$win_block" | awk '{ print ($1 >= 1) ? 1 : 0 }')"
+t "windows script: only that tunnel port is forwarded" 1 "$(grep -c -F -- '-R "0.0.0.0:5789:${h}:3000" -p 9001 vftun5789@1.2.3.4' <<< "$win_block" | awk '{ print ($1 >= 1) ? 1 : 0 }')"
+t "windows script: checks 127.0.0.1 and ::1 before connecting (not just localhost)" 1 "$(grep -c -F -- '"127.0.0.1", "::1"' <<< "$win_block" | awk '{ print ($1 >= 1) ? 1 : 0 }')"
 
 # every site block of a saved Caddy file is read, not only the first line
 caddy_text=$(printf 'a.com, b.com {

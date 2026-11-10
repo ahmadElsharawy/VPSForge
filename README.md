@@ -16,6 +16,12 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 
 ---
 
+## ✨ What's new in v2.1.25
+
+- **Windows tunnels no longer fail when your site listens on one address only.** The setup script used to forward visitors to `localhost`, which Windows may turn into `::1` (IPv6) while your site listens on `127.0.0.1` only (or the other way round): visitors got nothing. Before every connection the script now checks which of `127.0.0.1` and `::1` your site really answers on and uses that one (it falls back to `localhost` if the site is not running yet). Existing tunnels keep the old script: delete the tunnel and add it again to get the fix. Tested on Windows with Windows OpenSSH against a real tunnel.
+
+---
+
 ## ✨ What's new in v2.1.24
 
 - **VPN** (menu 12 > 5): turn any VPS into a fast VPN with **Xray (VLESS + Reality)**. Your phone or PC goes online with the VPS's IP and speed, and the traffic looks like a normal HTTPS visit to `www.speedtest.net`, so it is hard to block or slow down. Each device gets its own **data limit (GB) and number of days** (or unlimited) and is switched off by itself when one runs out (checked every 5 minutes); renew it any time. Share a device with a **QR page** (QR code + "Copy link", works for 10 minutes) or its `vless://` link; the app (v2rayNG, Streisand, V2Box, v2rayN) shows the name `<server IP>-<VPS>-<days>-<GB>` by itself. Measured on a 1-CPU ARM server: about 3x faster than WireGuard (the CPU is the limit; more CPUs = more speed). Tested by `scripts/vpn-test.sh` on a real host.

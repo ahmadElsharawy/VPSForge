@@ -19,7 +19,9 @@ if (Test-Path $k) { icacls $k /grant:r "$($env:USERNAME):(F)" | Out-Null }
 [IO.File]::WriteAllText($k, (($kt -replace "`r", "").Trim() + "`n"))
 icacls $k /inheritance:r /grant:r "$($env:USERNAME):(R)" | Out-Null
 $r = "$d\vpsforge_tunnel_$id.ps1"
-Set-Content $r -Value 'while ($true) {', ('  ssh -N -i "' + $k + '" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes -R 0.0.0.0:@TPORT@:localhost:@LPORT@ -p @SSHPORT@ @TARGET@'), '  Start-Sleep 5', '}'
+# "localhost" is not safe on Windows: it may mean ::1 (IPv6) while the site listens on 127.0.0.1 only (or the other way round).
+# Before every connection the script looks at which address the site really answers on.
+Set-Content $r -Value 'while ($true) {', '  $h = "localhost"', '  foreach ($c in "127.0.0.1", "::1") { try { $t = New-Object Net.Sockets.TcpClient([Net.Sockets.AddressFamily]$(if ($c -eq "::1") { "InterNetworkV6" } else { "InterNetwork" })); $t.Connect($c, @LPORT@); $t.Close(); if ($c -eq "::1") { $h = "[::1]" } else { $h = $c }; break } catch { } }', ('  ssh -N -i "' + $k + '" -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes -R "0.0.0.0:@TPORT@:${h}:@LPORT@" -p @SSHPORT@ @TARGET@'), '  Start-Sleep 5', '}'
 $g = "$d\vpsforge_toggle_$id.ps1"
 @'
 Add-Type -AssemblyName System.Windows.Forms
@@ -28,7 +30,7 @@ $lnk = [Environment]::GetFolderPath('Desktop') + '\Tunnel @HOST@ @TPORT@ on-off.
 function Test-On { (Get-ScheduledTask $n -ErrorAction SilentlyContinue).State -eq 'Running' }
 function Stop-Tunnel {
   Stop-ScheduledTask $n -ErrorAction SilentlyContinue
-  Get-CimInstance Win32_Process -Filter "Name='ssh.exe'" | Where-Object { $_.CommandLine -like '*-R 0.0.0.0:@TPORT@:localhost:@LPORT@ -p @SSHPORT@ @TARGET@*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+  Get-CimInstance Win32_Process -Filter "Name='ssh.exe'" | Where-Object { $_.CommandLine -like '*-R 0.0.0.0:@TPORT@:*:@LPORT@ -p @SSHPORT@ @TARGET@*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
 }
 $f = New-Object System.Windows.Forms.Form
 $f.Text = 'VPSForge tunnel'; $f.ClientSize = New-Object System.Drawing.Size(340, 150); $f.StartPosition = 'CenterScreen'

@@ -602,7 +602,7 @@ def section_websites(ui):
         f.write("#!/bin/sh\necho \"$VFPW\"\n")
     os.chmod("/tmp/askpass.sh", 0o755)
     got = sh("VFPW='" + pw + "' SSH_ASKPASS=/tmp/askpass.sh SSH_ASKPASS_REQUIRE=force setsid ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o PubkeyAuthentication=no -o PreferredAuthentications=password -o ConnectTimeout=15 vftun9080@" + ip2)[1]
-    check("12.4 the limited login downloads the setup script", "-R 0.0.0.0:9080:localhost:3000" in got and "Register-ScheduledTask" in got, got[:300])
+    check("12.4 the limited login downloads the setup script", "0.0.0.0:9080:${h}:3000" in got and "Register-ScheduledTask" in got, got[:300])
     kb = re.search(r"\$kt = @'\n(.*?)\n'@", got, re.S)
     with open("/tmp/tk", "w") as f:
         f.write((kb.group(1) if kb else "") + "\n")
