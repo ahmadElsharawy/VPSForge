@@ -28,6 +28,7 @@ swap_vps_ips_and_ports() {
     apply_guest_static_network "$name_b" "$ip_a" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || true
   fi
 
+  remap_port_forwards_ip "$ip_a" "$ip_b" "$ip_b" "$ip_a"
   [ -n "$port_a" ] && add_forward_rule "$ip_b" "$port_a"
   [ -n "$port_b" ] && add_forward_rule "$ip_a" "$port_b"
 

@@ -29,6 +29,7 @@ change_vps_ip() {
   fi
 
   [ -n "$old_ip" ] && remove_ip "$old_ip"
+  [ -n "$old_ip" ] && remap_port_forwards_ip "$old_ip" "$new_ip"
   [ -n "$port" ] && add_forward_rule "$new_ip" "$port"
 
   update_vps_proxy_ip "$name" "$new_ip"
