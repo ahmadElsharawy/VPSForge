@@ -38,8 +38,20 @@ proxy_site_actions() {
       3)
         read -r -p "Remove $domain and ALL its routes? [y/N]: " answer </dev/tty
         if [[ "${answer,,}" =~ ^y ]]; then
-          unlink_proxy_domain "$vps" "$domain"
-          echo "Removed."
+          cp -f "$conf" "${conf}.bak" 2>/dev/null || true
+          caddy_unlink_domain "$conf" "$domain"     # only this domain leaves the file
+          if [ -f "$conf" ]; then
+            if caddy_apply_or_rollback "$conf" "${conf}.bak"; then
+              remove_domain_from_guest_hosts "$vps" "$domain" 2>/dev/null || true
+              sync_vps_metadata "$vps"
+              echo "Removed."
+            else
+              echo "ERROR: Caddy did not accept the change; nothing was changed."
+            fi
+          else
+            unlink_proxy_domain "$vps" "$domain"   # it was the last domain of this VPS
+            echo "Removed."
+          fi
           pause; return
         fi
         ;;

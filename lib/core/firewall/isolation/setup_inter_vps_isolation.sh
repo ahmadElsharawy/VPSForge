@@ -32,6 +32,11 @@ setup_inter_vps_isolation() {
   iptables -C FORWARD -s "$subnet" -d "$subnet" -j DROP 2>/dev/null || \
     iptables -A FORWARD -s "$subnet" -d "$subnet" -j DROP
 
+  if command -v ip6tables >/dev/null 2>&1; then   # the bridge may carry IPv6 too: no VPS-to-VPS traffic there either
+    ip6tables -C FORWARD -i incusbr0 -o incusbr0 -j DROP 2>/dev/null || \
+      ip6tables -I FORWARD 1 -i incusbr0 -o incusbr0 -j DROP 2>/dev/null || true
+  fi
+
   local legacy_rule
   while read -r legacy_rule; do
     [ -n "$legacy_rule" ] || continue

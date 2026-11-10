@@ -39,8 +39,12 @@ _clone_vps_steps() {
   configure_guest_dns "$new" >/dev/null 2>&1 || true
   set_guest_hostname "$new" "$src"
 
-  add_forward_rule "$ip" "$port"
-  set_vps_saved_port "$new" "$port"
+  if [ "$(incus config get "$src" user.vpsforge.ssh_forward 2>/dev/null || true)" = "n" ]; then
+    incus config set "$new" user.vpsforge.ssh_forward=n   # the source had no public ssh forward: neither has the copy
+  else
+    add_forward_rule "$ip" "$port"
+    set_vps_saved_port "$new" "$port"
+  fi
   sync_vps_metadata "$new"
   mark_vps_state "$new" ""
   pending_operation_clear "$new"

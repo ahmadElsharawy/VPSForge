@@ -30,6 +30,7 @@ reinstall_single_vps_core() {
   incus stop "$n" --force >/dev/null 2>&1 || true
   if ! incus rename "$n" "$old"; then
     echo "ERROR: could not set the original VPS aside; nothing was changed."
+    incus start "$n" >/dev/null 2>&1 || true
     return 1
   fi
   mark_vps_state "$old" reinstall-old

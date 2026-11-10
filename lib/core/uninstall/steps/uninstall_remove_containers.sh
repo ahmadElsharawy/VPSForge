@@ -5,6 +5,10 @@ uninstall_remove_containers() {
   local name
   UNINSTALL_FOREIGN_INSTANCES=0
   echo "[1/7] Removing VPS containers and their snapshots..."
+  if ! command -v incus >/dev/null 2>&1; then
+    echo "  (Incus is not installed: no containers to remove)"
+    return 0
+  fi
   # If Incus cannot list instances, stop: we could not tell which containers are foreign.
   if ! incus list --all-projects -c n --format csv >/dev/null 2>&1; then
     echo "ERROR: Incus does not answer, so VPSForge cannot tell which containers exist. Nothing was removed."
@@ -19,4 +23,13 @@ uninstall_remove_containers() {
       echo "  ! '$name' was not created by VPSForge: kept"
     fi
   done < <(incus list -c n --format csv 2>/dev/null)
+
+  # Anything else in Incus (other projects, other pools, custom volumes) is not ours: it must survive the uninstall.
+  local other
+  other=$(incus list --all-projects -c n,project --format csv 2>/dev/null | awk -F, '$2 != "default" && $1 != "" { n++ } END { print n + 0 }')
+  UNINSTALL_FOREIGN_INSTANCES=$((UNINSTALL_FOREIGN_INSTANCES + other))
+  other=$(incus storage list -c n --format csv 2>/dev/null | awk '$1 != "default" && $1 != "" { n++ } END { print n + 0 }')
+  UNINSTALL_FOREIGN_INSTANCES=$((UNINSTALL_FOREIGN_INSTANCES + other))
+  other=$(incus storage volume list default -c t --format csv 2>/dev/null | awk '$1 == "custom" { n++ } END { print n + 0 }')
+  UNINSTALL_FOREIGN_INSTANCES=$((UNINSTALL_FOREIGN_INSTANCES + other))
 }

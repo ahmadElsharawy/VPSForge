@@ -19,7 +19,7 @@ restore_vps_port_forwards_metadata() {
       
       # Never take a port the host itself uses, or one another VPS holds now
       port_forward_host_conflict "$ext_port" "$proto" >/dev/null 2>&1
-      [ "$?" -eq 1 ] && { echo "Skipped forward $proto:$ext_port (the host uses that port)."; continue; }
+      [ "$?" -ne 0 ] && { echo "Skipped forward $proto:$ext_port (the host uses that port)."; continue; }
       if awk -F'|' -v p="$proto" -v port="$ext_port" -v ip="$ip" '$1 == p && $3 == port && $4 != ip { f = 1 } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
         echo "Skipped forward $proto:$ext_port (another VPS holds it now)."; continue
       fi

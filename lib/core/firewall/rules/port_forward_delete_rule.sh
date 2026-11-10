@@ -8,6 +8,10 @@ port_forward_delete_rule() {
   iptables -t nat -D PREROUTING -p "$protocol" $dest_spec \
     --dport "$external_port" -j DNAT --to-destination "$internal_ip:$internal_port" 2>/dev/null || true
 
+  if [ -n "$external_ip" ] && [ "$external_ip" != "0.0.0.0" ] && [ "$external_ip" != "any" ]; then
+    iptables -t nat -D PREROUTING -p "$protocol" -d "$external_ip" \
+      --dport "$external_port" -j DNAT --to-destination "$internal_ip:$internal_port" 2>/dev/null || true   # the older form without the restriction
+  fi
   iptables -t nat -D PREROUTING -p "$protocol" \
     --dport "$external_port" -j DNAT --to-destination "$internal_ip:$internal_port" 2>/dev/null || true
 

@@ -23,7 +23,8 @@ get_next_available_vps_ip_and_num() {
     ssh_port=$((SSH_PORT_BASE + num))
     if [[ " ${used_ips[*]} " != *" $ip "* ]] && \
        [[ " ${used_nums[*]} " != *" $num "* ]] && \
-       ! grep -qE "dpt:${ssh_port}([^0-9]|$)" <<< "$nat_rules"; then
+       ! grep -qE "dpt:${ssh_port}([^0-9]|$)" <<< "$nat_rules" && \
+       [ -z "$(host_port_owner "$ssh_port" tcp 2>/dev/null)" ]; then
       NEXT_AVAIL_NUM="$num"
       NEXT_AVAIL_IP="$ip"
       return 0

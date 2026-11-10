@@ -7,7 +7,9 @@ restore_replaced_vps() {
   incus rename "$hold" "$name" >/dev/null 2>&1 || return 1
   if [ -n "$caddy_bak" ] && [ -f "$caddy_bak" ]; then
     mv -f "$caddy_bak" "$CADDY_CONF_DIR/${name}.caddy"
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
   fi
   incus start "$name" >/dev/null 2>&1 || true
+  sync_vps_metadata "$name" || true
   echo "The original '$name' was put back unchanged."
 }

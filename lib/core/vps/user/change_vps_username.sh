@@ -29,6 +29,7 @@ change_vps_username() {
     chown -R "$NEW_USER:$NEW_USER" "/home/$NEW_USER" 2>/dev/null || true
   ' || { echo "ERROR: Failed to create user $new_user in $name."; return 1; }
 
+  printf '%s:%s\n' "$new_user" "$(get_vps_password "$name")" | incus exec "$name" -- chpasswd >/dev/null 2>&1 || echo "WARNING: could not set the password of $new_user."
   set_vps_user "$name" "$new_user"
   echo "Username changed to '$new_user' for $name."
 }

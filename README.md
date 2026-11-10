@@ -26,7 +26,8 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 - **Fewer Incus calls** (one `incus list --format json` instead of one call per VPS), so menus stay fast on weak servers. Caddy domain removal handles every site block of a file, and port-forward rules are validated (protocol, IPv4, port range, reserved ports 22/80/443).
 - **Backups, copies and snapshots keep tunnels, ports and domains right.** Importing a backup under a new name gives it a new internal IP and SSH port, moves its forwards and Caddy routes to them, checks every domain block for conflicts, keeps the saved login, and marks each tunnel *active* only if its public side really came back (otherwise *stopped*). A copy gets a new tunnel key. Cloning never copies the source's tunnels. A failed or cancelled import can no longer remove the original VPS's SSH port or forwards. A backup file without its `.info` is read directly (its settings live inside the archive), and an import stopped while changing Caddy puts every Caddy file back.
 - **A full code review and the fixes from it.** Six Opus reviewers and a Gemini review read the whole project; the confirmed problems were fixed and tested on a real server. Highlights: a VPS can no longer reach another VPS's SSH port over the bridge; a failed reinstall keeps the original's domains, forwards, traffic quota and SSH choice; the owner's own forwards to port 22 survive; disabled forwards stay disabled at every start; traffic quotas keep a monthly running total that a VPS restart cannot reset; deleting snapshots and changing the OS of selected VPSs now ask first (`REINSTALL`); a port-forward edit is validated before the old rule is removed; a new VPS never takes an address another VPS holds; the weekly tidy no longer runs the full startup. Every forwarded port (not only SSH) is now accepted only for traffic that comes from outside the bridge, so a VPS cannot reach another VPS's forwarded ports either; older unrestricted rules are removed automatically at the next start.
-- **Reviewed and tested.** Offline tests (`scripts/test.sh`, 98 checks) and real-server UI tests cover the tunnel feature, including "add two tunnels, delete one, the other keeps working".
+- **More fixes from a second independent review.** Removing one domain no longer deletes the VPS's other domains; forwards bound to the server IP and IPv6 traffic are isolated between VPSs too; a clone of a VPS without public SSH stays without it; a new login gets the VPS password; the backup export check allows for Incus staging the tarball; the weekly tidy leaves files younger than an hour alone; an interrupted import is cancelled in Incus; a failed replace-import brings the original's domains back live; uninstall works without Incus and keeps other Incus projects, pools and volumes; the host's IPv6 router advertisements are no longer disturbed.
+- **Reviewed and tested.** Offline tests (`scripts/test.sh`, 99 checks) and real-server UI tests cover the tunnel feature, including "add two tunnels, delete one, the other keeps working".
 
 ---
 
@@ -155,7 +156,7 @@ Every container is assigned a static internal IPv4 address on the isolated subne
 
 ```mermaid
 graph TD
-    subgraph Host_Node["Host Server (Public IP: 158.101.236.52)"]
+    subgraph Host_Node["Host Server (Public IP: 203.0.113.10)"]
         HostNIC["Physical Interface (eth0 / ens3)"] --> IPTables["Host iptables NAT & Filtering Engine"]
         
         IPTables -->|Port 9001| DNAT_SSH1["DNAT: 10.135.30.101:22"]
@@ -194,7 +195,7 @@ graph LR
     Main --> M9["9) Shell Attach"]
     Main --> M10["10) Connection Info"]
     Main --> M11["11) Port Forwarding"]
-    Main --> M12["12) Domains & SSL"]
+    Main --> M12["12) Domains & Reverse Proxy"]
     Main --> M13["13) Snapshots & Backups"]
     Main --> M14["14) Settings & Updates"]
     Main --> M15["0) Exit"]

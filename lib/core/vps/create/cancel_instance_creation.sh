@@ -14,7 +14,7 @@ try:
     ops = data.get("running", []) if isinstance(data, dict) else []
     for o in ops:
         res = json.dumps(o.get("resources", {}))
-        if re.search(re.escape("/instances/" + name) + r"(?![A-Za-z0-9_.-])", res) and o.get("description", "").lower().startswith("creat"):
+        if re.search(re.escape("/instances/" + name) + r"(?![A-Za-z0-9_.-])", res) and o.get("description", "").lower().startswith(("creat", "restor")):
             print(o["id"]); break
 except Exception:
     pass

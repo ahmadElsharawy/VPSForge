@@ -40,6 +40,7 @@ uninstall_remove_firewall() {
     uninstall_run iptables -t nat -D POSTROUTING -s "$subnet" ! -d "$subnet" -j MASQUERADE
     uninstall_run iptables -t nat -D POSTROUTING -s "$subnet" -d "$subnet" -j MASQUERADE
     uninstall_run iptables -D FORWARD -s "$subnet" -d "$subnet" -j DROP
+    command -v ip6tables >/dev/null 2>&1 && uninstall_run ip6tables -D FORWARD -i incusbr0 -o incusbr0 -j DROP
     [ -n "$gw" ] && uninstall_run iptables -D FORWARD -i incusbr0 -s "$subnet" -d "$gw" -j ACCEPT
   fi
   uninstall_run iptables -D FORWARD -i incusbr0 -o incusbr0 -j DROP

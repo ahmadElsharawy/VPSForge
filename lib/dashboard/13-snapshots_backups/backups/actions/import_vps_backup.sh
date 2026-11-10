@@ -91,6 +91,8 @@ import_vps_backup() {
       # The SSH forward (port -> 22) is not restored: the import gives the new VPS its own SSH port,
       # so asking about a conflict with the old VPS's SSH port would be pointless.
       [ "$int_port" = "22" ] && continue
+      port_forward_host_conflict "$ext_port" "$proto" >/dev/null 2>&1
+      [ "$?" -ne 0 ] && { echo "Skipped forward $proto:$ext_port (the host uses that port)."; continue; }
       
       other_vps=$(awk -F'|' -v p="$proto" -v port="$ext_port" -v oldip="$old_ip" '$1 == p && $3 == port && $4 != oldip { print $4; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null || true)
       if [ -n "$other_vps" ]; then

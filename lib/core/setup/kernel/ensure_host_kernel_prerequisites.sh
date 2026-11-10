@@ -41,9 +41,6 @@ EOF
     if [ -e /proc/sys/net/ipv4/conf/all/forwarding ]; then
       echo 'net.ipv4.conf.all.forwarding=1'
     fi
-    if [ -e /proc/sys/net/ipv6/conf/all/forwarding ]; then
-      echo 'net.ipv6.conf.all.forwarding=1'
-    fi
   } > /etc/sysctl.d/99-vpsforge-nesting.conf
   sysctl -p /etc/sysctl.d/99-vpsforge-nesting.conf >/dev/null 2>&1 || true
 }
