@@ -71,7 +71,8 @@ ok "default password saved" test "$(get_vps_password "$T")" = "root"
 ok "sshd listening on :22" incus exec "$T" -- sh -c 'ss -lnt | grep -q ":22 "'
 ok "DNAT rule for ssh port" sh -c "iptables -t nat -S PREROUTING | grep -q -- '--dport $port -j DNAT --to-destination $ip:22'"
 ok "ssh password login root" ssh_pw root root "$ip" true
-ok "container has internet" incus exec "$T" -- sh -c 'getent hosts archive.ubuntu.com >/dev/null && curl -fsS -m 8 -o /dev/null http://archive.ubuntu.com'
+# Some clouds cannot reach archive.ubuntu.com (ARM hosts use ports.ubuntu.com), so any one of these is enough.
+ok "container has internet" incus exec "$T" -- sh -c 'for u in http://archive.ubuntu.com http://ports.ubuntu.com https://github.com; do curl -fsS -m 8 -o /dev/null "$u" && exit 0; done; exit 1'
 ok "RAM limit applied" test "$(incus config get "$T" limits.memory)" = "256MiB"
 ok "CPU limit applied" test "$(incus config get "$T" limits.cpu)" = "1"
 other_ip=$(incus list -c n4 --format csv | awk -F, -v t="$T" '$1!=t && $2!="" {split($2,a," "); print a[1]; exit}')
@@ -175,14 +176,15 @@ ok "add website (whole domain -> :80)" add_route "" 80
 ok "config file written" grep -q "$pxy" "$conf"
 ok "caddy accepts the config" caddy_valid
 ok "add route /x/ -> :80" add_route "/x/" 80
-ok "add route /x/ -> :8080" add_route "/x/" 8080
+ok "add route /y/ -> :8080" add_route "/y/" 8080
+no "same domain + folder refused twice" add_route "/x/" 8080
 ok "list shows 3 routes" test "$(route_count)" = "3"
 ok "same domain refused for another VPS" not_owned_elsewhere
 no "bad domain rejected" add_proxy_route "$T" "$ip" "bad domain!" "" 80 http
 no "bad port rejected" add_proxy_route "$T" "$ip" "ok.example.com" "" 99999 http
 ok "delete route 2 (:80) keeps :8080 (exact match)" delete_nth_route 2
 ok "list shows 2 routes" test "$(route_count)" = "2"
-ok ":8080 route still there" grep -q "/x/\* http://$ip:8080" "$conf"
+ok ":8080 route still there" grep -q "/y/\* http://$ip:8080" "$conf"
 no ":80 route is gone" grep -qE "reverse_proxy /x/\* http://$ip:80\$" "$conf"
 ok "bad config is rolled back, caddy stays valid" rollback_works
 ok "proxy follows an IP change" proxy_ip_round_trip

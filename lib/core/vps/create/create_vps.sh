@@ -8,7 +8,7 @@
 create_vps() {
   local name="${1:-}" num="${2:-}"
   if ! is_valid_vps_name "$name"; then
-    echo "ERROR: Invalid VPS name '$name'. Use letters, digits and dashes only, starting with a letter (no dots, underscores or spaces)."
+    echo "ERROR: Invalid VPS name '$name'. Use letters, digits and dashes only (no dots, underscores or spaces; not only digits; no dash at the start or end)."
     return 1
   fi
   [[ "$num" =~ ^[0-9]+$ ]] || { echo "ERROR: Invalid VPS number '$num'."; return 1; }

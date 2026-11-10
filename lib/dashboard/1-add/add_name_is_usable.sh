@@ -6,7 +6,7 @@ add_name_is_usable() {
   local name="${1:-}" picked
   shift
   if ! is_valid_vps_name "$name"; then
-    echo "Invalid name '$name'. Use letters, digits and dashes only, starting with a letter."
+    echo "Invalid name '$name'. Use letters, digits and dashes only (not only digits, no dash at the start or end)."
     return 1
   fi
   if incus info "$name" >/dev/null 2>&1; then

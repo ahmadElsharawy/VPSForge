@@ -176,7 +176,7 @@ import_vps_backup() {
   fi
 
   if ! is_valid_vps_name "$target_name"; then
-    echo "ERROR: '$target_name' is not a valid VPS name. Use letters, digits and dashes only, starting with a letter (no dots, underscores or spaces)."
+    echo "ERROR: '$target_name' is not a valid VPS name. Use letters, digits and dashes only (no dots, underscores or spaces; not only digits; no dash at the start or end)."
     return 1
   fi
 
