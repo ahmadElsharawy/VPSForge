@@ -33,29 +33,30 @@ _apply_staged_code_sync() {
   fi
 
   # 3. Atomically replace active code (this purges deleted/obsolete files)
-  rm -rf "$app_dir/lib"
+  rm -rf "${app_dir:?}/lib"
   mv "$staging_lib" "$app_dir/lib"
   mv -f "$staging_app" "$app_dir/vpsforge.sh"
 
-  # 4. Save tracking commit metadata
-  echo "$target_commit" > "$app_dir/.installed_commit"
-  if [ -f "$repo_dir/vpsforge.sh" ]; then
-    local ver
-    ver=$(sed -n 's/^VPSFORGE_VERSION="\(v[0-9][0-9.]*\)"/\1/p' "$repo_dir/vpsforge.sh" 2>/dev/null | head -n1)
-    [ -n "$ver" ] && echo "$ver" > "$app_dir/.installed_version"
-  fi
-
-  # 5. Integrity Verification
+  # 4. Integrity Verification
   if ! diff -r -q "$app_dir/lib" "$repo_dir/lib" >/dev/null 2>&1; then
     echo "ERROR: Active installation verification failed after sync. Rolling back..." >&2
     if [ -d "$app_dir/lib.backup" ]; then
-      rm -rf "$app_dir/lib"
+      rm -rf "${app_dir:?}/lib"
       mv "$app_dir/lib.backup" "$app_dir/lib"
     fi
     if [ -f "$app_dir/vpsforge.sh.backup" ]; then
       mv -f "$app_dir/vpsforge.sh.backup" "$app_dir/vpsforge.sh"
     fi
     return 1
+  fi
+
+  # 5. Save tracking commit metadata (only after the new code is verified,
+  #    so a rolled-back update never claims the new version)
+  echo "$target_commit" > "$app_dir/.installed_commit"
+  if [ -f "$repo_dir/vpsforge.sh" ]; then
+    local ver
+    ver=$(sed -n 's/^VPSFORGE_VERSION="\(v[0-9][0-9.]*\)"/\1/p' "$repo_dir/vpsforge.sh" 2>/dev/null | head -n1)
+    [ -n "$ver" ] && echo "$ver" > "$app_dir/.installed_version"
   fi
 
   rm -rf "$app_dir"/lib.backup* "$app_dir"/vpsforge.sh.backup* "$app_dir"/raw_incus.txt "$app_dir"/ubuntu_images_cache.txt 2>/dev/null || true

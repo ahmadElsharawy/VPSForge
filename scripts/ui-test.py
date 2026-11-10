@@ -102,8 +102,17 @@ def to_menu(ui, timeout=60):
     return ui.expect(r"Choice: $|Choice: ", timeout)
 
 
+def menu_waiting(ui):
+    """True when the screen already ends at the main-menu prompt (its text may have been read before)."""
+    ui._read(0.5)
+    if re.search(r"Choice: *$", ui.buf):
+        ui.pos = len(ui.buf)
+        return True
+    return False
+
+
 def main_choice(ui, number):
-    if not to_menu(ui):
+    if not (menu_waiting(ui) or to_menu(ui)):
         check("main menu visible before option %s" % number, False, ui.tail(5))
         return False
     ui.send(str(number) + "\r")
@@ -364,6 +373,7 @@ def section_edit(ui):
 
     # 12: reinstall with a different OS (Alpine = the lightest option)
     step(ui, "edit menu", sub_prompt, "12\r")
+    step(ui, "confirm reinstall", r"Type REINSTALL to continue: ", "REINSTALL\r")
     step(ui, "distro", r"Operating system for uit1.*?Choice \[0=Back, Enter=\d\]: ", "3\r")  # Alpine
     step(ui, "version", r"Choice \[0=Back, Enter=default.*?\]: ", "\r")
     ok = ui.expect(r"Reinstall completed for uit1", 400)
@@ -928,11 +938,17 @@ def main():
                 section_cli(None)
                 ui = UI()
                 continue
+            seen = ui.pos
             if name != "dashboard" and ui.buf and not ui.expect(r"Choice: $", 3):
                 # a previous section left the program inside a menu: start from a clean main menu
                 ui.close()
                 ui = UI()
                 ui.expect(r"Choice: ", 90)
+                ui.pos = 0  # let the section's main_choice() see this first prompt too
+            elif name != "dashboard" and ui.buf:
+                # the main menu is waiting: leave its prompt unread so the section's own
+                # main_choice() can see it (expect() above moved past it)
+                ui.pos = seen
             try:
                 fn(ui)
             except Exception as exc:  # keep going: one broken section must not hide the others
@@ -940,6 +956,7 @@ def main():
             if not ui.alive():
                 ui = UI()
                 ui.expect(r"Choice: ", 60)
+                ui.pos = 0  # the next section's main_choice() must still see this prompt
         if "cleanup" in wanted or len(sys.argv) == 1:
             ui.close()
             for n in NAMES + ["uitimp", "uit1r"]:
