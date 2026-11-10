@@ -13,7 +13,7 @@ migrate_default_pool_to_btrfs() {
   elif incus storage create temp-btrfs btrfs size=$(default_pool_size_gib)GiB >/dev/null 2>&1 || incus storage show temp-btrfs >/dev/null 2>&1; then
     echo "Storage pool 'default' is using 'dir' driver. Automating migration to BTRFS..." >&2
     local -a instances=()
-    mapfile -t instances < <(incus storage show default 2>/dev/null | grep '/1.0/instances/' | awk -F'/' '{print $NF}' || true)
+    mapfile -t instances < <(incus storage show default 2>/dev/null | grep -E '/1.0/instances/[^/]+$' | awk -F'/' '{print $NF}' || true)
     
     local -a profiles=()
     mapfile -t profiles < <(incus storage show default 2>/dev/null | grep '/1.0/profiles/' | awk -F'/' '{print $NF}' || true)
