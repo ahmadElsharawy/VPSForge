@@ -8,6 +8,13 @@ uninstall_remove_storage() {
     return 0
   fi
 
+  # Incus was on this server before VPSForge: its pool, bridge and images are the owner's.
+  # (Older records have no flags: then the package list tells whether Incus was already installed.)
+  if [ -f "$PRE_INSTALL_DIR/had_incus_pool" ] || [ -f "$PRE_INSTALL_DIR/had_incus_bridge" ] || \
+     grep -qxE 'incus|incus-base' "$PRE_INSTALL_DIR/packages_all.txt" 2>/dev/null; then
+    echo "  (Incus was here before VPSForge: its storage pool, bridge and images are kept)"
+    return 0
+  fi
   while read -r fp; do
     [ -n "$fp" ] && uninstall_run incus image delete "$fp"
   done < <(incus image list -c f --format csv 2>/dev/null)

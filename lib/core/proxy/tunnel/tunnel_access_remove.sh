@@ -1,9 +1,15 @@
 #!/bin/bash
 # Delete the limited tunnel login of one tunnel port from a VPS (user, key, script and ssh rules). Safe to repeat.
+# A stopped VPS cannot be changed: the port is then noted (user.vpsforge.tunnel_cleanup) and the login is
+# removed as soon as the VPS runs again (tunnel_pending_cleanup, every 5 minutes and when VPSForge starts it).
 #   tunnel_access_remove <vps> <tunnel_port>
 tunnel_access_remove() {
-  local vps="${1:?vps}" tport="${2:?tunnel port}"
-  is_vps_running "$vps" || return 0
+  local vps="${1:?vps}" tport="${2:?tunnel port}" pending
+  if ! is_vps_running "$vps"; then
+    pending=$(incus config get "$vps" user.vpsforge.tunnel_cleanup 2>/dev/null || true)
+    case " $pending " in *" $tport "*) ;; *) incus config set "$vps" user.vpsforge.tunnel_cleanup "${pending:+$pending }$tport" >/dev/null 2>&1 || true;; esac
+    return 0
+  fi
   incus exec "$vps" --env TUSER="$(tunnel_access_user "$tport")" --env TPORT="$tport" -- sh -c '
     # A tunnel that is still connected is cut first. Its processes take a moment to end,
     # and userdel refuses a user that still runs something, so try a few times.

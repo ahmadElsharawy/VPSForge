@@ -1,0 +1,12 @@
+#!/bin/bash
+# Print an address in the VPS network that no VPS uses (saved or live), searching from the top
+# of the range (.250 down) so it never takes the next "normal" address. One `incus list` call.
+#   free_vps_ip
+free_vps_ip() {
+  local used n
+  used=$(vps_inventory 2>/dev/null | awk -F'|' '{ print $2 }')
+  for n in $(seq 250 -1 "$((IP_START + 1))"); do
+    grep -qxF "${NETWORK_PREFIX}.$n" <<< "$used" || { echo "${NETWORK_PREFIX}.$n"; return 0; }
+  done
+  return 1
+}

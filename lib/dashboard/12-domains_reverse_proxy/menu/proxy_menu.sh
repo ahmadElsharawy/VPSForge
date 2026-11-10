@@ -24,6 +24,7 @@ proxy_menu() {
     echo "2) My domains        see them all, test that they work, remove one"
     echo "3) Cloudflare real visitor IP   optional: show visitors' real IPs when you use Cloudflare"
     echo "4) Sites from MY computer   no router access needed: tunnels through a VPS (add, list, start, stop)"
+    echo "5) VPN                 your phone / PC through a VPS (WireGuard): its IP and speed, or a private network"
     echo "0) Back"
     echo "================================================================"
     read -r -p "Choice [0=Back, Enter=1]: " choice
@@ -34,6 +35,7 @@ proxy_menu() {
       2) proxy_my_sites_menu ;;
       3) configure_cloudflare_realip ;;
       4) tunnel_menu ;;
+      5) vpn_menu ;;
       *) echo "Invalid option."; sleep 1 ;;
     esac
   done

@@ -32,6 +32,11 @@ delete_proxy_route() {
     new_lines+=("$line")
   done < "$conf"
   printf '%s\n' "${new_lines[@]}" > "$conf"
+  # a domain whose last route was just removed must not stay behind as an empty block
+  local gone
+  while IFS= read -r gone; do
+    [ -n "$gone" ] && remove_domain_from_guest_hosts "$vps" "$gone"
+  done < <(caddy_drop_empty_sites "$conf")
 
   if ! grep -q 'reverse_proxy' "$conf"; then
     rm -f "$backup"

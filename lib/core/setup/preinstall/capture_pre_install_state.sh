@@ -21,5 +21,10 @@ capture_pre_install_state() {
   for pkg in $VPSFORGE_PACKAGES; do
     dpkg -s "$pkg" >/dev/null 2>&1 && echo "$pkg" >> "$PRE_INSTALL_DIR/packages_present.txt"
   done
+  # An Incus that was already here keeps its storage pool and bridge on uninstall.
+  if command -v incus >/dev/null 2>&1; then
+    incus storage show default >/dev/null 2>&1 && touch "$PRE_INSTALL_DIR/had_incus_pool"
+    incus network show incusbr0 >/dev/null 2>&1 && touch "$PRE_INSTALL_DIR/had_incus_bridge"
+  fi
   date -u '+%Y-%m-%d %H:%M:%S UTC' > "$PRE_INSTALL_DIR/captured_at"
 }

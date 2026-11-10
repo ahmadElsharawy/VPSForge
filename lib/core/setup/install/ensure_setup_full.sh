@@ -20,7 +20,9 @@ ensure_setup_full() {
   incus network show incusbr0 >/dev/null 2>&1 || incus admin init --minimal
 
   # Optimize storage: recreate default dir pool as BTRFS for instant snapshots
-  if incus storage show default >/dev/null 2>&1; then
+  if [ -f /opt/vpsforge/.pool_migration_running ]; then
+    migrate_default_pool_to_btrfs   # a migration was stopped half-way: finish it first
+  elif incus storage show default >/dev/null 2>&1; then
     if incus storage show default | grep -q 'driver: dir'; then
       local used_by
       used_by=$(incus storage show default | grep -A 10 'used_by:' | grep -v 'used_by:' | grep -c '-' || true)

@@ -9,6 +9,8 @@ bulk_state_action() {
     echo "$action $n..."
     incus "$action" "$n" || echo "FAILED: $n"
   done
+  # logins of tunnels deleted while a VPS was stopped are removed now that it runs
+  [ "$action" = "stop" ] || tunnel_pending_cleanup
   pause
   return 0
 }

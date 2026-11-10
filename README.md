@@ -16,6 +16,20 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 
 ---
 
+## ✨ What's new in v2.1.24
+
+- **VPN** (menu 12 > 5): turn any VPS into a fast VPN with **Xray (VLESS + Reality)**. Your phone or PC goes online with the VPS's IP and speed, and the traffic looks like a normal HTTPS visit to `www.speedtest.net`, so it is hard to block or slow down. Each device gets its own **data limit (GB) and number of days** (or unlimited) and is switched off by itself when one runs out (checked every 5 minutes); renew it any time. Share a device with a **QR page** (QR code + "Copy link", works for 10 minutes) or its `vless://` link; the app (v2rayNG, Streisand, V2Box, v2rayN) shows the name `<server IP>-<VPS>-<days>-<GB>` by itself. Measured on a 1-CPU ARM server: about 3x faster than WireGuard (the CPU is the limit; more CPUs = more speed). Tested by `scripts/vpn-test.sh` on a real host.
+- **Every menu option checked end to end on a real server** (and its tests brought up to date): `port-forward edit` really edits a rule (the old one comes back if the new one fails); VPS names follow exactly what Incus accepts and are checked as you type them; error messages in Port Forward stay on screen; Settings prompts default to the current values; `vpsforge ram` checks and verifies.
+- **Changing a VPS's internal IP really changes it.** The card used to keep its old address on a running VPS (a hidden setting was removed while it ran); now the new address is checked on the card and inside the VPS, and a refused change leaves everything as it was. Swapping two VPSs' IPs goes through a spare address, and two VPSs sharing one IP are fixed for real (the one that truly holds it keeps it).
+- **Safer updates.** Two updates can no longer run at the same time (a lock), and the installed version is recorded only after the new code is verified, so a rolled-back update never claims the new version.
+- **Safer storage migration and uninstall.** The move to BTRFS never touches containers VPSForge did not create and finishes by itself if it was stopped half-way. `vpsforge uninstall` keeps the storage pool, bridge and images of an Incus that was on the server before VPSForge.
+- **Reinstall recovery keeps the website.** If a reinstall is killed half-way, the restored VPS keeps its port forwards and its Caddy file.
+- **Smaller fixes:** removing the last route of a second domain no longer leaves an empty block in Caddy; deleting a tunnel of a stopped VPS removes its login when the VPS runs again; a real 1 Mbit speed limit survives the monthly quota reset; free disk space no longer counts what a VPS already used twice; name-based SSH ports never fall on a numbered VPS's port and a port the server itself uses is refused; the VPS list and the forward list ask Incus once instead of once per VPS.
+- **On purpose:** VPSs stay *privileged* so Docker, WireGuard and the VPN work inside them. Give a VPS only to people you trust with root on it.
+- **Tested on a real Oracle ARM server:** `scripts/e2e.sh`, `scripts/ui-test.py` (every menu, no safe mode), `scripts/vpn-test.sh` and `scripts/space-test.sh`.
+
+---
+
 ## ✨ What's new in v2.1
 
 - **Sites from MY computer** (menu 12 > 4): open a site that runs on your own PC to the internet through a VPS, **without opening any port on your router**. Your PC connects *out* to the VPS and visitors come in through the same connection. Add several tunnels per VPS, then list, start, stop, edit or delete each one (or all of them) from one table. A port tunnel appears in Port Forward (menu 11) by itself and disappears when you stop it. See [6.6b](#66b-sites-from-my-computer-reverse-tunnels-menu-12--4).
@@ -60,6 +74,7 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
    - [6.5 Port Forwarding & Conflict Detection (Menu 11)](#65-port-forwarding--conflict-detection-menu-11)
    - [6.6 Domain Reverse Proxy & Auto-SSL via Caddy (Menu 12)](#66-domain-reverse-proxy--auto-ssl-via-caddy-menu-12)
    - [6.6b Sites from MY computer: reverse tunnels (Menu 12 > 4)](#66b-sites-from-my-computer-reverse-tunnels-menu-12--4)
+   - [6.6c VPN: Xray VLESS + Reality (Menu 12 > 5)](#66c-vpn-xray-vless--reality-menu-12--5)
    - [6.7 Snapshots & Compressed Backups (Menu 13)](#67-snapshots--compressed-backups-menu-13)
 7. [⚙️ Engineering Secrets & Core Algorithms](#7-️-engineering-secrets--core-algorithms)
    - [7.1 BTRFS Copy-on-Write & Instant Snapshots](#71-btrfs-copy-on-write--instant-snapshots)
@@ -396,6 +411,26 @@ flowchart LR
 **Who can do what.** The line and password belong to a limited login that exists only for that tunnel port. It cannot open a shell, cannot open any other port and cannot reach other services in the VPS, so it is safe to hand to a friend whose site cannot be exposed otherwise. Cloud firewalls (Oracle VCN, Google VPC) are yours: open the public TCP port there yourself.
 
 **Manage them** in *My tunnels*: one table with each tunnel's state (`ACTIVE - connected`, `ACTIVE - waiting for your PC`, `STOPPED`), and start / stop / edit / delete for one tunnel or for all tunnels of a VPS.
+
+---
+
+### 6.6c VPN: Xray VLESS + Reality (Menu 12 > 5)
+
+Turn a VPS into a VPN for your phones and computers. All their internet goes out through the VPS (its IP, its speed), and to anyone watching it looks like a normal HTTPS visit to `www.speedtest.net` (a stranger who connects to the port really gets speedtest.net).
+
+**Create (12 > 5 > 1):** pick a running VPS and a public port (default 8443). Open **TCP <port>** (the VPN) and **TCP <port>+1** (the QR page) in your cloud firewall. Xray is downloaded from its official GitHub release (checksum checked) and runs as the `vpsforge-vpn` service inside the VPS.
+
+**Add a device (12 > 5 > 2):** a name (e.g. `my-phone`), a **data limit in GB** and a **number of days** (0 = unlimited for either). The device is switched off by itself when one runs out (checked every 5 minutes); **Renew (12 > 5 > 4)** gives it new GB / days from today. The overview shows each device's use (`3.2/50 GB`), days left and whether it is in use.
+
+**Connect:** the free apps **v2rayNG** (Android), **Streisand** or **V2Box** (iPhone), **v2rayN** (Windows). Choose one of:
+- **QR page** (easiest): a link like `http://SERVER:8444/<secret>/` that shows the QR code and a *Copy link* button for 10 minutes, then closes (even if a browser keeps a connection open).
+- **QR code** in the terminal, or the `vless://` **link** to paste (*Import from clipboard*).
+
+The app shows the name `<server IP>-<VPS>-<days>-<GB>` by itself, e.g. `193.122.84.156-vps3-30d-50GB` (`unl` = unlimited).
+
+**Speed:** measured from Frankfurt to a 1-CPU ARM VPS in Jeddah with Ookla speedtest: about **410 Mbit/s down / 570 up**, against 138 / 310 with WireGuard (the server's single CPU is at 100%: more CPUs give more speed). Normal HTTPS browsing needs even less CPU (Xray's *Vision* passes already-encrypted data through without encrypting it twice).
+
+**Clean:** removing a device stops it at once; removing the VPN (12 > 5 > 6) removes Xray, its service and files from the VPS and its port from the server. Deleting the VPS or `vpsforge uninstall` remove everything too.
 
 ---
 

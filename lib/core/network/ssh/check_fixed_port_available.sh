@@ -1,4 +1,7 @@
 #!/bin/bash
+# Is <port> free to be the SSH port of <name>? Not when another VPS's forward uses it, and not
+# when a program on the server itself listens on it (the forward would silently take its place).
+#   check_fixed_port_available <name> <ip> <port>
 check_fixed_port_available() {
   local name="$1" ip="$2" port="$3" owner_ip
   # POSIX awk only (Ubuntu ships mawk, which has no 3-arg match()).
@@ -14,6 +17,12 @@ check_fixed_port_available() {
 
   if [ -n "$owner_ip" ] && [ "$owner_ip" != "$ip" ]; then
     echo "ERROR: Required port $port for $name is already assigned to $owner_ip."
+    return 1
+  fi
+  local host_owner
+  host_owner=$(host_port_owner "$port" tcp 2>/dev/null || true)
+  if [ -z "$owner_ip" ] && [ -n "$host_owner" ]; then
+    echo "ERROR: port $port for $name is already used on this server by '$host_owner'."
     return 1
   fi
   return 0

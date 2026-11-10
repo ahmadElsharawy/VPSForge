@@ -160,8 +160,10 @@ UPD_WRAPPER
   echo "================================================"
   echo
 
+  # Tell vpsforge_with_update_lock that the code changed (it reloads VPSForge after letting go of the lock)
+  [ -n "${VPSFORGE_UPDATE_DONE_FILE:-}" ] && : > "$VPSFORGE_UPDATE_DONE_FILE"
   # If running in interactive shell / terminal, offer immediate re-exec
-  if [ -t 0 ] && [ -n "${VPSFORGE_VERSION:-}" ]; then
+  if [ -t 0 ] && [ -n "${VPSFORGE_VERSION:-}" ] && [ -z "${VPSFORGE_UPDATE_DONE_FILE:-}" ]; then
     echo "Reloading VPSForge in current session..."
     sleep 1
     exec "$app_dir/vpsforge.sh"

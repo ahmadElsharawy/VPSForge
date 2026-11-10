@@ -17,7 +17,9 @@ recover_interrupted_reinstall() {
     fi
     ip=$(incus config get "$old" user.vpsforge.ip 2>/dev/null || true)
     port=$(incus config get "$old" user.vpsforge.ssh_port 2>/dev/null || true)
-    cleanup_failed_vps "$original" "" ""
+    # The half-made new VPS has the original's name, IP and Caddy file name: keep the original's
+    # port-forwards and website file (they come back with it below).
+    VPS_KEEP_FORWARDS=1 cleanup_failed_vps "$original" "" ""
   fi
 
   echo "Recovery: the reinstall of '$original' did not finish. Restoring the original VPS..."

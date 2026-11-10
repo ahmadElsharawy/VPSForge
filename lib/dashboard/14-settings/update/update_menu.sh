@@ -26,7 +26,7 @@ update_menu() {
 
   case "$choice" in
     1)
-      vpsforge_perform_update latest
+      vpsforge_with_update_lock vpsforge_perform_update latest
       pause
       ;;
     2)
@@ -38,7 +38,7 @@ update_menu() {
       mapfile -t tags < <(git -C "$repo_dir" tag --sort=-version:refname 2>/dev/null || true)
       if [ "${#tags[@]}" -eq 0 ]; then
         echo "No release tags found. Updating to latest instead..."
-        vpsforge_perform_update latest
+        vpsforge_with_update_lock vpsforge_perform_update latest
         pause
         return
       fi
@@ -59,7 +59,7 @@ update_menu() {
       [ -n "$v_choice" ] || return
       if [[ "$v_choice" =~ ^[0-9]+$ ]] && [ "$v_choice" -ge 1 ] && [ "$v_choice" -le "${#tags[@]}" ]; then
         target="${tags[$((v_choice-1))]}"
-        vpsforge_perform_update "$target"
+        vpsforge_with_update_lock vpsforge_perform_update "$target"
         pause
       else
         echo "Invalid choice."

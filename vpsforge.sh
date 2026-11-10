@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v2.1.23"
+VPSFORGE_VERSION="v2.1.24"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -60,13 +60,13 @@ if [ "${1:-}" = "uninstall" ]; then
 fi
 # Light commands: no full startup (the cron jobs run these every few minutes).
 case "${1:-}" in
-  quota-check) check_vps_traffic_quotas; exit 0;;
+  quota-check) check_vps_traffic_quotas; vpn_check_limits; tunnel_pending_cleanup; exit 0;;
   tidy) get_network_info 2>/dev/null || true; host_tidy; exit 0;;
   reclaim) reclaim_pool_space; echo "Freed disk space returned to the server."; exit 0;;
   update|upgrade)
     shift
     get_network_info 2>/dev/null || true
-    vpsforge_perform_update "$@"
+    vpsforge_with_update_lock vpsforge_perform_update "$@"
     exit $?
     ;;
 esac
@@ -88,10 +88,12 @@ case "${1:-}" in
     ;;
   update|upgrade)
     shift
-    vpsforge_perform_update "$@"
+    vpsforge_with_update_lock vpsforge_perform_update "$@"
     ;;
   quota-check)
     check_vps_traffic_quotas
+    vpn_check_limits
+    tunnel_pending_cleanup
     ;;
   list)
     list_vps
