@@ -7,8 +7,8 @@
 #               network_mode network_value image traffic_mode rx tx open_ssh]
 create_vps() {
   local name="${1:-}" num="${2:-}"
-  if ! [[ "$name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
-    echo "ERROR: Invalid VPS name '$name'. Use letters, digits, dots, dashes or underscores (no spaces)."
+  if ! is_valid_vps_name "$name"; then
+    echo "ERROR: Invalid VPS name '$name'. Use letters, digits and dashes only, starting with a letter (no dots, underscores or spaces)."
     return 1
   fi
   [[ "$num" =~ ^[0-9]+$ ]] || { echo "ERROR: Invalid VPS number '$num'."; return 1; }

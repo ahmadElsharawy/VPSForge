@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v2.1.20"
+VPSFORGE_VERSION="v2.1.21"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -103,8 +103,11 @@ case "${1:-}" in
     incus "$1" "${2:-}"
     ;;
   ram)
-    [ -n "${2:-}" ] && [ -n "${3:-}" ] && incus config set "$2" limits.memory "${3}MiB" || \
+    if [ -n "${2:-}" ] && [ -n "${3:-}" ]; then
+      set_ram_mode_for_vps "$2" limited "$3" && echo "RAM of $2 set to ${3} MB."
+    else
       echo "Usage: vpsforge ram vps1 1024"
+    fi
     ;;
   repair|repair-all)
     repair_connection_menu

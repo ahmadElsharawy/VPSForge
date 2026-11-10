@@ -21,9 +21,9 @@ port_forward_menu() {
     c="${c:-1}"
 
     case "$c" in
-      1) _pf_interactive_add && pause;;
-      2) _pf_interactive_edit && pause;;
-      3) _pf_interactive_delete && pause;;
+      1) _pf_interactive_add; pause;;
+      2) _pf_interactive_edit; pause;;
+      3) _pf_interactive_delete; pause;;
       4)
         read -r -p "Are you sure you want to delete ALL port-forward rules? (y/N): " confirm
         if [[ "${confirm,,}" =~ ^y ]]; then

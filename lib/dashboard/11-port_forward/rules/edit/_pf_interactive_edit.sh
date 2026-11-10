@@ -78,6 +78,5 @@ _pf_interactive_edit() {
   [[ "$new_int_ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "ERROR: the target has no IP address (is the VPS running?). Nothing was changed."; return 1; }
 
   # Remove old rule & add new rule
-  port_forward_cli delete "$old_proto" "$old_ext_ip" "$old_ext_port" "$old_int_ip" "$old_int_port"
-  port_forward_cli add "$new_proto" "$new_ext_ip" "$new_ext_port" "$new_int_ip" "$new_int_port"
+  port_forward_cli edit "$old_proto" "${old_ext_ip:-0.0.0.0}" "$old_ext_port" "$old_int_ip" "$old_int_port"     "$new_proto" "$new_ext_ip" "$new_ext_port" "$new_int_ip" "$new_int_port"
 }

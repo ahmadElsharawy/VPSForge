@@ -128,8 +128,11 @@ add_menu() {
           for ((i=1; i<=count; i++)); do
             n=$((first_num + i - 1))
             default_name="${VPS_PREFIX}${n}"
-            read -r -p "Enter VPS Name for container $i [default: $default_name]: " custom_name </dev/tty
-            if [ -n "$custom_name" ]; then name="$custom_name"; else name="$default_name"; fi
+            while :; do
+              read -r -p "Enter VPS Name for container $i [default: $default_name]: " custom_name </dev/tty
+              if [ -n "$custom_name" ]; then name="$custom_name"; else name="$default_name"; fi
+              add_name_is_usable "$name" "${names[@]}" && break
+            done
             port=$(vps_fixed_port "$n")
             names+=("$name"); nums+=("$n"); ports+=("$port"); images+=("$shared_img"); ssh_forwards+=("$shared_ssh_fwd")
             ram_modes+=("$shared_rm"); ram_values+=("$shared_rv")
@@ -171,13 +174,14 @@ add_menu() {
                 1)
                   echo "----------------------------------------------------------------"
                   echo "Resources for container $vps_i of $count"
-                  show_example "web1, test-ubuntu, game-server  (letters, digits, - _ .)"
+                  show_example "web1, test-ubuntu, game-server  (letters, digits and dashes, starting with a letter)"
                   read -r -p "Enter VPS Name [default: $cur_name, 0=Back]: " custom_name </dev/tty
                   if [ "$custom_name" = "0" ]; then
                     ind_step=0
                     break
                   fi
                   if [ -n "$custom_name" ]; then cur_name="$custom_name"; fi
+                  add_name_is_usable "$cur_name" "${names[@]:0:$((vps_i-1))}" || continue
                   ind_step=2
                   ;;
                 2)

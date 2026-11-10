@@ -7,8 +7,8 @@
 clone_vps() {
   local src="${1:-}" new="${2:-}" num ip port
   incus info "$src" >/dev/null 2>&1 || { echo "ERROR: VPS '$src' does not exist."; return 1; }
-  if ! [[ "$new" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
-    echo "ERROR: Invalid name '$new'. Use letters, digits, dots, dashes or underscores (no spaces)."
+  if ! is_valid_vps_name "$new"; then
+    echo "ERROR: Invalid name '$new'. Use letters, digits and dashes only, starting with a letter (no dots, underscores or spaces)."
     return 1
   fi
   incus info "$new" >/dev/null 2>&1 && { echo "ERROR: A VPS named '$new' already exists."; return 1; }

@@ -38,8 +38,9 @@ settings_menu() {
         ;;
       2)
         show_example "10  (the dashboard refreshes every 10 seconds)"
-        read -r -p "Enter new refresh interval in seconds (min 2s) [Enter = 10]: " new_interval
-        new_interval="${new_interval:-10}"
+        read -r -p "Enter new refresh interval in seconds (min 2s) [Enter = $REFRESH_INTERVAL, 0=Back]: " new_interval
+        [ "$new_interval" = "0" ] && continue
+        new_interval="${new_interval:-$REFRESH_INTERVAL}"
         if [[ "$new_interval" =~ ^[0-9]+$ ]] && [ "$new_interval" -ge 2 ]; then
           REFRESH_INTERVAL="$new_interval"
           save_settings
@@ -57,7 +58,9 @@ settings_menu() {
         ;;
       5)
         show_example "1000 = a 1 Gbit/s server connection (used to show the speed limits)"
-        read -r -p "Enter total network speed of host in Mbit (e.g. 1000, 10000): " new_speed
+        read -r -p "Enter total network speed of host in Mbit [Enter = $current_net_speed, 0=Back]: " new_speed
+        [ "$new_speed" = "0" ] && continue
+        new_speed="${new_speed:-$current_net_speed}"
         if [[ "$new_speed" =~ ^[0-9]+$ ]] && [ "$new_speed" -ge 1 ]; then
           set_total_network_mbit "$new_speed"
           echo "Host Network Speed updated to ${new_speed} Mbit."

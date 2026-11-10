@@ -12,8 +12,8 @@ rename_vps_container() {
   [ "$old_name" != "$new_name" ] || { echo "New name is the same as current name."; return 0; }
 
   # Validate container name
-  if ! [[ "$new_name" =~ ^[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
-    echo "ERROR: Invalid VPS name '$new_name'. Use alphanumeric characters, dots, dashes, or underscores."
+  if ! is_valid_vps_name "$new_name"; then
+    echo "ERROR: Invalid VPS name '$new_name'. Use letters, digits and dashes only, starting with a letter (no dots, underscores or spaces)."
     return 1
   fi
 
