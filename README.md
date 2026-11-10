@@ -16,6 +16,12 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 
 ---
 
+## ✨ What's new in v2.1.26
+
+- **README brought up to date** (no code change): the dashboard map and the file directory now include the tunnels and the VPN, the CLI reference shows `port-forward edit`, the Windows tunnel chapter explains how the site address is chosen, and a new chapter, [11. What was tested and the known limits](#11--what-was-tested-and-the-known-limits), says exactly what has been tried on a real server and what has not.
+
+---
+
 ## ✨ What's new in v2.1.25
 
 - **Windows tunnels no longer fail when your site listens on one address only.** The setup script used to forward visitors to `localhost`, which Windows may turn into `::1` (IPv6) while your site listens on `127.0.0.1` only (or the other way round): visitors got nothing. Before every connection the script now checks which of `127.0.0.1` and `::1` your site really answers on and uses that one (it falls back to `localhost` if the site is not running yet). Existing tunnels keep the old script: delete the tunnel and add it again to get the fix. Tested on Windows with Windows OpenSSH against a real tunnel.
@@ -91,6 +97,7 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 8. [📂 Project File Directory & Module Structure](#8--project-file-directory--module-structure)
 9. [🧠 AI / Developer System Reconstruction Guide](#9--ai--developer-system-reconstruction-guide)
 10. [💻 CLI Command Reference](#10--cli-command-reference)
+11. [✅ What was tested and the known limits](#11--what-was-tested-and-the-known-limits)
 
 ---
 
@@ -220,6 +227,11 @@ graph LR
     Main --> M13["13) Snapshots & Backups"]
     Main --> M14["14) Settings & Updates"]
     Main --> M15["0) Exit"]
+
+    M12 --> D1["Add a domain / My domains"]
+    M12 --> D2["Cloudflare real visitor IP"]
+    M12 --> D3["Sites from MY computer (reverse tunnels)"]
+    M12 --> D4["VPN (Xray VLESS + Reality)"]
 
     M7 --> E1["RAM / CPU / Disk Limits"]
     M7 --> E2["Bandwidth & Traffic Quota"]
@@ -414,6 +426,8 @@ flowchart LR
 | Linux / macOS | A one-line loop that reconnects by itself. |
 | More | Try once, create a **new key** (takes access back), or remove a Windows setup. |
 
+**Which address of your PC?** On Windows the name `localhost` can mean `127.0.0.1` (IPv4) or `::1` (IPv6), and a site that listens on only one of them is unreachable through the other. The Windows setup script therefore checks, before every connection, which of the two your site answers on and forwards to that one (it falls back to `localhost` when the site is not running yet). Tunnels made before v2.1.25 keep the old script: delete the tunnel and add it again.
+
 **Who can do what.** The line and password belong to a limited login that exists only for that tunnel port. It cannot open a shell, cannot open any other port and cannot reach other services in the VPS, so it is safe to hand to a friend whose site cannot be exposed otherwise. Cloud firewalls (Oracle VCN, Google VPC) are yours: open the public TCP port there yourself.
 
 **Manage them** in *My tunnels*: one table with each tunnel's state (`ACTIVE - connected`, `ACTIVE - waiting for your PC`, `STOPPED`), and start / stop / edit / delete for one tunnel or for all tunnels of a VPS.
@@ -572,6 +586,8 @@ scripts/
   test.sh                    # Offline unit tests (no root / incus needed)
   e2e.sh                     # End-to-end test of every feature on a real VPS (root)
   space-test.sh              # Measures real disk use of snapshots/backups/deleted VPSs
+  ui-test.py                 # Drives every real menu through a terminal and checks the result on the server
+  vpn-test.sh                # VPN end to end: devices, limits, QR page, removal (real host, root)
 lib/
   load_vpsforge_lib.sh                  # load_vpsforge_lib: loads constants, then every function file
   core/
@@ -583,6 +599,8 @@ lib/
     selection/               # interactive/ numbering/ parser/
     setup/                   # install/ storage/ compat/ kernel/ update/ preinstall/
     proxy/caddy/             # Caddy install, validate-or-rollback, IP follow, conflict checks
+    proxy/tunnel/            # reverse tunnels: records, limited logins, Windows setup script
+    proxy/vpn/               # VPN (Xray): install, devices, GB/day limits, QR page, link
     backups/                 # list / delete / clean orphaned backups
     incus/                   # keeps Incus healthy: pause updates, self-test, online repair
     uninstall/               # vpsforge uninstall: puts the server back as it was
@@ -630,15 +648,42 @@ vpsforge clone <vps> [new]       # Instant exact copy of a VPS (own IP and SSH p
 vpsforge clean-backups           # List and delete backups whose VPS no longer exists
 vpsforge reclaim                 # Give space freed inside the VPS pool back to the real disk
 vpsforge tidy                    # reclaim + empty apt cache + trim system logs
-vpsforge quota-check             # Manually execute the traffic quota verification daemon
+vpsforge quota-check             # Traffic quotas, VPN device limits and pending tunnel clean-up (also every 5 minutes by cron)
 vpsforge repair-all              # Rebuild all guest static network configs and SSH rules
-vpsforge port-forward            # Port-forwarding CLI (add / delete / list ...)
+vpsforge port-forward            # Port-forwarding CLI (add / edit <old rule> <new rule> / delete / list ...)
 vpsforge setup                   # Force the full host setup again
 vpsforge update [latest|vX.Y.Z]  # Update from GitHub (or switch to a tagged release); --check / --list
 vpsforge selftest                # Check that the Incus commands VPSForge needs still work (run after an Incus update)
 vpsforge incus status|pin|unpin|repair   # Incus version, pause/allow its updates, repair it
 vpsforge uninstall               # Remove everything; --dry-run, --yes, --keep-backups
 ```
+
+---
+
+## 11. ✅ What was tested and the known limits
+
+**Tested on a real server:** Oracle Cloud ARM (Ampere), 1 CPU, about 6 GB RAM, Ubuntu 24.04, with real VPSs on it. Results of the v2.1.24 / v2.1.25 releases:
+
+| Test | Result |
+|---|---|
+| `scripts/test.sh` (offline, no root) | 100 / 100 |
+| `scripts/e2e.sh` (creates its own VPS and tries every feature) | 90 / 90 |
+| `scripts/ui-test.py` (types into every real menu, nothing skipped) | 142 / 142 |
+| `scripts/vpn-test.sh` (VPN devices, limits, QR page, removal) | 49 / 49 |
+| `scripts/space-test.sh` (snapshots, backups, deleted VPSs leave no files behind) | clean |
+
+The Windows tunnel script was tried on Windows 10 with Windows OpenSSH against a real tunnel.
+
+**Fixed in the code but not tried on a server:** the BTRFS migration (skipping containers VPSForge did not make, and finishing after an interruption), `vpsforge uninstall` on a server that already had Incus, and the recovery of a reinstall that was killed half-way.
+
+**Not tried at all:** x86 servers, other cloud providers, other host systems than Ubuntu 24.04, the VPN inside Alpine / Debian / Rocky VPSs (the installer has paths for them), and the Linux / macOS tunnel line with a site that listens on one address only.
+
+**Limits you should know:**
+- VPSs are **privileged on purpose** (Docker and the VPN need it). Whoever has root inside a VPS can affect the whole server: give a VPS only to people you trust.
+- The **VPN speed is limited by the CPU of the server**: about 410 Mbit/s down / 570 up on 1 ARM CPU (Frankfurt to Jeddah, Ookla). More CPUs give more speed. Your own internet and the route to the server are limits too.
+- The VPN needs TCP ports (the VPN port and the next one for the QR page) open in the **cloud provider's firewall**, not only on the server.
+- Xray is downloaded from its GitHub release (checksum checked) when a VPN is created, so the VPS needs internet access to GitHub.
+- A free 1-CPU server cannot give 1 Gbit/s through a VPN; for that use 2-4 CPUs.
 
 ---
 
