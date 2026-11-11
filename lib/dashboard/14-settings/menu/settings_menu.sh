@@ -19,7 +19,7 @@ settings_menu() {
       6) _settings_toggle_auto_start;;
       7)
         if vpsforge_uninstall; then
-          printf " [?1049l"
+          printf "[?1049l"
           exit 0
         fi
         pause

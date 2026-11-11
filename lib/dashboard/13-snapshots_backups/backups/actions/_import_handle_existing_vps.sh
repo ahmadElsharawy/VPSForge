@@ -14,7 +14,7 @@ _import_handle_existing_vps() {
       if [[ "$target_name" =~ -[0-9]+$ ]]; then
         base_prefix="${target_name%-*}"
         suffix_num="${target_name##*-}"
-        suffix_num=$((suffix_num + 1))
+        suffix_num=$((10#$suffix_num + 1))
       fi
       auto_next="${base_prefix}-${suffix_num}"
       while incus list -c n --format csv 2>/dev/null | grep -Fxq "$auto_next"; do

@@ -31,7 +31,7 @@ _pf_cli_add() {
   save_iptables
   target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
   if [ -n "$target_vps" ]; then
-    if [ "$internal_port" = "22" ]; then
+    if [ "$internal_port" = "22" ] && [[ "$protocol" =~ ^(tcp|both)$ ]]; then
       incus config set "$target_vps" user.vpsforge.ssh_port "$external_port" 2>/dev/null || true
     fi
     sync_vps_metadata "$target_vps"

@@ -30,6 +30,8 @@ change_vps_ip() {
   fi
 
   [ -n "$old_ip" ] && remove_ip "$old_ip"
+  # remove_ip only knows the 9001-9999 range: drop this VPS's own SSH forward by its port too (custom ports).
+  [ -n "$port" ] && remove_port "$port"
   [ -n "$old_ip" ] && remap_port_forwards_ip "$old_ip" "$new_ip"
   [ -n "$port" ] && vps_ssh_forward_enabled "$name" && add_forward_rule "$new_ip" "$port"
 

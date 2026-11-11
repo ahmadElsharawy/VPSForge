@@ -6,6 +6,7 @@ export_vps_backup() {
   _export_vps_backup_preview "$name" || return 0
 
   mkdir -p "$BACKUP_DIR"
+  chmod 700 "$BACKUP_DIR"
   default_name="${name}-backup-$(date +%Y%m%d-%H%M%S).tar"
   show_example "web1-before-upgrade   (saved in $BACKUP_DIR)"
   read -r -p "Enter backup filename [default: $default_name]: " custom_name </dev/tty
@@ -24,11 +25,12 @@ export_vps_backup() {
   fi
   local tmp_dir="${BACKUP_DIR}/.tmp"
   mkdir -p "$tmp_dir"
+  chmod 700 "$tmp_dir"
   local tmp_file_path="${tmp_dir}/$(basename "$file_path")"
 
   # Automatically disable and remove non-functional container swapfiles to prevent backup bloat
-  incus exec "$name" -- sh -c "swapoff /swapfile 2>/dev/null || true"
-  incus exec "$name" -- sh -c "rm -f /swapfile 2>/dev/null || true"
+  incus exec "$name" -- sh -c "swapoff /swapfile 2>/dev/null || true" >/dev/null 2>&1
+  incus exec "$name" -- sh -c "rm -f /swapfile 2>/dev/null || true" >/dev/null 2>&1
 
   echo "Exporting backup for $name to temporary storage..."
   backup_space_check "$name" || return 1
@@ -36,7 +38,9 @@ export_vps_backup() {
   if run_guarded "cleanup_partial_backup $(printf %q "$name") $(printf %q "$tmp_file_path")" _export_instance "$name" "$tmp_file_path"; then
     if mv "$tmp_file_path" "$file_path"; then
       echo "Backup saved: $file_path"
+      chmod 600 "$file_path"
       incus config show "$name" --expanded > "${file_path}.info" 2>/dev/null || true
+      chmod 600 "${file_path}.info"
     else
       echo "ERROR: Failed to move backup to final destination."
       return 1

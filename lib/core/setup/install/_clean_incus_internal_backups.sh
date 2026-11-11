@@ -8,7 +8,16 @@ _clean_incus_internal_backups() {
   touch "$stamp" 2>/dev/null || true
 
   local inst_list inst backup_list backup_name
-  inst_list=$(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)
+  # Only VPSForge's own VPSs (they carry user.vpsforge.num): other containers' backups are not ours to delete.
+  inst_list=$(incus list --format json 2>/dev/null | python3 -c '
+import sys, json
+try:
+    for inst in json.load(sys.stdin):
+        if (inst.get("config") or {}).get("user.vpsforge.num"):
+            print(inst.get("name", ""))
+except Exception:
+    pass
+' 2>/dev/null || true)
   for inst in $inst_list; do
     backup_list=$(incus query "/1.0/instances/${inst}/backups" 2>/dev/null | python3 -c '
 import sys, json

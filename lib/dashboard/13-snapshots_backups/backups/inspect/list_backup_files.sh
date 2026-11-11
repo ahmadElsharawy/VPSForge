@@ -3,6 +3,7 @@
 list_backup_files() {
   local filter_prefix="$1" f
   mkdir -p "$BACKUP_DIR"
+  chmod 700 "$BACKUP_DIR"
   BACKUP_FILES_RESULT=()
 
   while IFS= read -r f; do

@@ -6,6 +6,7 @@
 backup_space_check() {
   local name="${1:?vps}" used_gb free_gb needed_gb
   mkdir -p "$BACKUP_DIR"
+  chmod 700 "$BACKUP_DIR"
   used_gb=$(get_vps_disk_usage_gb "$name" 2>/dev/null || echo 0)
   free_gb=$(df -BG --output=avail "$BACKUP_DIR" 2>/dev/null | tail -1 | tr -dc '0-9')
   needed_gb=$(awk -v u="${used_gb:-0}" 'BEGIN { printf "%d", 2 * u + 1 }')

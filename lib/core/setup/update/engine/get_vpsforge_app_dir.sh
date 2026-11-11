@@ -6,6 +6,6 @@ get_vpsforge_app_dir() {
   elif [ -d "/opt/vpsforge" ]; then
     echo "/opt/vpsforge"
   else
-    cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../../.." && pwd
+    cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/../../../../.." && pwd
   fi
 }

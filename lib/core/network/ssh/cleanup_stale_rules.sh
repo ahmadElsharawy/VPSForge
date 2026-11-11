@@ -4,9 +4,12 @@ cleanup_stale_rules() {
   local line port ip removed=0 inventory
   echo "Scanning VPSForge port-forwarding rules..."
   # One look at Incus. If it does not answer, or a VPS has no known address, nothing is removed.
+  if ! incus list -c n --format csv >/dev/null 2>&1; then
+    echo "Incus did not answer: nothing was removed."
+    return 1
+  fi
   inventory=$(vps_inventory 2>/dev/null || true)
-  [ -n "$inventory" ] || { echo "Incus did not answer: nothing was removed."; return 1; }
-  if awk -F'|' '$2 == "" { f = 1 } END { exit !f }' <<< "$inventory"; then
+  if [ -n "$inventory" ] && awk -F'|' '$2 == "" { f = 1 } END { exit !f }' <<< "$inventory"; then
     echo "A VPS has no known address: nothing was removed."; return 1
   fi
 

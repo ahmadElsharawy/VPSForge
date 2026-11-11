@@ -13,6 +13,7 @@ update_vps_backup() {
       sync_vps_metadata "$name"
       local tmp_dir="${BACKUP_DIR}/.tmp"
       mkdir -p "$tmp_dir"
+      chmod 700 "$tmp_dir"
       local tmp_file_path="${tmp_dir}/$(basename "$SELECTED_BACKUP_FILE")"
 
       # Automatically disable and remove non-functional container swapfiles to prevent backup bloat
@@ -24,7 +25,9 @@ update_vps_backup() {
       if run_guarded "cleanup_partial_backup $(printf %q "$name") $(printf %q "$tmp_file_path")" _export_instance "$name" "$tmp_file_path"; then
         if mv -f "$tmp_file_path" "$SELECTED_BACKUP_FILE"; then   # replaces the old file in one step: it is never deleted before the new one is in place
           echo "Backup updated successfully: $SELECTED_BACKUP_FILE"
+          chmod 600 "$SELECTED_BACKUP_FILE"
           incus config show "$name" --expanded > "${SELECTED_BACKUP_FILE}.info" 2>/dev/null || true
+          chmod 600 "${SELECTED_BACKUP_FILE}.info"
         else
           echo "ERROR: Failed to move updated backup to final destination."
           return 1
