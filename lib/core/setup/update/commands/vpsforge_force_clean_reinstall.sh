@@ -50,9 +50,13 @@ vpsforge_force_clean_reinstall() {
   echo "================================================"
   echo
 
-  if [ -t 0 ] && [ -n "${VPSFORGE_VERSION:-}" ]; then
+  # Tell vpsforge_with_update_lock that the code changed (it reloads VPSForge after letting go of the lock)
+  [ -n "${VPSFORGE_UPDATE_DONE_FILE:-}" ] && : > "$VPSFORGE_UPDATE_DONE_FILE"
+
+  if [ -t 0 ] && [ -n "${VPSFORGE_VERSION:-}" ] && [ -z "${VPSFORGE_UPDATE_DONE_FILE:-}" ]; then
     echo "Reloading VPSForge in current session..."
     sleep 1
+    exec 9>&-
     exec "$app_dir/vpsforge.sh"
   fi
   return 0

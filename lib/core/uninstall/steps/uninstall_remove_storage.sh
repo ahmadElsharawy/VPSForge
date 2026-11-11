@@ -5,6 +5,7 @@ uninstall_remove_storage() {
   echo "[3/7] Removing storage pool, bridge and cached images..."
   if [ "${UNINSTALL_FOREIGN_INSTANCES:-0}" -gt 0 ]; then
     echo "  (other containers still use the pool and bridge: kept)"
+    UNINSTALL_KEPT_INCUS=1
     return 0
   fi
 
@@ -13,6 +14,7 @@ uninstall_remove_storage() {
   if [ -f "$PRE_INSTALL_DIR/had_incus_pool" ] || [ -f "$PRE_INSTALL_DIR/had_incus_bridge" ] || \
      grep -qxE 'incus|incus-base' "$PRE_INSTALL_DIR/packages_all.txt" 2>/dev/null; then
     echo "  (Incus was here before VPSForge: its storage pool, bridge and images are kept)"
+    UNINSTALL_KEPT_INCUS=1
     return 0
   fi
   while read -r fp; do

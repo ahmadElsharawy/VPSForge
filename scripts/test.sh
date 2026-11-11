@@ -23,6 +23,7 @@ t "ram unlimited" 0 "$(ram_mb Unlimited)"
 
 # forward rules read from backups must be safe
 is_valid_port_forward_rule tcp "" 8080 80 && r=ok || r=bad; t "rule ok" ok "$r"
+is_valid_port_forward_rule tcp any 8080 80 && r=ok || r=bad; t "rule any ext_ip ok" ok "$r"
 is_valid_port_forward_rule tcp "" 22 22 && r=ok || r=bad; t "rule host ssh port refused" bad "$r"
 is_valid_port_forward_rule tcp "1.2.3.4 -j ACCEPT" 8080 80 && r=ok || r=bad; t "rule ip injection refused" bad "$r"
 is_valid_port_forward_rule icmp "" 8080 80 && r=ok || r=bad; t "rule bad proto refused" bad "$r"
@@ -115,6 +116,33 @@ routes=$(list_proxy_routes)
 t "list_proxy_routes finds both routes" 2 "$(echo "$routes" | grep -c .)"
 t "list_proxy_routes root route" "vps1|a.example.com|/|http://10.0.0.9:80|2" "$(echo "$routes" | sed -n 1p)"
 t "list_proxy_routes path route" "vps1|a.example.com|/api/*|https://10.0.0.9:8443|3" "$(echo "$routes" | sed -n 2p)"
+rm -rf "$CADDY_CONF_DIR"
+
+# list_proxy_routes handles multi-domain headers and nested blocks
+CADDY_CONF_DIR=$(mktemp -d)
+cat << 'EOF' > "$CADDY_CONF_DIR/vps1.caddy"
+example.com {
+    handle /api/* {
+        reverse_proxy 10.0.0.2:8080
+    }
+}
+site1.com, site2.com {
+    reverse_proxy 10.0.0.3:80
+}
+EOF
+routes=$(list_proxy_routes)
+t "list_proxy_routes multi-domain and nested count" 3 "$(echo "$routes" | grep -c .)"
+t "list_proxy_routes nested block keeps domain" "vps1|example.com|/|10.0.0.2:8080|3" "$(echo "$routes" | sed -n 1p)"
+t "list_proxy_routes multi-domain first" "vps1|site1.com|/|10.0.0.3:80|7" "$(echo "$routes" | sed -n 2p)"
+t "list_proxy_routes multi-domain second" "vps1|site2.com|/|10.0.0.3:80|7" "$(echo "$routes" | sed -n 3p)"
+
+# _caddy_insert_proxy_line inserts into multi-domain block without creating duplicate block
+tmpconf="$CADDY_CONF_DIR/vps1.caddy"
+_caddy_insert_proxy_line "$tmpconf" "site2.com" "    reverse_proxy /api/* 10.0.0.3:8080"
+t "caddy insert: no duplicate site block" 0 "$(grep -c '^site2.com {' "$tmpconf")"
+t "caddy insert: directive added" 1 "$(grep -c 'reverse_proxy /api/\* 10.0.0.3:8080' "$tmpconf")"
+t "caddy insert: new route listed for site1" 1 "$(list_proxy_routes | grep -c 'vps1|site1.com|/api/\*|10.0.0.3:8080')"
+t "caddy insert: new route listed for site2" 1 "$(list_proxy_routes | grep -c 'vps1|site2.com|/api/\*|10.0.0.3:8080')"
 rm -rf "$CADDY_CONF_DIR"
 
 # --- remembered defaults (last answer becomes the default) ---

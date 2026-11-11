@@ -5,7 +5,7 @@
 is_valid_port_forward_rule() {
   local proto="${1:-}" ext_ip="${2:-}" ext_port="${3:-}" int_port="${4:-}"
   [[ "$proto" =~ ^(tcp|udp)$ ]] || return 1
-  if [ -n "$ext_ip" ] && [ "$ext_ip" != "0.0.0.0" ]; then
+  if [ -n "$ext_ip" ] && [ "$ext_ip" != "0.0.0.0" ] && [ "$ext_ip" != "any" ]; then
     [[ "$ext_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
   fi
   [[ "$ext_port" =~ ^[0-9]{1,5}$ ]] && [ "$ext_port" -ge 1 ] && [ "$ext_port" -le 65535 ] || return 1

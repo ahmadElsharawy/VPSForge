@@ -4,7 +4,10 @@
 #   tunnel_public_stop <vps> <tunnel_port> <public_port|""> <domain|"">
 tunnel_public_stop() {
   local vps="${1:?vps}" tport="${2:?tunnel port}" ext="${3:-}" domain="${4:-}" ip line
-  ip=$(get_ip "$vps")
+  ip=$(get_ip "$vps" 2>/dev/null || true)
+  if [ -z "$ip" ] && [ -n "$ext" ] && [ -f "$PORT_FORWARD_RULES_FILE" ]; then
+    ip=$(awk -F'|' -v ext="$ext" -v tp="$tport" '$3 == ext && $5 == tp { print $4; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null)
+  fi
 
   if [ -n "$domain" ]; then
     line=$(list_proxy_routes 2>/dev/null | awk -F'|' -v v="$vps" -v d="$domain" -v p=":$tport"       '$1 == v && $2 == d && $3 == "/" && substr($4, length($4) - length(p) + 1) == p { print $5; exit }')

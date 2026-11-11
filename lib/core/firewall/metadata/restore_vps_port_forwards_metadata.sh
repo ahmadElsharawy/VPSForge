@@ -8,13 +8,21 @@ restore_vps_port_forwards_metadata() {
   # 1. Try to restore from the container's own metadata rules (enables restoration on new servers or if IP changed!)
   rules=$(incus config get "$name" user.vpsforge.port_forwards.rules 2>/dev/null || true)
   if [ -n "$rules" ]; then
-    _apply_metadata_port_rules "$ip" "$rules"
-    save_iptables
+    if [ -n "$PORT_FORWARD_RULES_FILE" ] && [ -f "${PORT_FORWARD_RULES_FILE}.disabled" ]; then
+      (
+        port_forward_apply_rule() { :; }
+        _apply_metadata_port_rules "$ip" "$rules"
+      )
+    else
+      _apply_metadata_port_rules "$ip" "$rules"
+      save_iptables
+    fi
     return 0
   fi
 
   # 2. Fallback to the original host-rules-file lookup
-  [ -f "$PORT_FORWARD_RULES_FILE" ] || return 0
+  [ -n "$PORT_FORWARD_RULES_FILE" ] && [ -f "$PORT_FORWARD_RULES_FILE" ] || return 0
+  [ -f "${PORT_FORWARD_RULES_FILE}.disabled" ] && return 0
   local proto ext_ip ext_port int_ip int_port
   while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
     [ "$int_ip" = "$ip" ] || continue
