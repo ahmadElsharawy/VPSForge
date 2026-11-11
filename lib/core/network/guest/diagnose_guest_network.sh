@@ -1,4 +1,5 @@
 #!/bin/bash
+# Print diagnostic network routing, IP, and DNS information from inside a guest VPS.
 diagnose_guest_network() {
   local name="$1" ip="${2:-}"
 

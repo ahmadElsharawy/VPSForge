@@ -1,4 +1,5 @@
 #!/bin/bash
+# Forcibly delete an incomplete VPS and release its reserved IP, port, and forward rules.
 _rollback_vps_full() {
   local name="$1" ip="$2" port="$3"
   echo "Deleting incomplete VPS..."

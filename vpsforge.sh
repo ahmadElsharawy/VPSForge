@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v2.1.27"
+VPSFORGE_VERSION="v2.1.28"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -99,7 +99,12 @@ case "${1:-}" in
     list_vps
     ;;
   details)
-    incus info "${2:-}" >/dev/null 2>&1 && details "$2" || { echo "Usage: vpsforge details vps1"; exit 1; }
+    if incus info "${2:-}" >/dev/null 2>&1; then
+      details "$2"
+    else
+      echo "Usage: vpsforge details vps1"
+      exit 1
+    fi
     ;;
   start|stop|restart)
     incus "$1" "${2:-}"
@@ -119,7 +124,11 @@ case "${1:-}" in
     port_forward_cli "$@"
     ;;
   snapshot)
-    [ -n "${2:-}" ] && create_vps_snapshot "$2" "${3:-}" || echo "Usage: vpsforge snapshot vps1 [snapshot_name]"
+    if [ -n "${2:-}" ]; then
+      create_vps_snapshot "$2" "${3:-}"
+    else
+      echo "Usage: vpsforge snapshot vps1 [snapshot_name]"
+    fi
     ;;
   clone)
     if [ -n "${2:-}" ]; then
@@ -146,7 +155,11 @@ case "${1:-}" in
     echo "Freed disk space returned to the server."
     ;;
   backup)
-    [ -n "${2:-}" ] && export_vps_backup "$2" || echo "Usage: vpsforge backup vps1"
+    if [ -n "${2:-}" ]; then
+      export_vps_backup "$2"
+    else
+      echo "Usage: vpsforge backup vps1"
+    fi
     ;;
   *)
     echo "Usage: vpsforge [list|details vps1|start vps1|stop vps1|restart vps1|ram vps1 MB|snapshot vps1|backup vps1|repair-all|port-forward|update|clean-backups|reclaim|tidy|clone|selftest|incus|setup|uninstall]"

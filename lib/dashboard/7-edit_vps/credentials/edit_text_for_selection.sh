@@ -1,6 +1,5 @@
 #!/bin/bash
-# Change the username or password for the selected VPSs: ask once for all, or per VPS.
-#   edit_text_for_selection <username|password>
+# Updates username or password for selected VPS instances individually or in bulk.
 edit_text_for_selection() {
   local what="${1:?username|password}" value="" n first=1 silent="" last=""
   [ "$what" = "username" ] && last=$(pref_get edit_username "")

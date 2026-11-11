@@ -12,17 +12,7 @@ _clone_vps_steps() {
   mark_vps_state "$new" cloning
 
   # A fresh identity: new network address and none of the source's domains or port forwards.
-  incus config unset "$new" volatile.eth0.hwaddr >/dev/null 2>&1 || true
-  incus config unset "$new" volatile.eth0.host_name >/dev/null 2>&1 || true
-  incus config device unset "$new" eth0 hwaddr >/dev/null 2>&1 || true
-  incus config unset "$new" user.vpsforge.proxy >/dev/null 2>&1 || true
-  incus config unset "$new" user.vpsforge.tunnels >/dev/null 2>&1 || true   # the copy must not claim the source's tunnels
-  incus config unset "$new" user.vpsforge.last_restore >/dev/null 2>&1 || true
-  incus config unset "$new" user.vpsforge.port_forwards.count >/dev/null 2>&1 || true
-  incus config unset "$new" user.vpsforge.port_forwards.summary >/dev/null 2>&1 || true
-  incus config unset "$new" user.vpsforge.port_forwards.rules >/dev/null 2>&1 || true
-  incus config set "$new" user.vpsforge.ip "$ip" >/dev/null 2>&1 || true
-  incus config set "$new" user.vpsforge.num "$num" >/dev/null 2>&1 || true
+  _reset_cloned_vps_identity "$new" "$num" "$ip"
   configure_vps_network_device "$new" "$ip" || { echo "ERROR: could not give $new its network address."; return 1; }
 
   incus start "$new" || { echo "ERROR: the copy $new did not start."; return 1; }

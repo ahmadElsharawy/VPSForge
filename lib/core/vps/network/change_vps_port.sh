@@ -1,4 +1,5 @@
 #!/bin/bash
+# Change the external SSH port forward of a VPS.
 change_vps_port() {
   local name="$1" new_port="$2" ip old_port
   [ -n "$name" ] && [ -n "$new_port" ] || return 1

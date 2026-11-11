@@ -12,7 +12,6 @@ tunnel_edit() {
   TW_VPS="$vps"; TW_IP=$(get_ip "$vps"); TW_TPORT="$tport"; TW_LPORT="$lport"
   TW_DOMAIN="$domain"; TW_EXTPORT="$ext"
   TW_EDIT_TPORT="$tport"; TW_EDIT_EXT="$ext"; TW_EDIT_DOMAIN="$domain"
-  TW_TPORT="$tport"
 
   clear
   echo "EDIT TUNNEL  ($vps, port $tport)   - Enter keeps the current value"
@@ -32,16 +31,5 @@ tunnel_edit() {
     return 0
   fi
 
-  tunnel_public_stop "$vps" "$tport" "$ext" "$domain"
-  tunnel_record_delete "$vps" "$tport"
-  if ! tunnel_create "$vps" "$TW_TPORT" "$TW_LPORT" "$TW_EXTPORT" "$TW_DOMAIN"; then
-    echo "ERROR: the new settings could not be applied. Putting the old tunnel back..."
-    tunnel_record_set "$vps" "$tport" "$lport" "$ext" "$domain" stopped
-    tunnel_start "$vps" "$tport" || echo "The old tunnel is saved but stopped; start it from the list."
-    TW_TPORT="$tport"
-    return 1
-  fi
-  [ "$TW_TPORT" = "$tport" ] || tunnel_access_remove "$vps" "$tport"   # only now: a failed edit keeps the old login
-  echo "Saved."
-  [ "$TW_LPORT" = "$lport" ] && [ "$TW_TPORT" = "$tport" ] || echo "NOTE: on the computer, choose \"Show the command\" > 1 and run it again so it uses the new ports."
+  _tunnel_save_active_edit "$vps" "$tport" "$lport" "$ext" "$domain"
 }

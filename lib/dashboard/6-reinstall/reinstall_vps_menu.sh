@@ -1,6 +1,7 @@
 #!/bin/bash
 # VPSForge v1.0.0 — Reinstall VPS menu.
 
+# Prompts for confirmation and reinstalls selected VPS instances.
 reinstall_vps_menu() {
   local n x
   ask_vps_selection || return 1

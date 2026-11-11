@@ -1,39 +1,12 @@
 #!/bin/bash
 # Remove every iptables rule VPSForge added (port forwards, isolation, NAT, 80/443).
 uninstall_remove_firewall() {
-  local subnet="" gw="${INCUS_GATEWAY:-}" line proto ext_ip ext_port int_ip int_port
+  local subnet="" gw="${INCUS_GATEWAY:-}"
   [ -n "${NETWORK_PREFIX:-}" ] && subnet="${NETWORK_PREFIX}.0/24"
   echo "[2/7] Removing firewall rules..."
 
-  # Saved port forwards (SSH ports and custom rules).
-  if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
-    while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
-      [ -n "$proto" ] && [ -n "$ext_port" ] || continue
-      if [ "${UNINSTALL_DRY_RUN:-0}" = "1" ]; then
-        echo "  - remove forward $proto $ext_port -> $int_ip:$int_port"
-      else
-        port_forward_delete_rule "$proto" "$ext_ip" "$ext_port" "$int_ip" "$int_port"
-      fi
-    done < "$PORT_FORWARD_RULES_FILE"
-  fi
-
-  # Any leftover DNAT rule pointing into the VPS subnet.
-  if [ -n "$subnet" ] && [ "${UNINSTALL_DRY_RUN:-0}" != "1" ]; then
-    while read -r line; do
-      [ -n "$line" ] || continue
-      # shellcheck disable=SC2086
-      iptables -t nat -D PREROUTING $line >/dev/null 2>&1 || true
-    done < <(iptables -t nat -S PREROUTING 2>/dev/null | grep -E "DNAT.*--to-destination ${NETWORK_PREFIX}\." | sed 's/^-A PREROUTING //')
-  fi
-
-  # Leftover FORWARD rules that mention a VPS address.
-  if [ -n "$subnet" ] && [ "${UNINSTALL_DRY_RUN:-0}" != "1" ]; then
-    while read -r line; do
-      [ -n "$line" ] || continue
-      # shellcheck disable=SC2086
-      iptables -D FORWARD $line >/dev/null 2>&1 || true
-    done < <(iptables -S FORWARD 2>/dev/null | grep -E -- "-[ds] ${NETWORK_PREFIX//./\.}\." | sed 's/^-A FORWARD //')
-  fi
+  _uninstall_remove_saved_forwards
+  _uninstall_remove_subnet_rules "$subnet"
 
   # Isolation / NAT rules from setup_inter_vps_isolation.
   if [ -n "$subnet" ]; then

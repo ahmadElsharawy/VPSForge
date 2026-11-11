@@ -1,4 +1,6 @@
 #!/bin/bash
+# Remove PREROUTING and FORWARD firewall rules associated with a VPS IP.
+#   remove_ip <ip>
 remove_ip() {
   local ip="$1" line
   [ -z "$ip" ] && return
@@ -20,9 +22,9 @@ remove_ip() {
   while iptables -D FORWARD -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null; do :; done
   while iptables -D FORWARD ! -i incusbr0 -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null; do :; done
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
-    local tmpf
-    tmpf=$(mktemp)
-    awk -F'|' -v target="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 999))" '($4 != target || $5 != 22 || $3 + 0 < lo || $3 + 0 > hi)' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
-    mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+    local tmp_file
+    tmp_file=$(mktemp)
+    awk -F'|' -v target="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 999))" '($4 != target || $5 != 22 || $3 + 0 < lo || $3 + 0 > hi)' "$PORT_FORWARD_RULES_FILE" > "$tmp_file" 2>/dev/null || true
+    mv -f "$tmp_file" "$PORT_FORWARD_RULES_FILE"
   fi
 }

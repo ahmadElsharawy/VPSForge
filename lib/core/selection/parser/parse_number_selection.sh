@@ -1,4 +1,5 @@
 #!/bin/bash
+# Parses comma/space/range numbers or 'a'/'all' into the SELECTED_NUMS array (up to max_val).
 parse_number_selection() {
   local raw="$1" max_val="$2" token start end i
   SELECTED_NUMS=()

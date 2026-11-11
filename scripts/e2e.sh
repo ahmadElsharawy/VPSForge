@@ -20,46 +20,7 @@ load_settings
 LOG=/tmp/vpsforge-e2e.log
 : > "$LOG"
 
-# ok "name" cmd...   -> runs cmd, prints PASS/FAIL
-ok() {
-  local name="$1"; shift
-  if "$@" >>"$LOG" 2>&1; then PASS=$((PASS+1)); echo "PASS  $name"
-  else FAILN=$((FAILN+1)); echo "FAIL  $name"; tail -4 "$LOG" | sed 's/^/        /'; fi
-}
-# no "name" cmd...   -> passes when cmd FAILS
-no() {
-  local name="$1"; shift
-  if "$@" >>"$LOG" 2>&1; then FAILN=$((FAILN+1)); echo "FAIL  $name (expected failure)"
-  else PASS=$((PASS+1)); echo "PASS  $name"; fi
-}
-
-# Log in over SSH with a password (SSH_ASKPASS trick, no sshpass needed).
-ssh_pw() { # user pass host cmd
-  local u="$1" p="$2" h="$3" askpass rc; shift 3
-  askpass=$(mktemp); chmod 700 "$askpass"
-  {
-    echo '#!/bin/sh'
-    echo 'printf "%s\n" "$E2E_PW"'   # the password comes from the environment, never written to the file
-  } > "$askpass"
-  E2E_PW="$p" SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force setsid \
-    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password \
-        -o PubkeyAuthentication=no -o ConnectTimeout=10 "$u@$h" "$@"
-  rc=$?
-  rm -f "$askpass"
-  return "$rc"
-}
-cfg() { incus config get "$T" "$1"; }
-
-cleanup() {
-  local ip port
-  ip=$(get_ip "$T" 2>/dev/null || true)
-  [ -n "$ip" ] && { remove_ip "$ip"; port_forward_delete_rules_for_ip "$ip"; }
-  incus delete "$T" --force >/dev/null 2>&1 || true
-  incus delete "${T}-r" --force >/dev/null 2>&1 || true
-  incus delete "${T}-imp" --force >/dev/null 2>&1 || true
-  rm -f "$CADDY_CONF_DIR/$T.caddy" /tmp/e2e_askpass.sh 2>/dev/null
-  save_iptables
-}
+for f in "$(dirname "$0")/lib/e2e"/*.sh; do . "$f"; done
 trap cleanup EXIT
 
 echo "   incus version: $(incus --version 2>/dev/null)"
@@ -110,13 +71,12 @@ ok "network limit reads 100" test "$(get_vps_network_limit_mbit "$T")" = "100"
 ok "network unlimited" set_network_mode_for_vps "$T" unlimited
 ok "traffic quota set" set_traffic_mode_for_vps "$T" limited 100 100
 ok "quota check runs" check_vps_traffic_quotas
-ok "traffic display" sh -c "$(declare -f get_vps_network_io_display get_vps_traffic_rx_limit_gb get_vps_traffic_tx_limit_gb); get_vps_network_io_display '$T' | grep -q '↓'"
+ok "traffic display" sh -c "$(declare -f get_vps_network_io_display _format_instance_network_io get_vps_traffic_rx_limit_gb get_vps_traffic_tx_limit_gb); get_vps_network_io_display '$T' | grep -q '↓'"
 ok "traffic unlimited" set_traffic_mode_for_vps "$T" unlimited 0 0
 
 echo "-- port forwarding"
 ok "pf add tcp 18081 -> :80" port_forward_cli add tcp 0.0.0.0 18081 "$ip" 80
 ok "pf rule in iptables" sh -c "iptables -t nat -S PREROUTING | grep -q -- '--dport 18081'"
-pf_lists_rule() { local out; out=$(port_forward_list_rules); grep -q 18081 <<<"$out"; }
 ok "pf list prints the rule" pf_lists_rule
 ok "pf rule saved in file" grep -q "18081|$ip|80" "$PORT_FORWARD_RULES_FILE"
 ok "pf delete" port_forward_cli delete tcp 0.0.0.0 18081 "$ip" 80
@@ -142,7 +102,6 @@ ok "ssh works after repair" ssh_pw devuser N3wPass123 "$ip" true
 ok "rename" rename_vps_container "$T" "${T}-r"
 ok "renamed exists" incus info "${T}-r"
 ok "rename back" rename_vps_container "${T}-r" "$T"
-details_shows_vps() { local out; out=$(details "$T"); grep -q "VPS DETAILS INSPECTOR" <<<"$out"; }
 ok "details shows the VPS" details_shows_vps
 
 echo "-- backup / import"
@@ -160,19 +119,6 @@ rm -f "$bk" "$bk.info"
 
 echo "-- reverse proxy (Caddy)"
 pxy="e2e-proxy.example.com"; conf="$CADDY_CONF_DIR/$T.caddy"
-add_route() { add_proxy_route "$T" "$ip" "$pxy" "$1" "$2" http; }
-caddy_valid() { caddy validate --config "$MAIN_CADDYFILE"; }
-route_count() { list_proxy_routes | awk -F'|' -v v="$T" '$1 == v' | wc -l; }   # only the test VPS (real VPSs may have routes)
-delete_nth_route() { local line; line=$(list_proxy_routes | awk -F'|' -v v="$T" '$1 == v' | sed -n "${1}p" | awk -F'|' '{print $5}'); delete_proxy_route "$T" "$line"; }
-rollback_works() {
-  local b="$conf.bak"; cp "$conf" "$b"; echo "bogus {{{" >> "$conf"
-  if caddy_apply_or_rollback "$conf" "$b"; then return 1; fi
-  ! grep -q bogus "$conf" && caddy_valid
-}
-not_owned_elsewhere() { ! domain_used_by_other_vps "$pxy" "$T"; }
-proxy_ip_round_trip() { update_vps_proxy_ip "$T" 10.9.9.9 && grep -q '10.9.9.9' "$conf" && update_vps_proxy_ip "$T" "$ip" && grep -q "$ip" "$conf"; }
-app_listed() { list_vps_listening_ports "$T" | grep -qx 8088; }
-scheme_is_http() { test "$(detect_backend_scheme "$ip" 8088)" = "http"; }
 
 ok "caddy installed and wired to VPSForge folder" ensure_caddy_installed
 ok "caddy import line present" grep -qF 'import /etc/caddy/vpsforge/*.caddy' "$MAIN_CADDYFILE"

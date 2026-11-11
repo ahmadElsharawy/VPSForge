@@ -1,4 +1,5 @@
 #!/bin/bash
+# Remove iptables PREROUTING DNAT and FORWARD rules for a port forward.
 port_forward_delete_rule() {
   local protocol="$1" external_ip="$2" external_port="$3"
   local internal_ip="$4" internal_port="$5"

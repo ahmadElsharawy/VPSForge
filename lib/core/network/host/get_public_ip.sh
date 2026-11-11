@@ -1,13 +1,12 @@
 #!/bin/bash
-# Public IP lookup is cached on disk so dashboard refreshes never block on the
-# network. Pass "force" to bypass the cache.
+# Retrieve public IPv4 address with local file caching; pass "force" to bypass cache.
 get_public_ip() {
-  local force="${1:-}" now mtime ip
+  local force="${1:-}" now cache_mtime ip
   now=$(date +%s)
 
   if [ "$force" != "force" ] && [ -s "$PUBLIC_IP_CACHE_FILE" ]; then
-    mtime=$(stat -c %Y "$PUBLIC_IP_CACHE_FILE" 2>/dev/null || echo 0)
-    if [ $((now - mtime)) -lt "$PUBLIC_IP_TTL" ]; then
+    cache_mtime=$(stat -c %Y "$PUBLIC_IP_CACHE_FILE" 2>/dev/null || echo 0)
+    if [ $((now - cache_mtime)) -lt "$PUBLIC_IP_TTL" ]; then
       PUBLIC_IP=$(cat "$PUBLIC_IP_CACHE_FILE" 2>/dev/null)
       [ -n "$PUBLIC_IP" ] && return 0
     fi

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Loads persistent VPSForge settings from configuration file with default fallbacks.
 load_settings() {
   if [ -f "$SETTINGS_FILE" ]; then
     # shellcheck disable=SC1090

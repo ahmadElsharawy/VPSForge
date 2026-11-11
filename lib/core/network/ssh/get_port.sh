@@ -1,4 +1,6 @@
 #!/bin/bash
+# Retrieve the forwarded SSH port for a VPS IP from iptables, rules file, or metadata.
+#   get_port <ip>
 get_port() {
   local ip="$1" port=""
   [ -z "$ip" ] && return

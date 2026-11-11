@@ -1,4 +1,5 @@
 #!/bin/bash
+# Outputs the VPS table display without rendering the interactive menu.
 list_vps() {
   local pool_path host_net_mbit
   [ -n "${POOL_PATH_CACHE:-}" ] || POOL_PATH_CACHE=$(get_incus_pool_path)

@@ -1,4 +1,6 @@
 #!/bin/bash
+# Add NAT PREROUTING and FORWARD rules to expose a VPS's SSH port on the host.
+#   add_forward_rule <ip> <port>
 add_forward_rule() {
   local ip="$1" port="$2"
   remove_port "$port"

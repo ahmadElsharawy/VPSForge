@@ -1,6 +1,5 @@
 #!/bin/bash
-# Change one resource (ram, cpu, disk, network or traffic) for the selected VPSs.
-# One VPS: ask once. Several: each separately, or one answer applied to all.
+# Modifies resource limits (RAM, CPU, disk, network, or traffic) for selected VPSs.
 edit_resource_for_selection() {
   local resource="${1:?resource}" n first=1 mode="" value="" rx="" tx=""
   edit_ask_scope || return

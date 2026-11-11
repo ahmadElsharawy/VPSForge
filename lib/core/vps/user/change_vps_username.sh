@@ -1,4 +1,5 @@
 #!/bin/bash
+# Create a new sudo-capable user account inside a container and copy root SSH keys.
 change_vps_username() {
   local name="$1" new_user="$2"
   [ -n "$name" ] && [ -n "$new_user" ] || return 1

@@ -2,7 +2,7 @@
 # Remove VPSForge and everything it created, returning the server to how it was.
 #   vpsforge uninstall [--dry-run] [--yes] [--keep-backups]
 vpsforge_uninstall() {
-  local assume_yes=0 keep_backups=0 arg answer
+  local assume_yes=0 keep_backups=0 arg
   UNINSTALL_DRY_RUN=0
   for arg in "$@"; do
     case "$arg" in
@@ -22,10 +22,7 @@ vpsforge_uninstall() {
   [ "$UNINSTALL_DRY_RUN" = "1" ] && echo "DRY RUN: nothing will be changed, only listed."
   echo
 
-  if [ "$UNINSTALL_DRY_RUN" != "1" ] && [ "$assume_yes" != "1" ]; then
-    read -r -p "Type UNINSTALL to permanently remove everything: " answer
-    [ "$answer" = "UNINSTALL" ] || { echo "Cancelled."; return 1; }
-  fi
+  _uninstall_confirm_prompt "$assume_yes" || return 1
 
   uninstall_remove_containers || return 1
   uninstall_remove_firewall

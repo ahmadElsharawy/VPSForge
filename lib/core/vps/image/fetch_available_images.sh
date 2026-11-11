@@ -1,6 +1,5 @@
 #!/bin/bash
-# Build the list of images for <distro> from the official Incus image server
-# (always current: nothing is hard-coded) and cache it for an hour.
+# Build and cache the list of official Incus images available for a distribution.
 #   fetch_available_images <distro> [force]      -> cache file: ${IMAGE_CACHE_PREFIX}<distro>.txt
 fetch_available_images() {
   local distro="${1:-ubuntu}" force="${2:-false}"

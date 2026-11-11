@@ -1,4 +1,5 @@
 #!/bin/bash
+# Delete all port forward rules targeting a specific VPS internal IP.
 port_forward_delete_rules_for_ip() {
   local target_ip="$1" file="${2:-$PORT_FORWARD_RULES_FILE}"
   [ -f "$file" ] || return 0

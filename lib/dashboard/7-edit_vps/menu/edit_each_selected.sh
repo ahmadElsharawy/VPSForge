@@ -1,6 +1,5 @@
 #!/bin/bash
-# Run a per-VPS edit function (for example edit_change_port) for every selected VPS, one after another.
-#   edit_each_selected <function>
+# Executes a per-VPS edit function sequentially across all selected VPS instances.
 edit_each_selected() {
   local fn="${1:?function}" n
   for n in "${SELECTED_VPS[@]}"; do

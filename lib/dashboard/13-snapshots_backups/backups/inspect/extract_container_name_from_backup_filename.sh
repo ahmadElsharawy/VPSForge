@@ -1,4 +1,5 @@
 #!/bin/bash
+# Extract container name from a backup file name by stripping suffixes.
 extract_container_name_from_backup_filename() {
   local fname="$1" name
   fname=$(basename "$fname")

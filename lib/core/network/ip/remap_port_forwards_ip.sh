@@ -12,13 +12,13 @@ remap_port_forwards_ip() {
     port_forward_delete_rule "$proto" "$ext_ip" "$ext_port" "$int_ip" "$int_port" 2>/dev/null || true
   done <<< "$rules"
 
-  local tmpf
-  tmpf=$(mktemp)
+  local tmp_file
+  tmp_file=$(mktemp)
   awk -F'|' -v OFS='|' -v a="$from_a" -v na="$to_a" -v b="$from_b" -v nb="$to_b" '
     {
       if ($4 == a) { $4 = na } else if (b != "" && $4 == b) { $4 = nb }
       print
-    }' "$PORT_FORWARD_RULES_FILE" > "$tmpf" && mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+    }' "$PORT_FORWARD_RULES_FILE" > "$tmp_file" && mv -f "$tmp_file" "$PORT_FORWARD_RULES_FILE"
 
   while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
     [ -n "$proto" ] || continue

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Rename the selected VPSs one by one, then keep the selection pointing at the new names.
+# Sequentially renames selected VPS containers and updates the active selection.
 edit_rename_selection() {
   local i name
   for i in "${!SELECTED_VPS[@]}"; do

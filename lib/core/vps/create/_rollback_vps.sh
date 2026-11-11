@@ -1,4 +1,5 @@
 #!/bin/bash
+# Forcibly delete an incomplete VPS during creation rollback.
 _rollback_vps() {
   local name="$1"
   echo "Deleting incomplete VPS..."

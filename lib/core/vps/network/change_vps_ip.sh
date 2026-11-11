@@ -1,4 +1,5 @@
 #!/bin/bash
+# Change the internal IP address of a VPS and update its port forwards, DNS, and proxy.
 change_vps_ip() {
   local name="$1" new_ip="$2" old_ip port
   [ -n "$name" ] && [ -n "$new_ip" ] || return 1
@@ -20,21 +21,7 @@ change_vps_ip() {
   port=$(get_port "$old_ip" 2>/dev/null || true)
   [ -n "$port" ] || port=$(get_vps_saved_port "$name")
 
-  # The card must really take the new address, or nothing else is changed.
-  if ! set_vps_device_ip "$name" "$new_ip" >/dev/null 2>&1; then
-    if is_vps_running "$name"; then
-      # an older VPSForge may have broken the live link of the card: a restart repairs it
-      incus stop "$name" --force >/dev/null 2>&1 || true
-      set_vps_device_ip "$name" "$new_ip" >/dev/null 2>&1
-      local rc=$?
-      incus start "$name" >/dev/null 2>&1 || true
-      [ "$rc" -eq 0 ] || { [ -n "$old_ip" ] && set_vps_device_ip "$name" "$old_ip" >/dev/null 2>&1; echo "ERROR: Incus did not accept $new_ip for $name. Nothing was changed."; return 1; }
-    else
-      [ -n "$old_ip" ] && set_vps_device_ip "$name" "$old_ip" >/dev/null 2>&1
-      echo "ERROR: Incus did not accept $new_ip for $name. Nothing was changed."
-      return 1
-    fi
-  fi
+  _set_vps_ip_safe "$name" "$new_ip" "$old_ip" || return 1
   incus config set "$name" user.vpsforge.ip "$new_ip" 2>/dev/null || true
 
   if is_vps_running "$name"; then

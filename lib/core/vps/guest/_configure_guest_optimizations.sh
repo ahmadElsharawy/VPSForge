@@ -1,4 +1,5 @@
 #!/bin/bash
+# Configure guest container hostname, remove stale dockerenv markers, and generate UTF-8 locale.
 _configure_guest_optimizations() {
   local name="$1"
   set_guest_hostname "$name"

@@ -1,8 +1,5 @@
 #!/bin/bash
 # Swap the internal IP and SSH port of two VPSs (their forwards, websites and SSH ports follow).
-# Incus never lets two VPSs hold the same address, so A first moves to a free spare address,
-# then B takes A's, then A takes B's. If Incus refuses any step, the earlier steps are undone
-# and nothing else is changed.
 #   swap_vps_ips_and_ports <vps_a> <vps_b>
 swap_vps_ips_and_ports() {
   local name_a="$1" name_b="$2"
@@ -18,16 +15,7 @@ swap_vps_ips_and_ports() {
   spare=$(free_vps_ip) || { echo "ERROR: no free address left in the VPS network for the swap."; return 1; }
 
   echo "Swapping: $name_a ($ip_a:$port_a) <-> $name_b ($ip_b:$port_b)"
-  set_vps_device_ip "$name_a" "$spare" || { echo "Nothing was changed."; return 1; }
-  if ! set_vps_device_ip "$name_b" "$ip_a"; then
-    set_vps_device_ip "$name_a" "$ip_a" >/dev/null 2>&1 || true
-    echo "Nothing was changed."; return 1
-  fi
-  if ! set_vps_device_ip "$name_a" "$ip_b"; then
-    set_vps_device_ip "$name_b" "$ip_b" >/dev/null 2>&1 || true
-    set_vps_device_ip "$name_a" "$ip_a" >/dev/null 2>&1 || true
-    echo "Nothing was changed."; return 1
-  fi
+  _swap_device_ips "$name_a" "$name_b" "$ip_a" "$ip_b" "$spare" || return 1
 
   remove_ip "$ip_a"
   remove_ip "$ip_b"

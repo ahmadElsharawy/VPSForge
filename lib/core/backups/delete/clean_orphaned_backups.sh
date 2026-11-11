@@ -26,10 +26,7 @@ clean_orphaned_backups() {
     fi
   done < <(find "$BACKUP_DIR" -maxdepth 1 -type f \( -name '*.tar' -o -name '*.tar.gz' \) | sort)
 
-  # .info files whose backup is gone
-  while read -r file; do
-    [ -f "${file%.info}" ] || rm -f "$file"
-  done < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name '*.info')
+  _clean_stray_backup_info_files
 
   if [ "${#orphans[@]}" -eq 0 ]; then
     echo "No orphaned backups. Nothing to clean."

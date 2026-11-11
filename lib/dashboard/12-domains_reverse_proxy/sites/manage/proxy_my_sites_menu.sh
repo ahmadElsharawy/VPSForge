@@ -1,7 +1,7 @@
 #!/bin/bash
 # List every website on the server in one numbered table; pick one to test or remove it.
 proxy_my_sites_menu() {
-  local choice route vps domain path target shown
+  local choice
   local -a routes=()
 
   if ! command -v caddy >/dev/null 2>&1; then
@@ -20,15 +20,7 @@ proxy_my_sites_menu() {
       pause; return
     fi
 
-    printf ' %-3s %-38s %-12s %s\n' "#" "WEBSITE" "VPS" "GOES TO"
-    local i=0
-    for route in "${routes[@]}"; do
-      i=$((i + 1))
-      IFS='|' read -r vps domain path target _ <<< "$route"
-      shown="https://${domain}"
-      [ "$path" != "/" ] && shown="${shown}${path%\*}"
-      printf ' %-3s %-38s %-12s %s\n' "$i" "$shown" "$vps" "${target#*://}"
-    done
+    _proxy_print_sites_table "${routes[@]}"
     echo
     read -r -p "Pick a number to test or remove it [0=Back]: " choice </dev/tty
     [ "${choice:-0}" = "0" ] && return

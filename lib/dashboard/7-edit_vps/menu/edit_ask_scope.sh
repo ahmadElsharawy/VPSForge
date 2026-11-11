@@ -1,7 +1,5 @@
 #!/bin/bash
-# With several VPSs selected ask how to apply a change (defaults to your last choice).
-# Sets EDIT_SCOPE: 1 = each VPS separately, 2 = same setting for all. Returns 1 for Back.
-# With a single VPS there is nothing to ask (scope 1).
+# Prompts whether to edit selected VPS instances individually or apply settings to all.
 edit_ask_scope() {
   EDIT_SCOPE=1
   [ "${#SELECTED_VPS[@]}" -gt 1 ] || return 0

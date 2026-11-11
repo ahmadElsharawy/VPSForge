@@ -1,4 +1,5 @@
 #!/bin/bash
+# Check VPSForge synchronization and update status against the remote repository.
 vpsforge_check_update_status() {
   local app_dir repo_dir active_commit repo_commit remote_commit
   app_dir=$(get_vpsforge_app_dir)

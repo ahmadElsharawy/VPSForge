@@ -1,6 +1,5 @@
 #!/bin/bash
 # Succeeds when the process that started an operation ("<pid>:<start time>") is still running.
-# Used so recovery never touches a VPS that another VPSForge process is creating right now.
 #   vps_state_owner_alive <owner>
 vps_state_owner_alive() {
   local owner="${1:-}" pid start now

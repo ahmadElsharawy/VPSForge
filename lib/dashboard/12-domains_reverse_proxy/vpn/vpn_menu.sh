@@ -1,7 +1,7 @@
 #!/bin/bash
 # Submenu of main menu 12 > 5: a VPN (Xray, VLESS + Reality) on one of your VPSs.
 vpn_menu() {
-  local choice answer
+  local choice
   while true; do
     clear
     echo "================================================================"
@@ -27,23 +27,9 @@ vpn_menu() {
       1) vpn_create_wizard ;;
       2) vpn_add_device_wizard ;;
       3) vpn_pick_vpn && vpn_pick_device "$VPN_VPS" && vpn_show_device "$VPN_VPS" "$VPN_DEVICE" || pause ;;
-      4) if vpn_pick_vpn && vpn_pick_device "$VPN_VPS" "Device to renew"; then
-           VW_VPS="$VPN_VPS"
-           if vpn_wizard_step_device_limits; then
-             vpn_set_device_limits "$VPN_VPS" "$VPN_DEVICE" "$VW_GB" "$VW_DAYS" && echo "Renewed: '$VPN_DEVICE' works again."
-           fi
-         fi
-         pause ;;
-      5) if vpn_pick_vpn && vpn_pick_device "$VPN_VPS" "Device to remove"; then
-           read -r -p "Remove '$VPN_DEVICE' from the VPN of $VPN_VPS? [y/N]: " answer </dev/tty
-           if [[ "${answer,,}" =~ ^y ]]; then vpn_remove_device "$VPN_VPS" "$VPN_DEVICE" && echo "Removed."; fi
-         fi
-         pause ;;
-      6) if vpn_pick_vpn; then
-           read -r -p "Remove the VPN from $VPN_VPS? All its devices stop working. [y/N]: " answer </dev/tty
-           if [[ "${answer,,}" =~ ^y ]]; then vpn_remove "$VPN_VPS" && echo "VPN removed from $VPN_VPS."; fi
-         fi
-         pause ;;
+      4) _vpn_action_renew_device ;;
+      5) _vpn_action_remove_device ;;
+      6) _vpn_action_remove_vpn ;;
       *) echo "Invalid option."; sleep 1 ;;
     esac
   done

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Get the currently installed git commit SHA of VPSForge.
 get_active_installed_commit() {
   local app_dir
   app_dir=$(get_vpsforge_app_dir)

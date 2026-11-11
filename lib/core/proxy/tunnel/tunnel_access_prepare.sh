@@ -41,14 +41,7 @@ tunnel_access_prepare() {
   incus exec "$vps" --env TPORT="$tport" --env TUSER="$user" -- sh -c 'f="/etc/vpsforge-tunnel/$TPORT.ps1"; cat > "$f" && chown "root:$TUSER" "$f" && chmod 640 "$f"' < "$dir/script.ps1" 2>/dev/null || { rm -rf "$dir"; return 1; }
 
   # 3) the ssh rules. If they are not accepted, the whole login is removed again (never leave a half-limited one).
-  incus exec "$vps" --env TUSER="$user" --env TPORT="$tport" -- sh -c '
-    grep -qs "sshd_config.d" /etc/ssh/sshd_config || echo "Include /etc/ssh/sshd_config.d/*.conf" >> /etc/ssh/sshd_config
-    conf="/etc/ssh/sshd_config.d/98-vpsforge-tunnel-$TPORT.conf"
-    printf "Match User %s\n  PasswordAuthentication yes\n  AllowTcpForwarding remote\n  AllowStreamLocalForwarding no\n  PermitTunnel no\n  PermitListen 0.0.0.0:%s\n  PermitOpen none\n  PermitTTY no\n  X11Forwarding no\n  AllowAgentForwarding no\n  ForceCommand cat /etc/vpsforge-tunnel/%s.ps1\n" "$TUSER" "$TPORT" "$TPORT" > "$conf"
-    if sshd -t && { systemctl try-reload-or-restart ssh || systemctl try-reload-or-restart sshd || service ssh reload; }; then exit 0; fi
-    rm -f "$conf"; pkill -KILL -u "$TUSER" >/dev/null 2>&1; userdel -r "$TUSER" >/dev/null 2>&1; rm -f "/etc/vpsforge-tunnel/$TPORT".*
-    exit 1
-  ' </dev/null >/dev/null 2>&1
+  _tunnel_access_configure_sshd "$vps" "$user" "$tport"
   rc=$?
   rm -rf "$dir"
   return "$rc"

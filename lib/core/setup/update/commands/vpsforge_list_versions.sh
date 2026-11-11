@@ -1,4 +1,5 @@
 #!/bin/bash
+# List available release versions and tags from the local and remote repository.
 vpsforge_list_versions() {
   local repo_dir
   repo_dir=$(get_vpsforge_repo_dir)

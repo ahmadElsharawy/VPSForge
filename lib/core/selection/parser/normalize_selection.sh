@@ -1,7 +1,7 @@
 #!/bin/bash
 # Accepts "1,2", "1-3", "test2", "vps1", "1 2", or "all"/"A" and populates SELECTED_VPS array.
 normalize_selection() {
-  local raw="$1" token name idx start end i
+  local raw="$1" token name
   SELECTED_VPS=()
 
   if [[ "${raw,,}" == "a" ]] || [[ "${raw,,}" == "all" ]]; then
@@ -12,33 +12,12 @@ normalize_selection() {
       token="${token//[[:space:]]/}"
       [ -z "$token" ] && continue
 
-      # Range expansion like 1-3
       if [[ "$token" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-        start="${BASH_REMATCH[1]}"
-        end="${BASH_REMATCH[2]}"
-        if [ "$start" -le "$end" ]; then
-          for ((i=start; i<=end; i++)); do
-            if [ "$i" -ge 1 ] && [ "$i" -le "${#AVAILABLE_VPS_LIST[@]}" ]; then
-              idx=$((i - 1))
-              name="${AVAILABLE_VPS_LIST[$idx]}"
-              [[ " ${SELECTED_VPS[*]} " == *" $name "* ]] || SELECTED_VPS+=("$name")
-            fi
-          done
-        fi
+        _expand_selection_range "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
         continue
       fi
 
-      # Try token as a 1-based index from AVAILABLE_VPS_LIST
-      if [[ "$token" =~ ^[0-9]+$ ]] && [ "$token" -ge 1 ] && [ "$token" -le "${#AVAILABLE_VPS_LIST[@]}" ]; then
-        idx=$((token - 1))
-        name="${AVAILABLE_VPS_LIST[$idx]}"
-      else
-        if [[ "$token" =~ ^[0-9]+$ ]]; then
-          name="${VPS_PREFIX}${token}"
-        else
-          name="$token"
-        fi
-      fi
+      name=$(_resolve_vps_token "$token")
 
       if incus info "$name" >/dev/null 2>&1; then
         [[ " ${SELECTED_VPS[*]} " == *" $name "* ]] || SELECTED_VPS+=("$name")

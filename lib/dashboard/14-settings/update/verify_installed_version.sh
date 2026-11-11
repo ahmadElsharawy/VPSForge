@@ -1,4 +1,5 @@
 #!/bin/bash
+# Verifies that the installed VPSForge binary reports the expected target version.
 verify_installed_version() {
   local app="$1" target="$2" installed="" attempt
 

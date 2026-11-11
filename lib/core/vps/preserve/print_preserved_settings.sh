@@ -1,4 +1,5 @@
 #!/bin/bash
+# Print preserved resource limits, disk, CPU, RAM, network, and SSH port for a VPS.
 print_preserved_settings() {
   local name="$1" port="$2"
   echo "Preserving $name settings:"

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Change user and root passwords inside a VPS container and update saved configuration.
 change_vps_password() {
   local name="$1" new_pass="$2" user
   [ -n "$name" ] && [ -n "$new_pass" ] || return 1

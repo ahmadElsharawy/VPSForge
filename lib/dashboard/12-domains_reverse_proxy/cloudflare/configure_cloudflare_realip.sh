@@ -24,53 +24,8 @@ configure_cloudflare_realip() {
     choice="${choice:-1}"
     case "$choice" in
       0) break ;;
-      1)
-        echo "Fetching Cloudflare IP ranges from cloudflare.com..."
-        local cf_ipv4 cf_ipv6 all_ips
-        cf_ipv4=$(curl -sL --max-time 15 https://www.cloudflare.com/ips-v4)
-        cf_ipv6=$(curl -sL --max-time 15 https://www.cloudflare.com/ips-v6)
-
-        if [ -z "$cf_ipv4" ] || [ -z "$cf_ipv6" ]; then
-          echo "ERROR: Failed to fetch Cloudflare IPs. Check your internet connection."
-          sleep 2
-          continue
-        fi
-
-        if cloudflare_has_foreign_global_block "$caddyfile"; then
-          echo "Your Caddyfile already starts with its own global options block { ... }."
-          echo "VPSForge will not touch it. Add this line inside its 'servers { }' section yourself:"
-          echo "    trusted_proxies static $(echo -e "${cf_ipv4}\n${cf_ipv6}" | grep -v '^$' | tr '\n' ' ')"
-          pause
-          continue
-        fi
-
-        all_ips=$(echo -e "${cf_ipv4}\n${cf_ipv6}" | grep -v '^$' | tr '\n' ' ')
-        cp -f "$caddyfile" "$backup"
-        cloudflare_remove_block "$caddyfile"
-        {
-          echo "# BEGIN VPSFORGE CLOUDFLARE"
-          echo "{"
-          echo "    servers {"
-          echo "        trusted_proxies static $all_ips"
-          echo "    }"
-          echo "}"
-          echo "# END VPSFORGE CLOUDFLARE"
-          cat "$caddyfile"
-        } > "${caddyfile}.new" && mv -f "${caddyfile}.new" "$caddyfile"
-
-        if caddy_apply_or_rollback "$caddyfile" "$backup"; then
-          echo "SUCCESS: Cloudflare Real-IP is now ENABLED!"
-        fi
-        pause
-        ;;
-      2)
-        cp -f "$caddyfile" "$backup"
-        cloudflare_remove_block "$caddyfile"
-        if caddy_apply_or_rollback "$caddyfile" "$backup"; then
-          echo "SUCCESS: Cloudflare Real-IP is now DISABLED."
-        fi
-        pause
-        ;;
+      1) _cloudflare_enable_realip "$caddyfile" "$backup";;
+      2) _cloudflare_disable_realip "$caddyfile" "$backup";;
       *) sleep 1 ;;
     esac
   done

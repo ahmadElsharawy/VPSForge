@@ -1,4 +1,5 @@
 #!/bin/bash
+# Formats RAM usage, limit, and host total for table/dashboard display.
 format_ram_display() {
   local name="$1" used limit total
   used=$(get_vps_ram_usage_mb "$name")

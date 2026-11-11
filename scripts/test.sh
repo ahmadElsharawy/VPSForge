@@ -5,9 +5,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 pass=0; failn=0
-t() { # t "description" expected actual
-  if [ "$2" = "$3" ]; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: $1 (expected '$2', got '$3')"; fi
-}
+for f in "$(dirname "$0")/lib/test"/*.sh; do . "$f"; done
 
 # On Windows "python3" can be a Microsoft Store shortcut that only fails: use "python" in its place.
 if ! python3 -c 1 >/dev/null 2>&1 && python -c 1 >/dev/null 2>&1; then
@@ -129,9 +127,6 @@ t "a new answer replaces the old one" 256 "$(pref_get ram_value 7)"
 t "only one line per key" 1 "$(grep -c '^ram_value=' "$PREFS_FILE")"
 pref_set bad-key x && r=bad || r=ok; t "bad key refused" ok "$r"
 # the shared resource question: Enter repeats the last limit
-ask_in_test() { printf '2
-512
-' | ask_mode_and_value vpsX ram RAM RAM MB "in MB" is_valid_ram_value >/dev/null; echo "$RAM_MODE_RESULT $RAM_VALUE_RESULT"; }
 pref_set ram_mode 1; pref_set ram_value ""
 RAM_MODE_RESULT=""; RAM_VALUE_RESULT=""
 printf '2
@@ -157,21 +152,13 @@ rm -f "$PREFS_FILE"
 
 # --- wizard: 0 goes back ONE step ---
 WZ_LOG=""
-wz_a() { WZ_LOG+="a"; return 0; }
-wz_b() { WZ_LOG+="b"; [ "${WZ_B_COUNT:-0}" -eq 0 ] && { WZ_B_COUNT=1; return "$WIZARD_BACK"; }; return 0; }
-wz_c() { WZ_LOG+="c"; return 0; }
 run_wizard wz_a wz_b wz_c
 t "back from step 2 returns to step 1 only (a b a b c)" "ababc" "$WZ_LOG"
-wz_first_back() { return "$WIZARD_BACK"; }
 run_wizard wz_first_back wz_a && r=done || r=left; t "back on the first step leaves the wizard" left "$r"
-wz_abort() { return 1; }
 run_wizard wz_a wz_abort wz_c; t "an error stops the wizard with its code" 1 "$?"
 
 # --- run_guarded: failure runs the cleanup and reports the reason ---
 GUARD_CLEANED=""
-guard_cleanup() { GUARD_CLEANED="cleaned:$1"; }
-guard_ok() { echo fine; }
-guard_fail() { echo "ERROR: disk is full"; return 1; }
 out=$(run_guarded "guard_cleanup" guard_ok); t "guard: success runs no cleanup" "" "$GUARD_CLEANED"
 run_guarded "guard_cleanup" guard_fail >/dev/null; t "guard: failure runs cleanup with the reason" "cleaned:disk is full" "$GUARD_CLEANED"
 t "guard: reason is kept" "disk is full" "$GUARD_REASON"

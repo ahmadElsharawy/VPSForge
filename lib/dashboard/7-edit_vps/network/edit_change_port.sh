@@ -1,5 +1,7 @@
 #!/bin/bash
-# Edit: change a VPS's SSH port (Enter repeats the last port you typed).
+# VPSForge v1.0.0 — Edit: Change SSH Port.
+
+# Prompts for and updates the SSH port for a VPS container.
 edit_change_port() {
   local name="${1:-}" port last
   last=$(pref_get ssh_port_last "")

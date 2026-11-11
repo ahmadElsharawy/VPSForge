@@ -1,4 +1,6 @@
 #!/bin/bash
+# Remove PREROUTING NAT rules and saved rules associated with an external port.
+#   remove_port <port>
 remove_port() {
   local port="$1" line
   [ -z "$port" ] && return
@@ -17,9 +19,9 @@ remove_port() {
     iptables -t nat -D PREROUTING "$line" 2>/dev/null || break
   done
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
-    local tmpf
-    tmpf=$(mktemp)
-    awk -F'|' -v p="$port" '!($3 == p && $5 == "22")' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
-    mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+    local tmp_file
+    tmp_file=$(mktemp)
+    awk -F'|' -v p="$port" '!($3 == p && $5 == "22")' "$PORT_FORWARD_RULES_FILE" > "$tmp_file" 2>/dev/null || true
+    mv -f "$tmp_file" "$PORT_FORWARD_RULES_FILE"
   fi
 }

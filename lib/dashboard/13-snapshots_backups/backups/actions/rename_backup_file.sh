@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Prompt to select a backup archive and rename it along with its .info metadata file.
 rename_backup_file() {
   if select_backup_file "Select backup file to RENAME: "; then
     local old_file="$SELECTED_BACKUP_FILE"

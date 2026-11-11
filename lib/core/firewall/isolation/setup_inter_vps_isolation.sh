@@ -1,4 +1,5 @@
 #!/bin/bash
+# Set up firewall rules to isolate VPS traffic and allow Internet routing.
 setup_inter_vps_isolation() {
   [ -n "${NETWORK_PREFIX:-}" ] || return 0
   local subnet="${NETWORK_PREFIX}.0/24"
@@ -37,11 +38,7 @@ setup_inter_vps_isolation() {
       ip6tables -I FORWARD 1 -i incusbr0 -o incusbr0 -j DROP 2>/dev/null || true
   fi
 
-  local legacy_rule
-  while read -r legacy_rule; do
-    [ -n "$legacy_rule" ] || continue
-    iptables ${legacy_rule/-A/-D} 2>/dev/null || true
-  done < <(iptables -S FORWARD 2>/dev/null | grep -E "^-A FORWARD -d ${NETWORK_PREFIX//./\\.}\.[0-9]+/32 -p (tcp|udp) -m (tcp|udp) --dport [0-9]+( -m state --state NEW,RELATED,ESTABLISHED)? -j ACCEPT$" || true)
+  _purge_legacy_forward_rules "$NETWORK_PREFIX"
 
   purge_invalid_dnat_rules
   save_iptables

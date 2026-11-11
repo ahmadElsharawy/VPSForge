@@ -1,4 +1,5 @@
 #!/bin/bash
+# Display active PREROUTING and FORWARD iptables rules alongside the saved rules file.
 port_forward_status() {
   echo "=== Active NAT PREROUTING Rules ==="
   iptables -t nat -L PREROUTING -n --line-numbers 2>/dev/null || true

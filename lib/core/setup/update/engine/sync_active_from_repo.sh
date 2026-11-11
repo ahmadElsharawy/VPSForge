@@ -1,5 +1,5 @@
 #!/bin/bash
-# Auto-sync active /opt/vpsforge from /opt/vpsforge/repo if repo was updated manually
+# Auto-sync active /opt/vpsforge from /opt/vpsforge/repo if repo was updated manually.
 sync_active_from_repo() {
   local app_dir repo_dir repo_commit installed_commit
   app_dir=$(get_vpsforge_app_dir)

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Refresh an existing backup archive with current container data.
 update_vps_backup() {
   local name confirm
   ask_vps_selection "Select VPS container to update backup for: " single || return

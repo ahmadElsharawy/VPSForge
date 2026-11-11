@@ -1,6 +1,5 @@
 #!/bin/bash
-# VPSForge v1.0.0 — Incus compatibility profile.
-
+# Apply security nesting, privileged mode, and loadable kernel modules to a container.
 apply_incus_compatibility_profile() {
   local name="$1" raw_lxc modules
 

@@ -1,8 +1,5 @@
 #!/bin/bash
-# Mark a VPS with an unfinished-operation state (creating / importing / cloning ...),
-# or clear it with an empty value. The marker also records which process owns the
-# operation, so startup recovery only cleans up VPSs whose owner has really died
-# (never one that is being created right now by another process).
+# Record an active operation state and owner PID on a container, or clear it.
 #   mark_vps_state <name> <state|"">
 mark_vps_state() {
   local name="${1:?name}" state="${2:-}" start

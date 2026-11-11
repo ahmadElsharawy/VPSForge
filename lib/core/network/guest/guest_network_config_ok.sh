@@ -1,4 +1,5 @@
 #!/bin/bash
+# Check whether default route, nameservers, and IP address are correctly set in the guest.
 guest_network_config_ok() {
   local name="$1" ip="${2:-}" gateway="${3:-}" prefix="${4:-24}"
   local route_ok=0 resolv_ok=0 addr_ok=0

@@ -1,18 +1,11 @@
 #!/bin/bash
 
+# Restores a VPS container to a specified snapshot.
 restore_vps_snapshot() {
   local name="${1:-}" snap_name="${2:-}" was_running=false
   [ -z "$snap_name" ] && { echo "No snapshot specified."; return 1; }
 
-  # Resolve numeric index if passed directly
-  # A number is a list position only when no snapshot is really named like that.
-  if [[ "$snap_name" =~ ^[0-9]+$ ]] && ! incus snapshot list "$name" --format csv 2>/dev/null | cut -d, -f1 | grep -Fxq "$snap_name"; then
-    local -a snaps=()
-    mapfile -t snaps < <(incus snapshot list "$name" --format csv 2>/dev/null | cut -d',' -f1 || true)
-    if [ "$snap_name" -ge 1 ] && [ "$snap_name" -le "${#snaps[@]}" ]; then
-      snap_name="${snaps[$((snap_name-1))]}"
-    fi
-  fi
+  snap_name="$(_resolve_snapshot_name "$name" "$snap_name")"
 
   if is_vps_running "$name"; then
     was_running=true
@@ -26,14 +19,11 @@ restore_vps_snapshot() {
   fi
 
   local kept_tunnels
-  kept_tunnels=$(incus config get "$name" user.vpsforge.tunnels 2>/dev/null || true)   # a snapshot would bring back OLD tunnel records
+  kept_tunnels=$(incus config get "$name" user.vpsforge.tunnels 2>/dev/null || true)
   echo "Restoring $name to snapshot '$snap_name'..."
   if incus snapshot restore "$name" "$snap_name"; then
     echo "Snapshot '$snap_name' restored successfully."
-    incus config set "$name" user.vpsforge.last_restore "$(date '+%Y-%m-%d %H:%M:%S UTC')" 2>/dev/null || true
-    if [ -n "$kept_tunnels" ]; then incus config set "$name" "user.vpsforge.tunnels=$kept_tunnels" >/dev/null 2>&1; else incus config unset "$name" user.vpsforge.tunnels >/dev/null 2>&1 || true; fi
-    restore_vps_port_forwards_metadata "$name"
-    tunnel_reconcile_import "$name" "$(get_ip "$name")" "$(get_vps_saved_port "$name")"
+    _restore_snapshot_post_config "$name" "$kept_tunnels"
     if [ "$was_running" = true ]; then
       echo "Restarting container $name..."
       incus start "$name" 2>/dev/null || true

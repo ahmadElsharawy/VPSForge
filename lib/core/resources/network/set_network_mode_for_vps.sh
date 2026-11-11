@@ -1,4 +1,5 @@
 #!/bin/bash
+# Sets network ingress/egress speed limit (unlimited or 1..100000 Mbit) for a VPS container.
 set_network_mode_for_vps() {
   local name="$1" mode="$2" value="${3:-}" max actual_in actual_out
   max=100000

@@ -1,7 +1,7 @@
 #!/bin/bash
 # Wizard step 2 of 5: which port the app uses inside the VPS.
 proxy_wizard_step_port() {
-  local choice default_port=80 port idx label last_port
+  local choice default_port=80 port last_port
   last_port=$(pref_get proxy_port "")
   local -a ports=()
 
@@ -13,11 +13,7 @@ proxy_wizard_step_port() {
     default_port="${ports[0]}"
     for port in "${ports[@]}"; do [ "$port" = "80" ] && default_port=80; done
     for port in "${ports[@]}"; do [ "$port" = "$last_port" ] && default_port="$last_port"; done
-    echo "Ports an app is listening on right now:"
-    for idx in "${!ports[@]}"; do
-      label=""; [ "${ports[$idx]}" = "$default_port" ] && label="  (default)"
-      printf '   %d) %s%s\n' "$((idx + 1))" "${ports[$idx]}" "$label"
-    done
+    _proxy_print_detected_ports "$default_port" "${ports[@]}"
     read -r -p "Pick a number, or type any port [Enter=$default_port, 0=Back]: " choice </dev/tty
   else
     echo "Nothing is listening yet (you can still set it up now and start the app later)."

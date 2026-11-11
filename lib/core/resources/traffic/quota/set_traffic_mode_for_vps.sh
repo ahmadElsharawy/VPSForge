@@ -1,4 +1,5 @@
 #!/bin/bash
+# Configures monthly download/upload traffic limits for a VPS container.
 set_traffic_mode_for_vps() {
   local name="$1" mode="$2" rx_gb="${3:-0}" tx_gb="${4:-0}"
   case "$mode" in

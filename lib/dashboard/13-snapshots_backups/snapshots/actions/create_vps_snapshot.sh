@@ -1,11 +1,12 @@
 #!/bin/bash
 
+# Creates a new snapshot for a VPS container after syncing metadata and removing swapfiles.
 create_vps_snapshot() {
   local name="${1:-}" snap_name="${2:-}"
   [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"
   snap_name=$(echo "$snap_name" | tr ' ' '_' | sed 's/[^a-zA-Z0-9_.-]//g')
   [ -z "$snap_name" ] && snap_name="snap-$(date +%Y%m%d-%H%M%S)"
-  
+
   # Automatically disable and remove non-functional container swapfiles to prevent snapshot bloat
   incus exec "$name" -- sh -c "swapoff /swapfile 2>/dev/null || true"
   incus exec "$name" -- sh -c "rm -f /swapfile 2>/dev/null || true"

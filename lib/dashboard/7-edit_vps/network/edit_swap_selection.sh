@@ -1,5 +1,7 @@
 #!/bin/bash
-# Swap IP and SSH port: with 2 VPSs selected swap them; with 1 ask for the other VPS.
+# VPSForge v1.0.0 — Edit: Swap IP & Port for selection.
+
+# Initiates an IP and port swap for selected VPS instances.
 edit_swap_selection() {
   case "${#SELECTED_VPS[@]}" in
     1) edit_swap_ip "${SELECTED_VPS[0]}";;

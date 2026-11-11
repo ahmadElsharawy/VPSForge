@@ -1,4 +1,5 @@
 #!/bin/bash
+# Detect host architecture and map it to Incus architecture names (amd64, arm64, armhf).
 get_host_arch() {
   local arch
   arch=$(uname -m 2>/dev/null || echo "x86_64")

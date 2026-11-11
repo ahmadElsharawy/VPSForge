@@ -1,35 +1,44 @@
 #!/bin/bash
-# Remove ONE domain from a VPS's Caddy file, in every site block of the file.
-# A block that has no domain left is removed whole; when no block is left, the file is deleted.
+# Remove ONE domain from a VPS's Caddy file: if the site block lists several domains,
+# only the named one is cut out; if it was alone, the whole block is deleted.
 #   caddy_unlink_domain <caddy_file> <domain>
 caddy_unlink_domain() {
-  local file="${1:?caddy file}" domain="${2:?domain}" tmp rc
-  [ -f "$file" ] || return 0
-  tmp=$(mktemp)
-  awk -v d="$domain" '
-    function count(str, ch,   t) { t = str; return gsub(ch, "", t) }
+  local conf="${1:?caddy file}" domain="${2:?domain}" tmp_file
+  [ -f "$conf" ] || return 0
+  tmp_file=$(mktemp) || return 1
+  awk -v d="$domain" -v out="$tmp_file" '
+    function drop_domain(header, target,   arr, n, i, out_h) {
+      gsub(/[[:space:]]*\{.*/, "", header)
+      n = split(header, arr, /[[:space:]]*,[[:space:]]*/)
+      out_h = ""
+      for (i = 1; i <= n; i++) {
+        if (arr[i] != target && arr[i] != "") out_h = (out_h == "" ? arr[i] : out_h ", " arr[i])
+      }
+      return out_h
+    }
     {
-      opens = count($0, "{"); closes = count($0, "}")
-      if (depth == 0 && /^[^ 	#].*\{[ 	]*$/) {
-        line = $0; sub(/\{[ 	]*$/, "", line); gsub(/,/, " ", line)
-        n = split(line, a, " "); out = ""
-        for (i = 1; i <= n; i++) if (a[i] != d) out = out (out == "" ? "" : ", ") a[i]
-        if (out == "") { skipping = 1 } else { print out " {"; kept++ }
-        depth = opens - closes
-        if (depth <= 0) { depth = 0; skipping = 0 }
+      line = $0
+      if (depth == 0 && line ~ /^[^[:space:]#].*\{[[:space:]]*$/) {
+        if (line ~ ("(^|[[:space:],])" d "([[:space:],{]|$)")) {
+          new_h = drop_domain(line, d)
+          if (new_h == "") { drop_block = 1 }
+          else { line = new_h " {" }
+        }
+      }
+      if (drop_block) {
+        t = line; o = gsub(/\{/, "{", t); t = line; c = gsub(/\}/, "}", t)
+        depth += o - c
+        if (depth <= 0) { depth = 0; drop_block = 0 }
         next
       }
-      depth += opens - closes
-      if (depth < 0) depth = 0
-      if (!skipping) print
-      if (depth == 0) skipping = 0
+      print line > out
     }
-    END { exit (kept > 0 ? 0 : 3) }
-  ' "$file" > "$tmp"
-  rc=$?
-  if [ "$rc" -eq 3 ]; then rm -f "$file" "$tmp"
-  elif [ "$rc" -eq 0 ]; then mv -f "$tmp" "$file"
-  else rm -f "$tmp"   # awk failed: the file is left untouched
+  ' "$conf"
+  cat "$tmp_file" > "$conf"
+  rm -f "$tmp_file"
+
+  # If the file has no real content left, delete it so Caddy never imports an empty file.
+  if ! grep -qE '^[^[:space:]#]' "$conf" 2>/dev/null; then
+    rm -f "$conf"
   fi
-  return 0
 }

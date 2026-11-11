@@ -1,4 +1,5 @@
 #!/bin/bash
+# Load and apply all port forward rules from the rules file into iptables.
 port_forward_load_rules_from_file() {
   local file="${1:-$PORT_FORWARD_RULES_FILE}"
   [ -f "$file" ] || { echo "No rules file found at $file."; return 1; }

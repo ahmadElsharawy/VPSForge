@@ -1,18 +1,11 @@
 #!/bin/bash
 
+# Deletes a snapshot from a VPS container and reclaims pool space.
 delete_vps_snapshot() {
   local name="${1:-}" snap_name="${2:-}"
   [ -z "$snap_name" ] && { echo "No snapshot specified."; return 1; }
 
-  # Resolve numeric index if passed directly
-  # A number is a list position only when no snapshot is really named like that.
-  if [[ "$snap_name" =~ ^[0-9]+$ ]] && ! incus snapshot list "$name" --format csv 2>/dev/null | cut -d, -f1 | grep -Fxq "$snap_name"; then
-    local -a snaps=()
-    mapfile -t snaps < <(incus snapshot list "$name" --format csv 2>/dev/null | cut -d',' -f1 || true)
-    if [ "$snap_name" -ge 1 ] && [ "$snap_name" -le "${#snaps[@]}" ]; then
-      snap_name="${snaps[$((snap_name-1))]}"
-    fi
-  fi
+  snap_name="$(_resolve_snapshot_name "$name" "$snap_name")"
 
   echo "Deleting snapshot '$snap_name' from $name..."
   incus snapshot delete "$name" "$snap_name" && echo "Snapshot '$snap_name' deleted." && reclaim_pool_space

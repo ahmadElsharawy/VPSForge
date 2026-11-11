@@ -1,7 +1,8 @@
 #!/bin/bash
 
+# Repairs SSH and network connections across all detected VPS containers.
 repair_connection_menu() {
-  local n num ip saved_port preferred ok=0 failed=0
+  local n ok=0 failed=0
   local -a repair_list
 
   mapfile -t repair_list < <(
@@ -17,19 +18,7 @@ repair_connection_menu() {
   echo
 
   for n in "${repair_list[@]}"; do
-    num=$(get_num "$n")
-    ip=$(get_ip "$n")
-    preferred=$(get_vps_saved_port "$n" 2>/dev/null || true)   # keep a port the owner changed
-    [[ "$preferred" =~ ^[0-9]+$ ]] || preferred=$(vps_fixed_port "$num")
-    if ! check_fixed_port_available "$n" "$ip" "$preferred"; then
-      echo "FAILED: $n requires fixed port $preferred."
-      failed=$((failed+1))
-      echo
-      continue
-    fi
-
-    if repair_vps_connection "$n" "$preferred" </dev/null; then
-      set_vps_saved_port "$n" "$preferred"
+    if _repair_single_vps "$n"; then
       ok=$((ok+1))
     else
       failed=$((failed+1))

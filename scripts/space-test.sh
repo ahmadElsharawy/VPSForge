@@ -19,20 +19,7 @@ IMG=/var/lib/incus/disks/default.img
 POOL_DIR=$(get_incus_pool_path)
 mkdir -p "$BACKUP_DIR"
 
-host_free_mb() { df -m --output=avail / | tail -1 | tr -d ' '; }
-img_mb()       { [ -f "$IMG" ] && du -sm "$IMG" | cut -f1 || echo 0; }
-pool_used_mb() { incus query /1.0/storage-pools/default/resources 2>/dev/null | python3 -c 'import sys,json; print(int(json.load(sys.stdin)["space"]["used"]/1048576))' 2>/dev/null || echo 0; }
-backups_mb()   { du -sm "$BACKUP_DIR" 2>/dev/null | cut -f1; }
-report() {
-  printf '%-34s host_free=%6sMB  pool_used=%6sMB  default.img_on_disk=%6sMB  backup_dir=%5sMB\n' \
-    "$1" "$(host_free_mb)" "$(pool_used_mb)" "$(img_mb)" "$(backups_mb)"
-}
-
-cleanup() {
-  incus delete "$T" --force >/dev/null 2>&1 || true
-  rm -f "$BACKUP_DIR"/space-test-backup*.tar* 2>/dev/null
-  rm -rf "${SPACE_TMP:?}"
-}
+for f in "$(dirname "$0")/lib/space-test"/*.sh; do . "$f"; done
 trap cleanup EXIT
 incus delete "$T" --force >/dev/null 2>&1 || true
 rm -f "$BACKUP_DIR"/space-test-backup*.tar* 2>/dev/null

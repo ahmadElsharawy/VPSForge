@@ -4,10 +4,10 @@
 # the last route of the second domain must not leave an empty "domain { }" behind.
 #   caddy_drop_empty_sites <caddy_file>
 caddy_drop_empty_sites() {
-  local conf="${1:?caddy file}" tmp
+  local conf="${1:?caddy file}" tmp_file
   [ -f "$conf" ] || return 0
-  tmp=$(mktemp) || return 1
-  awk -v out="$tmp" '
+  tmp_file=$(mktemp) || return 1
+  awk -v out="$tmp_file" '
     function flush() {
       if (nb == 0) return
       if (has_route) { for (i = 1; i <= nb; i++) print buf[i] > out }
@@ -29,6 +29,6 @@ caddy_drop_empty_sites() {
     }
     END { flush(); close(out) }
   ' "$conf"
-  cat "$tmp" > "$conf"
-  rm -f "$tmp"
+  cat "$tmp_file" > "$conf"
+  rm -f "$tmp_file"
 }

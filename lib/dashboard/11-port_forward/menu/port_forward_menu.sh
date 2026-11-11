@@ -1,7 +1,7 @@
 #!/bin/bash
-
+# Interactive menu for managing port forward rules (add, edit, delete, status).
 port_forward_menu() {
-  local c confirm
+  local choice confirm
   while :; do
     clear
     echo "================================================"
@@ -17,10 +17,10 @@ port_forward_menu() {
     echo "4) Delete ALL Rules   closes every forwarded port (SSH ports come back with Settings > Repair)"
     echo "5) Active NAT Status   what is really open on the server right now"
     echo
-    read -r -p "Choice [0=Back, Enter=1]: " c
-    c="${c:-1}"
+    read -r -p "Choice [0=Back, Enter=1]: " choice
+    choice="${choice:-1}"
 
-    case "$c" in
+    case "$choice" in
       1) _pf_interactive_add; pause;;
       2) _pf_interactive_edit; pause;;
       3) _pf_interactive_delete; pause;;

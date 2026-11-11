@@ -1,4 +1,5 @@
 #!/bin/bash
+# Save resource limits, user credentials, and network settings of a VPS into global variables.
 preserve_vps_settings() {
   local name="$1"
 

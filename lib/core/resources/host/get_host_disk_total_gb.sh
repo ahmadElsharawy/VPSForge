@@ -1,4 +1,5 @@
 #!/bin/bash
+# Returns total disk space in GB of the filesystem hosting the Incus storage pool.
 get_host_disk_total_gb() {
   local path
   path=$(get_incus_pool_path)

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Remove legacy /.dockerenv marker files from all Incus containers.
 cleanup_legacy_dockerenv_markers() {
   local inst_list inst
   inst_list=$(incus list -c n --format csv 2>/dev/null | grep -v '^$' || true)

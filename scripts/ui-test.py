@@ -812,12 +812,22 @@ def driver(commands):
 
 
 def run_then_stop(commands, after, sig):
-    """Start the driver, stop it with <sig> after <after> seconds, return its output."""
+    """Start the driver, stop it with <sig> after <after> seconds (or once the text <after> is printed), return its output."""
     import signal
     driver(commands)
     out = open("/tmp/ui_drv.out", "w")
     proc = subprocess.Popen(["bash", "/tmp/ui_drv.sh"], stdout=out, stderr=subprocess.STDOUT, preexec_fn=os.setsid)
-    time.sleep(after)
+    if isinstance(after, str):
+        # Stop as soon as <after> shows in the output (the operation is really half-way),
+        # not after a fixed time that a fast or slow server may already have passed.
+        deadline = time.time() + 180
+        while time.time() < deadline and proc.poll() is None:
+            out.flush()
+            if after in open("/tmp/ui_drv.out", errors="replace").read():
+                break
+            time.sleep(0.2)
+    else:
+        time.sleep(after)
     try:
         os.killpg(proc.pid, sig)
     except ProcessLookupError:
@@ -847,7 +857,7 @@ def section_interrupt(ui):
     create = "create_vps uitint %d 256 %d limited unlimited '' limited 5 unlimited '' images:ubuntu/noble unlimited 0 0 y" % (free_num, port)
 
     # a) Ctrl-C in the middle of creating a VPS
-    out = run_then_stop(create, 30, signal.SIGINT)
+    out = run_then_stop(create, "Launching uitint", signal.SIGINT)
     check("interrupt: user is told it did not finish", "did not finish" in out and "stopped before it finished" in out, out[-300:])
     check("interrupt: the half-made VPS is gone", not exists("uitint"))
     check("interrupt: its IP and SSH port were released", not firewall_mentions(ip, port))
@@ -855,19 +865,19 @@ def section_interrupt(ui):
     check("interrupt: other VPSs untouched", running("uit2"))
 
     # b) kill -9 in the middle (no chance to clean): startup recovery must finish the job
-    run_then_stop(create, 30, signal.SIGKILL)
+    run_then_stop(create, "Launching uitint", signal.SIGKILL)
     leftover = exists("uitint")
     out = sh("vpsforge list", 300)[1]
     check("kill -9: recovery announces and removes the leftover", (not leftover) or "Recovery:" in out, out[-300:])
     check("kill -9: after recovery nothing remains", not exists("uitint") and not firewall_mentions(ip, port))
 
     # c) a backup that is stopped half-way leaves no file and no hidden copy
-    sh("incus exec uit2 -- sh -c 'dd if=/dev/urandom of=/root/big bs=1M count=300 status=none; sync'")
+    sh("incus exec uit2 -- sh -c 'dd if=/dev/urandom of=/root/big bs=1M count=1500 status=none; sync'")
     before_free = sh("df -m --output=avail / | tail -1")[1].strip()
     export_cmd = ("export_vps_backup_noninteractive() { mkdir -p $BACKUP_DIR/.tmp; "
                   "run_guarded \"cleanup_partial_backup uit2 $BACKUP_DIR/.tmp/x.tar\" _export_instance uit2 $BACKUP_DIR/.tmp/x.tar; }\n"
                   "export_vps_backup_noninteractive")
-    out = run_then_stop(export_cmd, 4, signal.SIGINT)
+    out = run_then_stop(export_cmd, "%", signal.SIGINT)
     check("interrupt: backup stopped, user told why", "did not finish" in out, out[-300:])
     check("interrupt: no half-written backup file", not os.path.exists("/opt/vpsforge-backups/.tmp/x.tar") and not os.path.exists("/opt/vpsforge-backups/x.tar"))
     check("interrupt: no hidden internal incus backup", sh("incus query /1.0/instances/uit2/backups")[1].count("/1.0/") == 0)

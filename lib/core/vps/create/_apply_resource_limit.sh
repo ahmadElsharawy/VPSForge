@@ -1,4 +1,5 @@
 #!/bin/bash
+# Apply specific resource limits (RAM, CPU, disk, network) for a VPS.
 _apply_resource_limit() {
   local name="$1" resource="$2" mode="$3" value="$4"
   case "$resource" in

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# Interactive wizard to select and delete port forward rules.
 _pf_interactive_delete() {
   echo
   echo "--- Delete Port Forward Rule ---"

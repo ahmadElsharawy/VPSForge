@@ -1,14 +1,12 @@
 #!/bin/bash
+# Check if the requested port forwarding rule already exists in iptables.
 port_forward_rule_conflicts() {
   local protocol="$1" external_ip="$2" external_port="$3"
   local internal_ip="$4" internal_port="$5"
-  local proto dest_spec
-  dest_spec=$(_build_dest_spec "$external_ip")
+  local proto
 
   for proto in $(resolve_protocols "$protocol"); do
-    if ! iptables -t nat -C PREROUTING -p "$proto" $dest_spec \
-      --dport "$external_port" -j DNAT \
-      --to-destination "$internal_ip:$internal_port" 2>/dev/null; then
+    if ! port_forward_rule_exists "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"; then
       return 1
     fi
   done

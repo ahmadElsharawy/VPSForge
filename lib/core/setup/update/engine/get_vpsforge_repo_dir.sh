@@ -1,4 +1,5 @@
 #!/bin/bash
+# Return the local git repository directory of VPSForge.
 get_vpsforge_repo_dir() {
   local app_dir
   app_dir=$(get_vpsforge_app_dir)

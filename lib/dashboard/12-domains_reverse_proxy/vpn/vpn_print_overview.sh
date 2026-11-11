@@ -1,7 +1,7 @@
 #!/bin/bash
 # Print every VPN and its devices: connected or last seen, data used / limit, days left.
 vpn_print_overview() {
-  local row vps port line n a m ago used limit expires state seen data days any=0 now
+  local row vps port line dev_name dev_ip dev_mac ago used limit expires state seen data days any=0 now
   now=$(date +%s)
   while IFS= read -r row; do
     [ -n "$row" ] || continue
@@ -10,7 +10,7 @@ vpn_print_overview() {
     echo "VPN on $vps   ->  ${PUBLIC_IP:-SERVER}:$port (UDP)"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      IFS='|' read -r n a m ago used limit expires state <<< "$line"
+      IFS='|' read -r dev_name dev_ip dev_mac ago used limit expires state <<< "$line"
       if [ -z "$ago" ]; then seen="never connected"
       elif [ "$ago" -lt 180 ]; then seen="CONNECTED"
       elif [ "$ago" -lt 3600 ]; then seen="seen $((ago / 60)) min ago"
@@ -26,7 +26,7 @@ vpn_print_overview() {
         off-data) seen="OFF: data limit reached";;
         off-time) seen="OFF: days are over";;
       esac
-      printf '    %-18s %-20s %-15s %s\n' "$n" "$data" "$days" "$seen"
+      printf '    %-18s %-20s %-15s %s\n' "$dev_name" "$data" "$days" "$seen"
     done < <(vpn_list_devices "$vps")
   done < <(vpn_all_vps)
   [ "$any" -eq 1 ] || echo "No VPN yet."

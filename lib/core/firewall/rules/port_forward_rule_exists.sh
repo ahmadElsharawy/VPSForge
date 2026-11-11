@@ -1,4 +1,5 @@
 #!/bin/bash
+# Check if a specific DNAT port forward rule currently exists in iptables PREROUTING.
 port_forward_rule_exists() {
   local protocol="$1" external_ip="$2" external_port="$3"
   local internal_ip="$4" internal_port="$5"

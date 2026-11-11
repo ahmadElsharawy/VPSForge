@@ -1,4 +1,5 @@
 #!/bin/bash
+# Sets root disk limit (unlimited or min_disk..max GB) for a VPS container.
 set_disk_mode_for_vps() {
   local name="$1" mode="$2" value="${3:-}" max min_disk=3 actual
   max=$(get_disk_available_for_vps "$name")

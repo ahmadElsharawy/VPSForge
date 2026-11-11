@@ -1,8 +1,8 @@
 #!/bin/bash
-
+# Menu for managing container snapshots, backups, and cloning.
 backup_vps_menu() {
   clean_stale_temp_backups >/dev/null 2>&1 || true
-  local c n snap_name file_path
+  local c
   while :; do
     clear
     echo "================================================"
@@ -28,52 +28,11 @@ backup_vps_menu() {
     c="${c:-1}"
 
     case "$c" in
-      1)
-        ask_vps_selection "VPS name or number [0=Back, Enter=1]: " single || continue
-        [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Snapshot supports one VPS at a time."; pause; continue; }
-        n="${SELECTED_VPS[0]}"
-        show_example "before-update  (a name to find this snapshot later)"
-        read -r -p "Snapshot name [Enter = auto-timestamp]: " snap_name
-        create_vps_snapshot "$n" "$snap_name"
-        pause
-        ;;
-      2)
-        ask_vps_selection "VPS name or number [0=Back, Enter=1]: " single || continue
-        [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
-        list_vps_snapshots "${SELECTED_VPS[0]}"
-        pause
-        ;;
-      3)
-        ask_vps_selection "VPS name or number [0=Back, Enter=1]: " single || continue
-        [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
-        n="${SELECTED_VPS[0]}"
-        if select_vps_snapshot "$n" "Snapshot number or name to restore: "; then
-          read -r -p "Restore '$n' to '$SELECTED_SNAPSHOT'? Changes made after it are lost. [y/N]: " _c </dev/tty || _c=n
-          [[ "${_c,,}" =~ ^y ]] || { echo "Cancelled."; pause; continue; }
-          restore_vps_snapshot "$n" "$SELECTED_SNAPSHOT"
-          pause
-        fi
-        ;;
-      4)
-        ask_vps_selection "VPS name or number [0=Back, Enter=1]: " single || continue
-        [ "${#SELECTED_VPS[@]}" -eq 1 ] || { echo "Supports one VPS at a time."; pause; continue; }
-        n="${SELECTED_VPS[0]}"
-        if select_vps_snapshots "$n" "Snapshot number(s) to delete (e.g. 1, 1,2, 1-3, or A for All, 0=Cancel): "; then
-          read -r -p "Delete ${#SELECTED_SNAPSHOTS[@]} snapshot(s) of '$n' (${SELECTED_SNAPSHOTS[*]})? This cannot be undone. [y/N]: " _c </dev/tty || _c=n
-          [[ "${_c,,}" =~ ^y ]] || { echo "Cancelled."; pause; continue; }
-          for snap_name in "${SELECTED_SNAPSHOTS[@]}"; do
-            delete_vps_snapshot "$n" "$snap_name"
-          done
-          pause
-        fi
-        ;;
-      5)
-        ask_vps_selection "VPS name or number [0=Back, Enter=1]: " || continue
-        for n in "${SELECTED_VPS[@]}"; do
-          export_vps_backup "$n"
-        done
-        pause
-        ;;
+      1) _backup_menu_create_snapshot ;;
+      2) _backup_menu_list_snapshots ;;
+      3) _backup_menu_restore_snapshot ;;
+      4) _backup_menu_delete_snapshot ;;
+      5) _backup_menu_export ;;
       6)
         if select_backup_file "Select backup file to import: "; then
           import_vps_backup "$SELECTED_BACKUP_FILE"
@@ -86,15 +45,9 @@ backup_vps_menu() {
           pause
         fi
         ;;
-      8)
-        update_vps_backup
-        ;;
-      9)
-        delete_backup_file
-        ;;
-      10)
-        rename_backup_file
-        ;;
+      8) update_vps_backup ;;
+      9) delete_backup_file ;;
+      10) rename_backup_file ;;
       11)
         echo "Running cleanup..."
         clean_stale_temp_backups

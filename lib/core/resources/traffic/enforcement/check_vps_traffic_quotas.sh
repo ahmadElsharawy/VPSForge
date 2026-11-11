@@ -31,60 +31,9 @@ check_vps_traffic_quotas() {
 
     if { [ "$rx_lim" -gt 0 ] && [ "$used_rx" -ge $((rx_lim * 1073741824)) ]; } || \
        { [ "$tx_lim" -gt 0 ] && [ "$used_tx" -ge $((tx_lim * 1073741824)) ]; }; then
-      if [ "$action" = "stop" ]; then
-        incus config set "$name" user.vpsforge.traffic.status "STOPPED" 2>/dev/null || true
-        incus stop "$name" --force 2>/dev/null || true
-      elif [ "$action" = "warn" ]; then
-        incus config set "$name" user.vpsforge.traffic.status "EXCEEDED" 2>/dev/null || true
-      else
-        ensure_device_override "$name" eth0 >/dev/null 2>&1 || true
-        # Remember the real speed once, so it can be restored when the quota resets.
-        # Saved only before the first throttle ("unlimited" when there was no limit), so a real
-        # limit of 1 Mbit is kept as 1 and is never confused with the throttle itself.
-        if [ -z "$status" ] && [ -z "$(incus config get "$name" user.vpsforge.net_limit_orig 2>/dev/null)" ]; then
-          local real_net
-          real_net=$(get_vps_network_limit_mbit "$name" 2>/dev/null || true)
-          incus config set "$name" user.vpsforge.net_limit_orig "${real_net:-unlimited}" 2>/dev/null || true
-        fi
-        incus config device set "$name" eth0 limits.ingress "1Mbit" 2>/dev/null || true
-        incus config device set "$name" eth0 limits.egress  "1Mbit" 2>/dev/null || true
-        incus config set "$name" user.vpsforge.traffic.status "THROTTLED (1M)" 2>/dev/null || true
-      fi
+      _apply_traffic_quota_action "$name" "$action" "$status"
     elif [ -n "$status" ] && [ "$action" != "stop" ]; then
       reset_vps_traffic_limits "$name" >/dev/null 2>&1 || true
     fi
-  done < <(incus list --format json 2>/dev/null | python3 -c '
-import sys, json
-
-def num(value):
-    try:
-        return max(0, int(float(value or 0)))
-    except (TypeError, ValueError):
-        return 0
-
-try:
-    instances = json.load(sys.stdin)
-except Exception:
-    instances = []
-for inst in instances:
-    cfg = inst.get("config") or {}
-    eth0 = ((inst.get("state") or {}).get("network") or {}).get("eth0") or {}
-    counters = eth0.get("counters") or {}
-    fields = [
-        inst.get("name", ""),
-        num(cfg.get("user.vpsforge.traffic.rx_limit_gb")),
-        num(cfg.get("user.vpsforge.traffic.tx_limit_gb")),
-        (cfg.get("user.vpsforge.traffic.status") or "").replace("|", " "),
-        (cfg.get("user.vpsforge.traffic.action") or "").replace("|", " "),
-        num(cfg.get("user.vpsforge.traffic.used_rx")),
-        num(cfg.get("user.vpsforge.traffic.used_tx")),
-        num(cfg.get("user.vpsforge.traffic.last_rx")),
-        num(cfg.get("user.vpsforge.traffic.last_tx")),
-        (cfg.get("user.vpsforge.traffic.period") or ""),
-        num(counters.get("bytes_received")),
-        num(counters.get("bytes_sent")),
-        1 if inst.get("status") == "Running" else 0,
-    ]
-    print("|".join(str(f) for f in fields))
-' 2>/dev/null || true)
+  done < <(incus list --format json 2>/dev/null | _parse_vps_traffic_json)
 }

@@ -3,7 +3,7 @@
 # put every Caddy file back exactly as it was before the import started.
 #   restore_caddy_after_import <target_name>
 restore_caddy_after_import() {
-  local target="${1:?target}" dir="/opt/vpsforge/.import-caddy-${1}"
+  local target="${1:?target}" dir="/opt/vpsforge/.import-caddy-${target}"
   [ -d "$dir" ] || return 0
   rm -f "$CADDY_CONF_DIR"/*.caddy
   cp -a "$dir"/. "$CADDY_CONF_DIR"/ 2>/dev/null || true

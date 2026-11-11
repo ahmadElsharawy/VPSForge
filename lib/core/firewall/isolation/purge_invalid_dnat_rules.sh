@@ -1,4 +1,5 @@
 #!/bin/bash
+# Purge dangling or misconfigured DNAT rules from the iptables PREROUTING chain.
 purge_invalid_dnat_rules() {
   local rule
   while read -r rule; do

@@ -1,7 +1,8 @@
 #!/bin/bash
+# Returns current root disk usage in GB (formatted to 1 decimal) for a VPS container.
 get_vps_disk_usage_gb() {
-  local bytes=0
-  bytes=$(incus query "/1.0/instances/$1/state" </dev/null 2>/dev/null | python3 -c '
+  local vps_name="$1" bytes=0
+  bytes=$(incus query "/1.0/instances/$vps_name/state" </dev/null 2>/dev/null | python3 -c '
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -18,7 +19,7 @@ except Exception:
 ' 2>/dev/null || echo 0)
 
   if [ -z "$bytes" ] || [ "$bytes" -eq 0 ] 2>/dev/null; then
-    bytes=$(incus exec "$1" -- sh -c 'du -s -B1 --exclude=/proc --exclude=/sys --exclude=/dev / 2>/dev/null | awk "{print \$1}"' </dev/null 2>/dev/null || echo 0)
+    bytes=$(incus exec "$vps_name" -- sh -c 'du -s -B1 --exclude=/proc --exclude=/sys --exclude=/dev / 2>/dev/null | awk "{print \$1}"' </dev/null 2>/dev/null || echo 0)
   fi
 
   [[ "$bytes" =~ ^[0-9]+$ ]] || bytes=0

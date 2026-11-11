@@ -1,4 +1,5 @@
 #!/bin/bash
+# Formats network speed limit and current I/O display for a VPS container.
 format_network_display() {
   local name="$1" limit io
   limit=$(get_vps_network_limit_mbit "$name" 2>/dev/null || true)

@@ -1,6 +1,5 @@
 #!/bin/bash
-# Reinstall / change the OS of the selected VPSs (settings, IP, port and login are kept).
-# One VPS: pick the OS. Several: each separately, or the same OS for all.
+# Reinstalls selected VPS instances with chosen OS images while preserving settings.
 edit_os_for_selection() {
   local n first=1 image="" typed
   edit_ask_scope || return

@@ -10,9 +10,10 @@ cd "$ROOT" || exit 1
 fail=0
 mapfile -t files < <(find . -name '*.sh' -not -path './.git/*' | sort)
 
-# Rule: one function per file (files with 2+ functions are rejected).
+# Rule: one function per file (files with 2+ functions are rejected; applies to lib/ and scripts/lib/).
+# Note: awk 'function x()' inside awk code is not a bash function and is not matched by the regex.
 for f in "${files[@]}"; do
-  case "$f" in ./lib/*) ;; *) continue;; esac
+  case "$f" in ./lib/*|./scripts/lib/*) ;; *) continue;; esac
   case "$f" in */NIU/*) continue;; esac
   n=$(grep -cE '^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$f" || true)
   if [ "${n:-0}" -gt 1 ]; then
@@ -21,18 +22,28 @@ for f in "${files[@]}"; do
   fi
 done
 
-# Rule: no duplicate functions across lib/ (ignore files under any NIU folder).
+# Rule: no duplicate functions across lib/ or within each scripts/lib/<script>/ folder.
 declare -A seen_func=()
 for f in "${files[@]}"; do
-  case "$f" in ./lib/*) ;; *) continue;; esac
   case "$f" in */NIU/*) continue;; esac
+  scope=""
+  case "$f" in
+    ./lib/*) scope="lib" ;;
+    ./scripts/lib/*/*)
+      sub="${f#./scripts/lib/}"
+      scope="scripts/lib/${sub%%/*}"
+      ;;
+    ./scripts/lib/*) scope="scripts/lib" ;;
+    *) continue ;;
+  esac
   while read -r fn; do
     [ -n "$fn" ] || continue
-    if [ -n "${seen_func[$fn]:-}" ]; then
-      echo "FAIL: duplicate function $fn in $f (already defined in ${seen_func[$fn]})"
+    key="${scope}:${fn}"
+    if [ -n "${seen_func[$key]:-}" ]; then
+      echo "FAIL: duplicate function $fn in $f (already defined in ${seen_func[$key]})"
       fail=1
     else
-      seen_func["$fn"]="$f"
+      seen_func["$key"]="$f"
     fi
   done < <(sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)[[:space:]]*()[[:space:]]*{.*/\1/p' "$f")
 done

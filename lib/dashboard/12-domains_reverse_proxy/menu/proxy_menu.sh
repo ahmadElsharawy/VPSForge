@@ -4,13 +4,7 @@ proxy_menu() {
   local choice count caddy_state
   while true; do
     count=$(list_proxy_routes 2>/dev/null | wc -l)
-    if command -v caddy >/dev/null 2>&1 && systemctl is-active --quiet caddy; then
-      caddy_state="running"
-    elif command -v caddy >/dev/null 2>&1; then
-      caddy_state="installed but NOT running"
-    else
-      caddy_state="not installed yet (installed automatically when you add a domain)"
-    fi
+    caddy_state=$(_proxy_caddy_status)
 
     clear
     echo "================================================================"

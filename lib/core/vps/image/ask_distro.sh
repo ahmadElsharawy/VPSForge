@@ -2,7 +2,7 @@
 # Ask which Linux distribution the new VPS should run (defaults to your last choice).
 # Sets SELECTED_DISTRO. Returns 1 when the user chooses Back.
 ask_distro() {
-  local target="$1" choice i default_index=1 last_distro mark
+  local target="$1" choice idx default_index=1 last_distro mark
   local -a names=(ubuntu debian alpine rockylinux almalinux fedora archlinux centos)
   local -a labels=(
     "Ubuntu        (best compatibility)"
@@ -16,17 +16,17 @@ ask_distro() {
   )
 
   last_distro=$(pref_get distro ubuntu)
-  for i in "${!names[@]}"; do
-    [ "${names[$i]}" = "$last_distro" ] && default_index=$((i + 1))
+  for idx in "${!names[@]}"; do
+    [ "${names[$idx]}" = "$last_distro" ] && default_index=$((idx + 1))
   done
 
   echo "----------------------------------------------------------------"
   echo "Operating system for $target:"
   echo "0) Back"
-  for i in "${!names[@]}"; do
+  for idx in "${!names[@]}"; do
     mark=""
-    [ "$((i + 1))" = "$default_index" ] && mark="   <- last used"
-    printf '%2d) %s%s\n' "$((i + 1))" "${labels[$i]}" "$mark"
+    [ "$((idx + 1))" = "$default_index" ] && mark="   <- last used"
+    printf '%2d) %s%s\n' "$((idx + 1))" "${labels[$idx]}" "$mark"
   done
   read -r -p "Choice [0=Back, Enter=$default_index]: " choice </dev/tty
   choice="${choice:-$default_index}"

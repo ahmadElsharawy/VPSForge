@@ -1,18 +1,19 @@
 #!/bin/bash
-
+# Display SSH connection details (IP, port, user, password) for selected VPSs.
 bulk_connection_menu() {
-  local n ip p
+  local vps_name vps_ip ssh_port
   ask_vps_selection_enter_all || return
-  for n in "${SELECTED_VPS[@]}"; do
-    ip=$(get_ip "$n"); p=$(get_port "$ip")
+  for vps_name in "${SELECTED_VPS[@]}"; do
+    vps_ip=$(get_ip "$vps_name")
+    ssh_port=$(get_port "$vps_ip")
     echo
     echo "================================================"
-    echo "VPS Name:    $n"
+    echo "VPS Name:    $vps_name"
     echo "Public IP:   $PUBLIC_IP"
-    echo "Port:        ${p:--}"
-    echo "Username:    $(get_vps_user "$n")"
-    echo "Password:    $(get_vps_password "$n")"
-    [ -n "$p" ] && echo "SSH Command: ssh $(get_vps_user "$n")@$PUBLIC_IP -p $p"
+    echo "Port:        ${ssh_port:--}"
+    echo "Username:    $(get_vps_user "$vps_name")"
+    echo "Password:    $(get_vps_password "$vps_name")"
+    [ -n "$ssh_port" ] && echo "SSH Command: ssh $(get_vps_user "$vps_name")@$PUBLIC_IP -p $ssh_port"
     echo "================================================"
   done
 }

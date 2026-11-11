@@ -1,7 +1,7 @@
 #!/bin/bash
+# List available backup files in BACKUP_DIR, optionally filtered by VPS prefix.
 list_backup_files() {
-  local filter_prefix="$1"
-  local f size mtime idx=1
+  local filter_prefix="$1" f
   mkdir -p "$BACKUP_DIR"
   BACKUP_FILES_RESULT=()
 
@@ -31,11 +31,6 @@ list_backup_files() {
   else
     echo "Available Backup Files in $BACKUP_DIR:"
   fi
-  for i in "${!BACKUP_FILES_RESULT[@]}"; do
-    f="${BACKUP_FILES_RESULT[$i]}"
-    size=$(du -h "$f" 2>/dev/null | awk '{print $1}')
-    mtime=$(stat -c "%y" "$f" 2>/dev/null | cut -d'.' -f1 || echo "-")
-    printf "  %2d) %-40s (%s | %s)\n" "$((i+1))" "$(basename "$f")" "$size" "$mtime"
-  done
+  _list_backup_files_print
   return 0
 }

@@ -1,7 +1,5 @@
 #!/bin/bash
-# From the given module names, print (comma separated) only those this server's
-# kernel can really load or already has built in. Asking Incus to load a module the
-# kernel does not have makes the VPS refuse to start, so unknown ones are skipped.
+# From the given module names, print comma-separated only those the host kernel supports.
 #   get_loadable_kernel_modules overlay br_netfilter tun ...
 get_loadable_kernel_modules() {
   local module list=""

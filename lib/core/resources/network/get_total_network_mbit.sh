@@ -1,4 +1,5 @@
 #!/bin/bash
+# Returns total network interface speed in Mbit, cached or detected from default route.
 get_total_network_mbit() {
   local saved speed iface
   saved=$(cat /opt/vpsforge/network_speed_mbit 2>/dev/null || true)

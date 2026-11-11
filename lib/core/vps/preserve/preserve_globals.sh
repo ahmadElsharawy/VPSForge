@@ -1,5 +1,5 @@
 #!/bin/bash
-# Global variables for preserve.
+# Global variables for preserved VPS configuration settings.
 
 PRESERVED_RAM_LIMIT=""
 PRESERVED_RAM_MODE=""

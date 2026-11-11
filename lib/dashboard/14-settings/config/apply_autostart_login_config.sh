@@ -1,4 +1,5 @@
 #!/bin/bash
+# Configures or removes the /etc/profile.d autostart script for interactive SSH login.
 apply_autostart_login_config() {
   local autostart_file="/etc/profile.d/vpsforge-autostart.sh"
   if [ "${AUTO_START_ON_LOGIN:-off}" = "on" ]; then

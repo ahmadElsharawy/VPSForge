@@ -1,4 +1,5 @@
 #!/bin/bash
+# Sets memory limit (unlimited or minimum MB) for a VPS container.
 set_ram_mode_for_vps() {
   local name="$1" mode="$2" value="${3:-}" actual
   case "$mode" in

@@ -1,43 +1,21 @@
 #!/bin/bash
+# Restore port forwarding rules for a VPS from container metadata or rules file.
 restore_vps_port_forwards_metadata() {
-  local name="$1" ip rules proto ext_ip ext_port int_port rule
+  local name="$1" ip rules
   ip=$(get_ip "$name" 2>/dev/null || true)
   [ -n "$ip" ] || return 0
 
   # 1. Try to restore from the container's own metadata rules (enables restoration on new servers or if IP changed!)
   rules=$(incus config get "$name" user.vpsforge.port_forwards.rules 2>/dev/null || true)
   if [ -n "$rules" ]; then
-    mkdir -p "$(dirname "$PORT_FORWARD_RULES_FILE")"
-    touch "$PORT_FORWARD_RULES_FILE"
-    IFS=';' read -ra rule_arr <<< "$rules"
-    for rule in "${rule_arr[@]}"; do
-      [ -n "$rule" ] || continue
-      IFS='|' read -r proto ext_ip ext_port int_port <<< "$rule"
-      # Skip empty values
-      [ -n "$proto" ] && [ -n "$ext_port" ] || continue
-      is_valid_port_forward_rule "$proto" "$ext_ip" "$ext_port" "$int_port" || continue
-      
-      # Never take a port the host itself uses, or one another VPS holds now
-      port_forward_host_conflict "$ext_port" "$proto" >/dev/null 2>&1
-      [ "$?" -ne 0 ] && { echo "Skipped forward $proto:$ext_port (the host uses that port)."; continue; }
-      if awk -F'|' -v p="$proto" -v port="$ext_port" -v ip="$ip" '$1 == p && $3 == port && $4 != ip { f = 1 } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
-        echo "Skipped forward $proto:$ext_port (another VPS holds it now)."; continue
-      fi
-
-      # Apply custom rule with the container's current IP
-      port_forward_apply_rule "$proto" "$ext_ip" "$ext_port" "$ip" "$int_port"
-      
-      # Also add it to our rules file if not already present
-      if ! grep -Fxq "${proto}|${ext_ip}|${ext_port}|${ip}|${int_port}" "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
-        echo "${proto}|${ext_ip}|${ext_port}|${ip}|${int_port}" >> "$PORT_FORWARD_RULES_FILE"
-      fi
-    done
+    _apply_metadata_port_rules "$ip" "$rules"
     save_iptables
     return 0
   fi
 
   # 2. Fallback to the original host-rules-file lookup
   [ -f "$PORT_FORWARD_RULES_FILE" ] || return 0
+  local proto ext_ip ext_port int_ip int_port
   while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
     [ "$int_ip" = "$ip" ] || continue
     port_forward_apply_rule "$proto" "$ext_ip" "$ext_port" "$int_ip" "$int_port"

@@ -1,4 +1,5 @@
 #!/bin/bash
+# Set the runtime and persistent hostname inside a guest container.
 set_guest_hostname() {
   local name="${1:-}" old_name="${2:-}"
   [ -n "$name" ] || return 0

@@ -1,9 +1,7 @@
 #!/bin/bash
-# VPSForge v1.0.0 — VPS connection repair.
-
+# Repair VPS connectivity, guest network configuration, SSH daemon, and firewall forwards.
 repair_vps_connection() {
-  local name="$1" ip port reachable=0
-
+  local name="$1" ip port
   is_vps_running "$name" || incus start "$name"
   wait_ready "$name" || { echo "FAILED: $name did not become ready."; return 1; }
 
@@ -31,12 +29,7 @@ repair_vps_connection() {
 
   ensure_ssh_ready "$name" || { echo "FAILED: SSH could not start in $name."; return 1; }
 
-  local i
-  for i in $(seq 1 15); do
-    timeout 2 bash -c "</dev/tcp/$ip/22" >/dev/null 2>&1 && { reachable=1; break; }
-    sleep 1
-  done
-  [ "$reachable" -eq 1 ] || { echo "FAILED: Host cannot reach $ip:22."; return 1; }
+  _wait_for_ssh_port "$ip" || { echo "FAILED: Host cannot reach $ip:22."; return 1; }
 
   vps_ssh_forward_enabled "$name" && add_forward_rule "$ip" "$port"
   if vps_ssh_forward_enabled "$name"; then

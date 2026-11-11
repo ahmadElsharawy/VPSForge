@@ -1,5 +1,5 @@
 #!/bin/bash
-# Internal helper: Atomically copy code from repo to active dir and purge obsolete files
+# Atomically copy code from repo to active dir and purge obsolete files.
 _apply_staged_code_sync() {
   local app_dir="$1" repo_dir="$2" target_commit="$3"
   local staging_lib="$app_dir/.lib_staging_$$"
@@ -8,20 +8,7 @@ _apply_staged_code_sync() {
   rm -rf "$staging_lib" "$staging_app" 2>/dev/null || true
 
   # 1. Stage new files
-  if [ -d "$repo_dir/lib" ]; then
-    cp -r "$repo_dir/lib" "$staging_lib" || { rm -rf "$staging_lib"; return 1; }
-    find "$staging_lib" -type f -name "*.sh" -exec chmod 755 {} + 2>/dev/null || true
-  else
-    return 1
-  fi
-
-  if [ -f "$repo_dir/vpsforge.sh" ]; then
-    cp "$repo_dir/vpsforge.sh" "$staging_app" || { rm -rf "$staging_lib" "$staging_app"; return 1; }
-    chmod 755 "$staging_app"
-  else
-    rm -rf "$staging_lib"
-    return 1
-  fi
+  _stage_code_sync "$repo_dir" "$staging_lib" "$staging_app" || return 1
 
   # 2. Backup current active files for rollback safety
   if [ -d "$app_dir/lib" ]; then
@@ -40,13 +27,7 @@ _apply_staged_code_sync() {
   # 4. Integrity Verification
   if ! diff -r -q "$app_dir/lib" "$repo_dir/lib" >/dev/null 2>&1; then
     echo "ERROR: Active installation verification failed after sync. Rolling back..." >&2
-    if [ -d "$app_dir/lib.backup" ]; then
-      rm -rf "${app_dir:?}/lib"
-      mv "$app_dir/lib.backup" "$app_dir/lib"
-    fi
-    if [ -f "$app_dir/vpsforge.sh.backup" ]; then
-      mv -f "$app_dir/vpsforge.sh.backup" "$app_dir/vpsforge.sh"
-    fi
+    _rollback_staged_code_sync "$app_dir"
     return 1
   fi
 

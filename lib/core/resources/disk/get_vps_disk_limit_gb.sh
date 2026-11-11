@@ -1,7 +1,8 @@
 #!/bin/bash
+# Returns root disk limit in GB for a VPS container.
 get_vps_disk_limit_gb() {
-  local raw
-  raw=$(incus config device get "$1" root size 2>/dev/null || true)
+  local vps_name="$1" raw
+  raw=$(incus config device get "$vps_name" root size 2>/dev/null || true)
   [ -n "$raw" ] || return 0
   echo "$raw" | awk '
     /GiB$/ {gsub(/GiB/,""); printf "%d",$1; exit}

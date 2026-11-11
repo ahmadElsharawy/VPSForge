@@ -1,7 +1,8 @@
 #!/bin/bash
+# Temporarily disable all port forward rules in iptables while keeping them in the file.
 port_forward_disable_rules() {
   local file="${1:-$PORT_FORWARD_RULES_FILE}"
-  [ -f "$file" ] || { echo "No rules file."; return; }
+  [ -f "$file" ] || { echo "No rules file."; return 0; }
 
   while IFS='|' read -r proto ext_ip ext_port int_ip int_port; do
     [ -n "$proto" ] || continue

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Does this VPS get a public SSH forward? Returns 1 only when it was created without one (flag is exactly n).
+# Check if public SSH forward is enabled for a VPS (returns 1 only if flag is 'n').
 #   vps_ssh_forward_enabled <name>
 vps_ssh_forward_enabled() {
   local name="${1:?name}" flag

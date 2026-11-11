@@ -1,4 +1,5 @@
 #!/bin/bash
+# Saves current VPSForge settings to configuration file and applies autostart rules.
 save_settings() {
   mkdir -p "$(dirname "$SETTINGS_FILE")"
   {
