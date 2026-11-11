@@ -38,6 +38,10 @@ repair_vps_connection() {
   done
   [ "$reachable" -eq 1 ] || { echo "FAILED: Host cannot reach $ip:22."; return 1; }
 
-  add_forward_rule "$ip" "$port"
-  echo "OK: $name | $PUBLIC_IP:$port -> $ip:22"
+  vps_ssh_forward_enabled "$name" && add_forward_rule "$ip" "$port"
+  if vps_ssh_forward_enabled "$name"; then
+    echo "OK: $name | $PUBLIC_IP:$port -> $ip:22"
+  else
+    echo "OK: $name | $ip:22 (no public SSH forward, as created)"
+  fi
 }

@@ -10,7 +10,7 @@ interactive() {
   local c
   local is_refresh=0
   local INPUT_BUFFER=""
-  local char
+  local char read_rc
   load_settings
 
   while :; do
@@ -23,14 +23,19 @@ interactive() {
 
     char=""
     if [ "$AUTO_REFRESH" = "on" ] && [ -z "$INPUT_BUFFER" ]; then
-      if ! read -s -n 1 -t "$REFRESH_INTERVAL" char; then
+      read_rc=0
+      read -s -n 1 -t "$REFRESH_INTERVAL" char || read_rc=$?
+      if [ "$read_rc" -gt 128 ]; then
+        # timeout: refresh the screen
         get_network_info
         get_public_ip
         is_refresh=1
         continue
+      elif [ "$read_rc" -ne 0 ]; then
+        return 0   # stdin closed (EOF): leave the loop
       fi
     else
-      read -s -n 1 char
+      read -s -n 1 char || return 0   # stdin closed (EOF): leave the loop
     fi
 
     # Handle Enter (newline)

@@ -9,6 +9,11 @@ t() { # t "description" expected actual
   if [ "$2" = "$3" ]; then pass=$((pass+1)); else failn=$((failn+1)); echo "FAIL: $1 (expected '$2', got '$3')"; fi
 }
 
+# On Windows "python3" can be a Microsoft Store shortcut that only fails: use "python" in its place.
+if ! python3 -c 1 >/dev/null 2>&1 && python -c 1 >/dev/null 2>&1; then
+  python3() { python "$@"; }
+fi
+
 LIB_DIR="$ROOT/lib"
 source "$LIB_DIR/load_vpsforge_lib.sh"
 load_vpsforge_lib "$LIB_DIR"
@@ -298,6 +303,17 @@ c.com {
 ')
 t "caddy_site_domains: all blocks" "a.com b.com c.com" "$(caddy_site_domains <<< "$caddy_text" | tr '
 ' ' ' | sed 's/ $//')"
+
+# vps_ssh_forward_enabled: only the flag n turns the public SSH forward off (incus is stubbed)
+incus() { echo "n"; }
+vps_ssh_forward_enabled v1 && r=on || r=off; t "ssh_forward flag n: disabled" off "$r"
+incus() { echo "y"; }
+vps_ssh_forward_enabled v1 && r=on || r=off; t "ssh_forward flag y: enabled" on "$r"
+incus() { echo ""; }
+vps_ssh_forward_enabled v1 && r=on || r=off; t "ssh_forward flag empty: enabled" on "$r"
+incus() { return 1; }
+vps_ssh_forward_enabled v1 && r=on || r=off; t "ssh_forward incus fails: enabled" on "$r"
+unset -f incus
 
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

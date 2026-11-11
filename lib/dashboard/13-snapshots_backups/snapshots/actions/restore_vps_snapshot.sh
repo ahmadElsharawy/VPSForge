@@ -44,5 +44,6 @@ restore_vps_snapshot() {
       echo "Restarting container $name..."
       incus start "$name" 2>/dev/null || true
     fi
+    return 1
   fi
 }

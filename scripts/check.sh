@@ -13,11 +13,28 @@ mapfile -t files < <(find . -name '*.sh' -not -path './.git/*' | sort)
 # Rule: one function per file (files with 2+ functions are rejected).
 for f in "${files[@]}"; do
   case "$f" in ./lib/*) ;; *) continue;; esac
+  case "$f" in */NIU/*) continue;; esac
   n=$(grep -cE '^[A-Za-z_][A-Za-z0-9_]*[[:space:]]*\(\)[[:space:]]*\{' "$f" || true)
   if [ "${n:-0}" -gt 1 ]; then
     echo "FAIL: $f has $n functions (max 1 per file)"
     fail=1
   fi
+done
+
+# Rule: no duplicate functions across lib/ (ignore files under any NIU folder).
+declare -A seen_func=()
+for f in "${files[@]}"; do
+  case "$f" in ./lib/*) ;; *) continue;; esac
+  case "$f" in */NIU/*) continue;; esac
+  while read -r fn; do
+    [ -n "$fn" ] || continue
+    if [ -n "${seen_func[$fn]:-}" ]; then
+      echo "FAIL: duplicate function $fn in $f (already defined in ${seen_func[$fn]})"
+      fail=1
+    else
+      seen_func["$fn"]="$f"
+    fi
+  done < <(sed -n 's/^\([A-Za-z_][A-Za-z0-9_]*\)[[:space:]]*()[[:space:]]*{.*/\1/p' "$f")
 done
 
 echo "Syntax check (bash -n) on ${#files[@]} files..."
@@ -30,8 +47,11 @@ for f in "${files[@]}"; do
 done
 rm -f /tmp/vpsforge_check_err
 
-if command -v python3 >/dev/null 2>&1 && [ -f lib/dashboard/dashboard_helper.py ]; then
-  python3 -B -c "import ast,sys; ast.parse(open(sys.argv[1], encoding='utf-8').read())" lib/dashboard/dashboard_helper.py || fail=1
+# A python that really runs (on Windows "python3" can be a Store shortcut that only fails).
+PY=""
+for c in python3 python; do "$c" -c 1 >/dev/null 2>&1 && { PY="$c"; break; }; done
+if [ -n "$PY" ] && [ -f lib/dashboard/dashboard_helper.py ]; then
+  "$PY" -B -c "import ast,sys; ast.parse(open(sys.argv[1], encoding='utf-8').read())" lib/dashboard/dashboard_helper.py || fail=1
 fi
 
 if [ "${1:-}" = "--lint" ]; then

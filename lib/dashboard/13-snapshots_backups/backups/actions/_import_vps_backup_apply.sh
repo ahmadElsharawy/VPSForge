@@ -42,7 +42,7 @@ _import_vps_backup_apply() {
   incus config unset "$target_name" volatile.eth0.host_name >/dev/null 2>&1 || true
   incus config device unset "$target_name" eth0 hwaddr >/dev/null 2>&1 || true
   apply_incus_compatibility_profile "$target_name" >/dev/null 2>&1 || true
-  configure_vps_network_device "$target_name" >/dev/null 2>&1 || true
+  configure_vps_network_device "$target_name" "$new_ip" >/dev/null 2>&1 || true
   incus config set "$target_name" user.vpsforge.ip "$new_ip" >/dev/null 2>&1 || true
   incus config set "$target_name" user.vpsforge.num "$new_num" >/dev/null 2>&1 || true
   incus config set "$target_name" user.vpsforge.ssh_port "$new_port" >/dev/null 2>&1 || true

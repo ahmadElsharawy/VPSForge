@@ -30,7 +30,9 @@ inspect_backup_file() {
     rm -f "$tmp_meta" 2>/dev/null
     
     # Cache it for next time
-    echo "$index_content" > "$info_path" 2>/dev/null || true
+    if [ -n "$index_content" ]; then
+      echo "$index_content" > "$info_path" 2>/dev/null || true
+    fi
   fi
 
   orig_name=$(extract_container_name_from_backup_filename "$file_path")

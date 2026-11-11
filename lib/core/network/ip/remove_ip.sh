@@ -4,7 +4,7 @@ remove_ip() {
   [ -z "$ip" ] && return
   while :; do
     line=$(iptables -t nat -L PREROUTING -n --line-numbers 2>/dev/null |
-      awk -v ip="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 900))" '
+      awk -v ip="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 999))" '
         {
           port = 0; hit = 0
           for (i = 1; i <= NF; i++) {
@@ -22,7 +22,7 @@ remove_ip() {
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmpf
     tmpf=$(mktemp)
-    awk -F'|' -v target="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 900))" '($4 != target || $5 != 22 || $3 + 0 < lo || $3 + 0 > hi)' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
+    awk -F'|' -v target="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 999))" '($4 != target || $5 != 22 || $3 + 0 < lo || $3 + 0 > hi)' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
     mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
   fi
 }

@@ -42,8 +42,8 @@ swap_vps_ips_and_ports() {
   fi
 
   remap_port_forwards_ip "$ip_a" "$ip_b" "$ip_b" "$ip_a"
-  [ -n "$port_a" ] && add_forward_rule "$ip_b" "$port_a"
-  [ -n "$port_b" ] && add_forward_rule "$ip_a" "$port_b"
+  [ -n "$port_a" ] && vps_ssh_forward_enabled "$name_a" && add_forward_rule "$ip_b" "$port_a"
+  [ -n "$port_b" ] && vps_ssh_forward_enabled "$name_b" && add_forward_rule "$ip_a" "$port_b"
 
   set_vps_saved_port "$name_a" "$port_a"
   set_vps_saved_port "$name_b" "$port_b"

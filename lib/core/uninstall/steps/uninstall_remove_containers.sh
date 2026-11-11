@@ -26,7 +26,7 @@ uninstall_remove_containers() {
 
   # Anything else in Incus (other projects, other pools, custom volumes) is not ours: it must survive the uninstall.
   local other
-  other=$(incus list --all-projects -c n,project --format csv 2>/dev/null | awk -F, '$2 != "default" && $1 != "" { n++ } END { print n + 0 }')
+  other=$(incus list --all-projects -c nP --format csv 2>/dev/null | awk -F, '$2 != "default" && $1 != "" { n++ } END { print n + 0 }')
   UNINSTALL_FOREIGN_INSTANCES=$((UNINSTALL_FOREIGN_INSTANCES + other))
   other=$(incus storage list -c n --format csv 2>/dev/null | awk '$1 != "default" && $1 != "" { n++ } END { print n + 0 }')
   UNINSTALL_FOREIGN_INSTANCES=$((UNINSTALL_FOREIGN_INSTANCES + other))

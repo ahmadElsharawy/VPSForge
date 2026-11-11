@@ -81,7 +81,7 @@ import_vps_backup() {
   if [ -n "$rules" ]; then
     echo
     echo "Scanning Port Forwarding rules for conflicts..."
-    local rules_arr rule proto ext_ip ext_port int_port conflict_line action new_ext_port host_check
+    local rules_arr rule proto ext_ip ext_port int_port conflict_line action new_ext_port host_check port_declined go
     IFS=';' read -ra rules_arr <<< "$rules"
     for rule in "${rules_arr[@]}"; do
       [ -n "$rule" ] || continue
@@ -109,10 +109,18 @@ import_vps_backup() {
             if [[ "$new_ext_port" =~ ^[0-9]+$ ]] && [ "$new_ext_port" -gt 0 ] && [ "$new_ext_port" -lt 65536 ]; then
               host_check=0
               port_forward_host_conflict "$new_ext_port" "$proto" >/dev/null 2>&1 || host_check=$?
+              port_declined=0
+              if [ "$host_check" -eq 2 ] && is_valid_port_forward_rule "$proto" "$ext_ip" "$new_ext_port" "$int_port"; then
+                port_forward_host_conflict "$new_ext_port" "$proto" | sed 's/^/   /'
+                read -r -p "   Use it anyway? [y/N]: " go </dev/tty
+                [[ "${go,,}" =~ ^y ]] || port_declined=1
+              fi
               if ! is_valid_port_forward_rule "$proto" "$ext_ip" "$new_ext_port" "$int_port"; then
                 echo "   ERROR: that port is not allowed (22, 80 and 443 are reserved)."
               elif [ "$host_check" -eq 1 ]; then
                 echo "   ERROR: the host itself uses port $new_ext_port. Try another one."
+              elif [ "$port_declined" -eq 1 ]; then
+                echo "   Port $new_ext_port was not accepted. Try another one."
               elif ! awk -F'|' -v p="$proto" -v port="$new_ext_port" -v oldip="$old_ip" 'BEGIN { f=0 } $1 == p && $3 == port && $4 != oldip { f=1; exit } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
                 ext_port="$new_ext_port"
                 break

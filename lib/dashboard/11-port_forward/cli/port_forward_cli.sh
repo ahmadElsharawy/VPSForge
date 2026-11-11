@@ -31,7 +31,12 @@ port_forward_cli() {
       done
       save_iptables
       target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
-      [ -n "$target_vps" ] && sync_vps_metadata "$target_vps"
+      if [ -n "$target_vps" ]; then
+        if [ "$internal_port" = "22" ]; then
+          incus config set "$target_vps" user.vpsforge.ssh_port "$external_port" 2>/dev/null || true
+        fi
+        sync_vps_metadata "$target_vps"
+      fi
       echo "Port forward applied: $protocol $external_ip:$external_port -> $internal_ip:$internal_port"
       ;;
 

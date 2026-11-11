@@ -3,6 +3,7 @@
 # files that keep eating the server's real disk?   sudo bash scripts/space-test.sh
 # Only touches its own test container (name below).
 set -uo pipefail
+SPACE_TMP=$(mktemp -d)   # private folder for this run's temp files
 
 LIB_DIR="${LIB_DIR:-/opt/vpsforge/lib}"
 T="vpsforge-space"
@@ -30,6 +31,7 @@ report() {
 cleanup() {
   incus delete "$T" --force >/dev/null 2>&1 || true
   rm -f "$BACKUP_DIR"/space-test-backup*.tar* 2>/dev/null
+  rm -rf "${SPACE_TMP:?}"
 }
 trap cleanup EXIT
 incus delete "$T" --force >/dev/null 2>&1 || true
@@ -39,7 +41,7 @@ echo "== SPACE TEST on $(hostname) =="
 report "0. baseline"
 
 num=$(next_num); port=$(vps_fixed_port "$num")
-create_vps "$T" "$num" 256 "$port" limited unlimited "" limited 8 unlimited "" "images:ubuntu/24.04" unlimited 0 0 n >/tmp/space-create.log 2>&1 || { echo "create failed"; tail -5 /tmp/space-create.log; exit 1; }
+create_vps "$T" "$num" 256 "$port" limited unlimited "" limited 8 unlimited "" "images:ubuntu/24.04" unlimited 0 0 n >"$SPACE_TMP/create.log" 2>&1 || { echo "create failed"; tail -5 "$SPACE_TMP/create.log"; exit 1; }
 report "1. VPS created"
 
 incus exec "$T" -- sh -c 'dd if=/dev/urandom of=/root/big1 bs=1M count=800 status=none; sync'
@@ -55,7 +57,7 @@ echo "   backup file: $(du -h "$BACKUP_DIR/space-test-backup.tar" | cut -f1)"
 
 # --- Delete the VPS through the real menu (needs a tty -> use script) ---
 echo "-- deleting VPS with the real delete menu"
-cat > /tmp/space-del.sh <<EOS
+cat > "$SPACE_TMP/del.sh" <<EOS
 LIB_DIR=$LIB_DIR; VPSFORGE_VERSION=space
 for f in "\$LIB_DIR"/core/*.sh; do [ -f "\$f" ] && source "\$f"; done
 while read -r f; do source "\$f"; done < <(find "\$LIB_DIR/core" -mindepth 2 -type f -name '*.sh' | sort)
@@ -63,9 +65,9 @@ while read -r f; do source "\$f"; done < <(find "\$LIB_DIR" -type f -name '*.sh'
 get_network_info; get_public_ip; load_settings
 delete_vps_menu
 EOS
-( sleep 3; echo "$T"; sleep 2; echo "DELETE"; sleep 25; echo ) | script -qec "bash /tmp/space-del.sh" /dev/null >/tmp/space-del.out 2>&1
+( sleep 3; echo "$T"; sleep 2; echo "DELETE"; sleep 25; echo ) | script -qec "bash $SPACE_TMP/del.sh" /dev/null >"$SPACE_TMP/del.out" 2>&1
 sleep 2
-grep -E "Deleted|WARNING|Cancelled" /tmp/space-del.out | head
+grep -E "Deleted|WARNING|Cancelled" "$SPACE_TMP/del.out" | head
 if incus info "$T" >/dev/null 2>&1; then echo "RESULT: VPS STILL EXISTS"; else echo "RESULT: VPS gone"; fi
 report "5. VPS deleted"
 echo "   leftover subvolumes of $T: $(btrfs subvolume list "$POOL_DIR" 2>/dev/null | grep -c "$T")"
@@ -78,7 +80,7 @@ report "6. after fstrim"
 # --- interrupted backup leftovers ---
 echo "-- interrupted backup test"
 num=$(next_num); port=$(vps_fixed_port "$num")
-create_vps "$T" "$num" 256 "$port" limited unlimited "" limited 8 unlimited "" "images:ubuntu/24.04" unlimited 0 0 n >/tmp/space-create.log 2>&1
+create_vps "$T" "$num" 256 "$port" limited unlimited "" limited 8 unlimited "" "images:ubuntu/24.04" unlimited 0 0 n >"$SPACE_TMP/create.log" 2>&1
 incus exec "$T" -- sh -c 'dd if=/dev/urandom of=/root/big bs=1M count=600 status=none; sync'
 mkdir -p "$BACKUP_DIR/.tmp"
 ( incus export "$T" "$BACKUP_DIR/.tmp/space-test-backup-partial.tar" >/dev/null 2>&1 ) &

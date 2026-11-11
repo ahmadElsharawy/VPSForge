@@ -4,7 +4,13 @@ set -euo pipefail
 APP_DIR="/opt/vpsforge"
 DEFAULT_REPO="https://github.com/ahmadElsharawy/VPSForge.git"
 
-if [ "$EUID" -ne 0 ]; then exec sudo -E bash "$0" "$@"; fi
+if [ "$EUID" -ne 0 ]; then
+  if [ ! -f "$0" ]; then
+    echo "Please run as root: curl -sSL https://raw.githubusercontent.com/ahmadElsharawy/VPSForge/main/install.sh | sudo bash" >&2
+    exit 1
+  fi
+  exec sudo -E bash "$0" "$@"
+fi
 
 # Record how the server looks BEFORE VPSForge touches anything. "vpsforge uninstall"
 # uses this to put the server back exactly as it was. (Keep the package list in
@@ -46,11 +52,19 @@ cd /root 2>/dev/null || cd /tmp 2>/dev/null || cd /
 if [ -z "${VPSFORGE_REPO_URL:-}" ] && [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/vpsforge.sh" ]; then
   echo "Installing VPSForge from local directory..."
   cp "$SCRIPT_DIR/vpsforge.sh" "$APP_DIR/vpsforge.sh"
-  rm -rf "$APP_DIR/lib"
+  rm -rf "${APP_DIR:?}/lib"
   cp -r "$SCRIPT_DIR/lib" "$APP_DIR/lib"
   if [ -d "$SCRIPT_DIR/.git" ] && [ "$(readlink -f "$SCRIPT_DIR")" != "$(readlink -f "$APP_DIR/repo")" ]; then
     rm -rf "$APP_DIR/repo"
-    git clone "$SCRIPT_DIR" "$APP_DIR/repo" 2>/dev/null || cp -r "$SCRIPT_DIR" "$APP_DIR/repo"
+    if git clone "$SCRIPT_DIR" "$APP_DIR/repo" 2>/dev/null; then
+      git -C "$APP_DIR/repo" remote set-url origin "$DEFAULT_REPO" 2>/dev/null || true
+    else
+      rm -rf "$APP_DIR/repo"
+      cp -r "$SCRIPT_DIR" "$APP_DIR/repo"
+      if [ -d "$APP_DIR/repo/.git" ]; then
+        git -C "$APP_DIR/repo" remote set-url origin "$DEFAULT_REPO" 2>/dev/null || true
+      fi
+    fi
   fi
 else
   REPO_URL="${VPSFORGE_REPO_URL:-$DEFAULT_REPO}"
@@ -64,7 +78,7 @@ else
     git clone "$REPO_URL" "$APP_DIR/repo"
   fi
   cp "$APP_DIR/repo/vpsforge.sh" "$APP_DIR/vpsforge.sh"
-  rm -rf "$APP_DIR/lib"
+  rm -rf "${APP_DIR:?}/lib"
   cp -r "$APP_DIR/repo/lib" "$APP_DIR/lib"
 fi
 

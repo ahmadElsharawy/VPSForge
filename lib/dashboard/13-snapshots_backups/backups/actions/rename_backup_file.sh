@@ -25,7 +25,10 @@ rename_backup_file() {
     fi
 
     echo "Renaming '$old_name' to '$new_name'..."
-    mv "$old_file" "$new_file"
+    if ! mv "$old_file" "$new_file"; then
+      echo "ERROR: could not rename the backup file. Nothing was changed."
+      return 1
+    fi
     if [ -f "${old_file}.info" ]; then
       mv "${old_file}.info" "${new_file}.info"
       echo "Renamed accompanying .info metadata file to '${new_name}.info'."

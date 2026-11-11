@@ -35,11 +35,18 @@ no() {
 
 # Log in over SSH with a password (SSH_ASKPASS trick, no sshpass needed).
 ssh_pw() { # user pass host cmd
-  local u="$1" p="$2" h="$3"; shift 3
-  printf '#!/bin/sh\necho "%s"\n' "$p" > /tmp/e2e_askpass.sh; chmod 700 /tmp/e2e_askpass.sh
-  SSH_ASKPASS=/tmp/e2e_askpass.sh SSH_ASKPASS_REQUIRE=force setsid \
+  local u="$1" p="$2" h="$3" askpass rc; shift 3
+  askpass=$(mktemp); chmod 700 "$askpass"
+  {
+    echo '#!/bin/sh'
+    echo 'printf "%s\n" "$E2E_PW"'   # the password comes from the environment, never written to the file
+  } > "$askpass"
+  E2E_PW="$p" SSH_ASKPASS="$askpass" SSH_ASKPASS_REQUIRE=force setsid \
     ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o UserKnownHostsFile=/dev/null -o PreferredAuthentications=password \
         -o PubkeyAuthentication=no -o ConnectTimeout=10 "$u@$h" "$@"
+  rc=$?
+  rm -f "$askpass"
+  return "$rc"
 }
 cfg() { incus config get "$T" "$1"; }
 
@@ -155,8 +162,8 @@ echo "-- reverse proxy (Caddy)"
 pxy="e2e-proxy.example.com"; conf="$CADDY_CONF_DIR/$T.caddy"
 add_route() { add_proxy_route "$T" "$ip" "$pxy" "$1" "$2" http; }
 caddy_valid() { caddy validate --config "$MAIN_CADDYFILE"; }
-route_count() { list_proxy_routes | wc -l; }
-delete_nth_route() { local line; line=$(list_proxy_routes | sed -n "${1}p" | awk -F'|' '{print $5}'); delete_proxy_route "$T" "$line"; }
+route_count() { list_proxy_routes | awk -F'|' -v v="$T" '$1 == v' | wc -l; }   # only the test VPS (real VPSs may have routes)
+delete_nth_route() { local line; line=$(list_proxy_routes | awk -F'|' -v v="$T" '$1 == v' | sed -n "${1}p" | awk -F'|' '{print $5}'); delete_proxy_route "$T" "$line"; }
 rollback_works() {
   local b="$conf.bak"; cp "$conf" "$b"; echo "bogus {{{" >> "$conf"
   if caddy_apply_or_rollback "$conf" "$b"; then return 1; fi
