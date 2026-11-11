@@ -17,5 +17,6 @@ change_vps_port() {
   remove_port "$old_port"   # only the old SSH forward; other forwards of this VPS stay
   vps_ssh_forward_enabled "$name" && add_forward_rule "$ip" "$new_port"
   set_vps_saved_port "$name" "$new_port"
+  sync_vps_metadata "$name"
   echo "SSH port changed to $new_port for $name."
 }

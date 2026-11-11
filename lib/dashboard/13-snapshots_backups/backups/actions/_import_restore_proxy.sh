@@ -6,6 +6,7 @@ _import_restore_proxy() {
   echo "[  98% ] Restoring proxy configurations..."
   # Keep a copy of every Caddy file: if the result does not validate, everything goes back.
   local conf_backup="/opt/vpsforge/.import-caddy-${target_name}" entry loser
+  command -v caddy >/dev/null 2>&1 || ensure_caddy_installed || true   # a new host may not have Caddy yet
   rm -rf "$conf_backup"; mkdir -p "$conf_backup"   # a stopped import puts it back (restore_caddy_after_import)
   mkdir -p "$CADDY_CONF_DIR"
   cp -a "$CADDY_CONF_DIR"/. "$conf_backup"/ 2>/dev/null || true
