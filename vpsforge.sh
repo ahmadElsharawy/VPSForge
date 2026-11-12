@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v3.2.0"
+VPSFORGE_VERSION="v3.2.1"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then

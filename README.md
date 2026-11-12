@@ -1,7 +1,7 @@
-# VPSForge v3.2.0
+# VPSForge v3.2.1
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.2.0-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.2.1-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,13 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.2.1
+
+- **Self-healing now clears stale port-forward (DNAT) rules too.** The startup sweep already
+  removed FORWARD rules for addresses no VPS owns any more; it now also removes dangling DNAT
+  rules in PREROUTING that point to a deleted VPS, so a reused port or IP can never route to the
+  wrong VPS. Live VPSs keep every rule untouched.
 
 ## ✨ What's new in v3.2.0
 
