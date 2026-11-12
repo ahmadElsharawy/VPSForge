@@ -386,14 +386,8 @@ def main():
     # than letters; fall back to plain ASCII when the terminal cannot show UTF-8.
     enc = (getattr(sys.stdout, "encoding", "") or "").lower()
     on, off = "", ""
-    if os.environ.get("VPSFORGE_DRAW") == "dec":
-        # Shown on a terminal: VT100 line drawing. Every line piece is ONE byte, so a terminal that
-        # gets the screen in pieces can never split a character (that showed as "◆◆◆"),
-        # and every terminal draws these pieces exactly one cell wide.
-        on, off = "(0", "(B"
-        H, V = "q", on + "x" + off
-        TOP, MID, BOT = ("l", "w", "k"), ("t", "n", "u"), ("m", "v", "j")
-    elif "utf" in enc:
+    # (VT100 line drawing was tried in v3.0.3: some terminals print it as letters "qqqx", so no.)
+    if "utf" in enc:
         H, V = "─", "│"
         TOP, MID, BOT = ("┌", "┬", "┐"), ("├", "┼", "┤"), ("└", "┴", "┘")
     else:
