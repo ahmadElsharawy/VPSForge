@@ -4,14 +4,30 @@
 # The VPS whose network card really holds the address keeps it; the others move.
 # One `incus list` call to find them.
 resolve_ip_collisions() {
-  local ip names keep name new_ip
+  local ip names keep name new_ip num_name port_name
   while IFS='|' read -r ip keep names; do
     [ -n "$ip" ] || continue
     for name in $names; do
       [ "$name" = "$keep" ] && continue
       new_ip=$(free_vps_ip) || { echo "WARNING: '$name' shares $ip with '$keep' and no free address is left."; continue; }
       echo "IP conflict: '$name' shares $ip with '$keep'. Moving '$name' to $new_ip..."
-      change_vps_ip "$name" "$new_ip" || echo "WARNING: could not move '$name' to $new_ip."
+      num_name=$(get_num "$name")
+      port_name=$(get_vps_saved_port "$name" 2>/dev/null || true)
+      [[ "$port_name" =~ ^[0-9]+$ ]] || port_name=$(vps_fixed_port "$num_name")
+
+      _set_vps_ip_safe "$name" "$new_ip" || { echo "WARNING: could not set IP on '$name'."; continue; }
+      incus config set "$name" user.vpsforge.ip "$new_ip" 2>/dev/null || true
+
+      if is_vps_running "$name"; then
+        apply_guest_static_network "$name" "$new_ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || true
+        configure_guest_dns "$name" || true
+      fi
+
+      [ -n "$port_name" ] && set_vps_saved_port "$name" "$port_name"
+      [ -n "$port_name" ] && vps_ssh_forward_enabled "$name" && add_forward_rule "$new_ip" "$port_name"
+      update_vps_proxy_ip "$name" "$new_ip"
+      sync_vps_metadata "$name"
+      echo "Moved '$name' to $new_ip (SSH port $port_name)."
     done
   done < <(incus list --format json 2>/dev/null | python3 -c '
 import json, sys

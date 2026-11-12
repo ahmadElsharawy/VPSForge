@@ -5,7 +5,7 @@
 # deleted and the original is put back exactly as it was, with the reason shown.
 #   reinstall_single_vps_core <name> [image]
 reinstall_single_vps_core() {
-  local name="$1" image="${2:-}" num ip port old="${1}-old-reinstall"
+  local name="$1" image="${2:-}" num ip port old="${1:0:49}-old-reinstall"
   num=$(get_num "$name")
   ip=$(get_ip "$name")
   port=$(get_vps_saved_port "$name" 2>/dev/null || true)

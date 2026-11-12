@@ -40,6 +40,6 @@ _recreate_default_btrfs_pool() {
     rm -f "$state_file"
     return 1
   fi
-  create_storage_pool default || true
+  create_storage_pool default || return 1
   return 0
 }

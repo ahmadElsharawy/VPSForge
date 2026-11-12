@@ -29,5 +29,6 @@ _inspect_backup_load_metadata() {
   # Cache it for next time
   if [ -n "$index_content" ]; then
     echo "$index_content" > "$info_path" 2>/dev/null || true
+    chmod 600 "$info_path" 2>/dev/null || true
   fi
 }

@@ -5,7 +5,7 @@ configure_vps_network_device() {
   local name="$1" ip="${2:-}"
   ensure_device_override "$name" eth0 || return 1
   if [ -n "$ip" ]; then
-    incus config device set "$name" eth0 ipv4.address "$ip" >/dev/null 2>&1 || true
+    incus config device set "$name" eth0 ipv4.address "$ip" >/dev/null 2>&1 || return 1
   else
     incus config device unset "$name" eth0 ipv4.address >/dev/null 2>&1 || true
   fi

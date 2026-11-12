@@ -9,11 +9,10 @@ list_backup_files() {
   while IFS= read -r f; do
     [ -f "$f" ] || continue
     if [ -n "$filter_prefix" ]; then
-      local base
+      local base cname
       base=$(basename "$f")
-      if [[ "$base" != "${filter_prefix}-backup-"* && "$base" != "${filter_prefix}-"* ]]; then
-        continue
-      fi
+      cname=$(extract_container_name_from_backup_filename "$base")
+      [ "$cname" = "$filter_prefix" ] || continue
     fi
     BACKUP_FILES_RESULT+=("$f")
   done < <(find "$BACKUP_DIR" -maxdepth 1 -type f \( -name "*.tar.gz" -o -name "*.tar" \) 2>/dev/null | sort -r || true)

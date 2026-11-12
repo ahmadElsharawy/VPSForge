@@ -13,8 +13,10 @@ vpn_pick_vpn() {
     return 0
   fi
   last=$(pref_get vpn_vps 1)
+  # the saved choice may point past the end after a VPN was removed
+  [[ "$last" =~ ^[0-9]+$ ]] && [ "$last" -ge 1 ] && [ "$last" -le "${#rows[@]}" ] || last=1
   for i in "${!rows[@]}"; do
-    echo "  $((i + 1))) ${rows[$i]%%|*}   (port ${rows[$i]#*|} UDP)"
+    echo "  $((i + 1))) ${rows[$i]%%|*}   (port ${rows[$i]#*|} TCP)"
   done
   read -r -p "Which VPN [0=Back, Enter=$last]: " choice </dev/tty
   choice="${choice:-$last}"

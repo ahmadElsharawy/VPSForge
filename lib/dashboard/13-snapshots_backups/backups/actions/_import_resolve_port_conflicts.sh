@@ -28,8 +28,11 @@ _import_resolve_port_conflicts() {
       read -r -p "   Choice [1-2, Enter=2]: " action </dev/tty
       action="${action:-2}"
       if [ "$action" = "1" ]; then
-        _import_prompt_new_ext_port "$proto" "$ext_ip" "$int_port" "$old_ip"
-        rules_to_apply+=("${proto}|${ext_ip}|${ext_port}|${int_port}")
+        if _import_prompt_new_ext_port "$proto" "$ext_ip" "$int_port" "$old_ip"; then
+          rules_to_apply+=("${proto}|${ext_ip}|${ext_port}|${int_port}")
+        else
+          echo "   Skipped rule [ $proto:$ext_port -> $int_port ]."
+        fi
       else
         echo "   Skipped rule [ $proto:$ext_port -> $int_port ]."
       fi

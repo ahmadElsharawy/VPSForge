@@ -19,7 +19,7 @@ tunnel_public_start() {
   fi
 
   if ! port_forward_rule_conflicts tcp 0.0.0.0 "$ext" "$ip" "$tport"; then
-    if awk -F'|' -v p="$ext" '$3 == p { f = 1 } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
+    if awk -F'|' -v p="$ext" -v ip="$ip" -v tp="$tport" '$3 == p && ($4 != ip || $5 != tp) { f = 1 } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
       echo "ERROR: public port $ext is already used by another forward."; return 1
     fi
     port_forward_host_conflict "$ext" tcp || return 1

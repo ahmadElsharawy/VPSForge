@@ -33,8 +33,15 @@ restore_vps_snapshot() {
       incus start "$name" 2>/dev/null || true
     fi
     # the guest's own network file came back from the snapshot too: give it the current address
-    if [ -n "$RESTORE_FIX_GUEST_IP" ] && is_vps_running "$name"; then
-      apply_guest_static_network "$name" "$RESTORE_FIX_GUEST_IP" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+    if [ -n "$RESTORE_FIX_GUEST_IP" ]; then
+      if is_vps_running "$name"; then
+        apply_guest_static_network "$name" "$RESTORE_FIX_GUEST_IP" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+      else
+        incus start "$name" >/dev/null 2>&1 || true
+        wait_ready "$name" >/dev/null 2>&1 || true
+        apply_guest_static_network "$name" "$RESTORE_FIX_GUEST_IP" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" >/dev/null 2>&1 || true
+        incus stop "$name" --force >/dev/null 2>&1 || true
+      fi
     fi
   else
     echo "Failed to restore snapshot '$snap_name'."

@@ -5,7 +5,10 @@
 hold_vps_for_replace() {
   local name="${1:?name}" hold="${2:?hold name}" caddy_bak="${3:?caddy backup}"
   incus stop "$name" --force >/dev/null 2>&1 || true
-  incus rename "$name" "$hold" >/dev/null 2>&1 || return 1
+  if ! incus rename "$name" "$hold" >/dev/null 2>&1; then
+    incus start "$name" >/dev/null 2>&1 || true
+    return 1
+  fi
   if [ -f "$CADDY_CONF_DIR/${name}.caddy" ]; then
     mv -f "$CADDY_CONF_DIR/${name}.caddy" "$caddy_bak"
   fi

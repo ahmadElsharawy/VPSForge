@@ -12,7 +12,8 @@ _add_shared_collect_names() {
     n=$((first_num + idx - 1))
     default_name="${VPS_PREFIX}${n}"
     while :; do
-      read -r -p "Enter VPS Name for container $idx [default: $default_name]: " custom_name </dev/tty
+      read -r -p "Enter VPS Name for container $idx [default: $default_name, 0=Back]: " custom_name </dev/tty
+      [ "$custom_name" = "0" ] && return 1
       if [ -n "$custom_name" ]; then name="$custom_name"; else name="$default_name"; fi
       add_name_is_usable "$name" "${names[@]}" && break
     done

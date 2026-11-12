@@ -2,7 +2,9 @@
 # Ask which computer runs the site and show only what that computer needs.
 #   tunnel_connect_menu <ssh_user> <server_ip> <ssh_port> <tunnel_port> <local_port> <vps>
 tunnel_connect_menu() {
-  local user="${1:?user}" host="${2:?host}" sshport="${3:?port}" tport="${4:?tunnel port}" lport="${5:?local port}" vps="${6:?vps}" choice
+  local user="${1:?user}" host="${2:?host}" sshport="${3:-}" tport="${4:?tunnel port}" lport="${5:?local port}" vps="${6:?vps}" choice
+  [ -n "$sshport" ] || sshport=$(get_port "$(get_ip "$vps" 2>/dev/null)" 2>/dev/null || true)
+  [ -n "$sshport" ] || sshport=22
   local base="ssh -N -o ServerAliveInterval=30 -o ExitOnForwardFailure=yes -R 0.0.0.0:${tport}:localhost:${lport} -p ${sshport} ${user}@${host}"
   while true; do
     echo

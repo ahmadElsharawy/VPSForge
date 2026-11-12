@@ -6,8 +6,9 @@ _pf_cli_delete() {
   shift || true
   [ $# -ge 5 ] || { echo "Usage: vpsforge port-forward delete <tcp|udp|both> <external_ip|0.0.0.0> <external_port> <internal_ip> <internal_port>"; return 1; }
 
-  local protocol external_ip external_port internal_ip internal_port
+  local protocol raw_ext_ip external_ip external_port internal_ip internal_port
   protocol=$(printf '%s' "${1:-TCP}" | tr '[:upper:]' '[:lower:]')
+  raw_ext_ip="${2:-}"
   external_ip="${2:-0.0.0.0}" external_port="${3:-}" internal_ip="${4:-}" internal_port="${5:-}"
   [ -n "$external_ip" ] || external_ip="0.0.0.0"
   [[ "$protocol" =~ ^(tcp|udp|both)$ ]] || { echo "Protocol must be tcp, udp, or both."; return 1; }
@@ -15,12 +16,18 @@ _pf_cli_delete() {
   local proto target_vps
   for proto in $(resolve_protocols "$protocol"); do
     port_forward_delete_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
-    port_forward_remove_rule_from_file "$target_file" "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
+    port_forward_remove_rule_from_file "$target_file" "$proto" "$raw_ext_ip" "$external_port" "$internal_ip" "$internal_port"
+    [ "$external_ip" != "$raw_ext_ip" ] && port_forward_remove_rule_from_file "$target_file" "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
+    if [ -z "$raw_ext_ip" ] || [ "$raw_ext_ip" = "0.0.0.0" ] || [ "$raw_ext_ip" = "any" ]; then
+      port_forward_remove_rule_from_file "$target_file" "$proto" "" "$external_port" "$internal_ip" "$internal_port"
+      port_forward_remove_rule_from_file "$target_file" "$proto" "0.0.0.0" "$external_port" "$internal_ip" "$internal_port"
+      port_forward_remove_rule_from_file "$target_file" "$proto" "any" "$external_port" "$internal_ip" "$internal_port"
+    fi
   done
   save_iptables
   target_vps=$(get_vps_name_by_ip "$internal_ip" 2>/dev/null || true)
   if [ -n "$target_vps" ]; then
-    if [ "$internal_port" = "22" ]; then
+    if [ "$internal_port" = "22" ] && [[ "$protocol" =~ ^(tcp|both)$ ]]; then
       incus config unset "$target_vps" user.vpsforge.ssh_port 2>/dev/null || true
     fi
     sync_vps_metadata "$target_vps"

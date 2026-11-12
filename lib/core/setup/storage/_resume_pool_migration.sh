@@ -31,7 +31,7 @@ _resume_pool_migration() {
   for name in "${running[@]}"; do
     incus start "$name" >/dev/null 2>&1 || true
   done
-  rm -f "$state_file"
+  [ "$ok" -eq 1 ] && rm -f "$state_file"
   [ "$ok" -eq 1 ] && echo "BTRFS storage optimization completed successfully." >&2
   return 0
 }

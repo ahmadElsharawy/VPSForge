@@ -10,11 +10,12 @@ list_proxy_routes() {
     domains=()
     depth=0
     n=0
-    while IFS= read -r line; do
+    while IFS= read -r line || [ -n "$line" ]; do
       n=$((n + 1))
       trimmed=$(echo "$line" | sed -e 's/^[ \t]*//' -e 's/[ \t]*$//')
-      open_b=$(echo "$line" | tr -cd '{' | wc -c)
-      close_b=$(echo "$line" | tr -cd '}' | wc -c)
+      no_comment="${line%%#*}"
+      open_b=$(echo "$no_comment" | tr -cd '{' | wc -c)
+      close_b=$(echo "$no_comment" | tr -cd '}' | wc -c)
       if [ "$depth" -eq 0 ] && [[ "$trimmed" == *"{"* ]] && [[ "$trimmed" != \#* ]] && [[ "$trimmed" != reverse_proxy* ]] && [[ "$trimmed" != transport* ]] && [[ "$trimmed" != tls_* ]]; then
         header="${trimmed%\{*}"
         domains=()

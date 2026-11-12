@@ -30,7 +30,10 @@ add_menu() {
             if [ "$count" -gt 1 ]; then main_step=2; else main_step=1; fi
             continue
           }
-          _add_shared_collect_names
+          _add_shared_collect_names || {
+            if [ "$count" -gt 1 ]; then main_step=2; else main_step=1; fi
+            continue
+          }
         else
           _add_individual_wizard || {
             if [ "$count" -gt 1 ]; then main_step=2; else main_step=1; fi

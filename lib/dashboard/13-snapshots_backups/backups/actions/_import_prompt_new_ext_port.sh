@@ -5,7 +5,8 @@ _import_prompt_new_ext_port() {
   local new_ext_port host_check port_declined go
 
   while :; do
-    read -r -p "   Enter new external port for $proto: " new_ext_port </dev/tty
+    read -r -p "   Enter new external port for $proto [0=Cancel]: " new_ext_port </dev/tty
+    [ "${new_ext_port:-0}" = "0" ] && return 1
     if [[ "$new_ext_port" =~ ^[0-9]+$ ]] && [ "$new_ext_port" -gt 0 ] && [ "$new_ext_port" -lt 65536 ]; then
       host_check=0
       port_forward_host_conflict "$new_ext_port" "$proto" >/dev/null 2>&1 || host_check=$?

@@ -35,7 +35,7 @@ _import_handle_existing_vps() {
       [ "$c" = "YES" ] || { echo "Import cancelled."; return 2; }
       echo "Putting the current $target_name aside (it is deleted only after the import succeeds)..."
       old_ip=$(get_ip "$target_name"); old_port=$(get_port "$old_ip")
-      hold_name="${target_name}-replaced-$$"
+      hold_name="${target_name:0:45}-replaced-$$"
       caddy_bak="/opt/vpsforge/.replaced-${hold_name}.caddy"
       ;;
     *)

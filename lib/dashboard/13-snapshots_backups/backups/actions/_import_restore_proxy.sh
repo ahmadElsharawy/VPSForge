@@ -38,6 +38,7 @@ _import_restore_proxy() {
     echo "   ERROR: Caddy validation failed. Restoring proxy cancelled; nothing was changed."
     rm -f "$CADDY_CONF_DIR"/*.caddy
     cp -a "$conf_backup"/. "$CADDY_CONF_DIR"/ 2>/dev/null || true
+    systemctl reload-or-restart caddy >/dev/null 2>&1 || true
+    rm -rf "$conf_backup"
   fi
-  rm -rf "$conf_backup"
 }

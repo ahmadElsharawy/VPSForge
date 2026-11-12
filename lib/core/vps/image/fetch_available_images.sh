@@ -19,10 +19,13 @@ fetch_available_images() {
 
   # One line per release (aliases like "debian/12"); skip cloud-init/other variants and "edge" builds.
   images=$(incus image list images: "$distro" type=container "architecture=${host_arch}" -c l --format csv 2>/dev/null |
-    awk -v d="$distro" '{
+    awk -v d="$distro" -v arch="$host_arch" '{
       alias = $0; gsub(/"/, "", alias); sub(/[[:space:]].*/, "", alias)
       n = split(alias, a, "/")
-      if (n == 2 && a[1] == d && a[2] ~ /^[a-zA-Z0-9.-]+$/ && a[2] != "edge" && a[2] != "current") print "images:" alias
+      if (a[1] == d && a[2] ~ /^[a-zA-Z0-9.-]+$/ && a[2] != "edge" && a[2] != "current") {
+        if (n == 2) print "images:" alias
+        else if (n == 3 && (a[3] == arch || a[3] ~ /^(amd64|arm64|armhf|i386|default)$/)) print "images:" a[1] "/" a[2]
+      }
     }' | sort -u -V -r)
 
   # Offline fallback so the menu is never empty.

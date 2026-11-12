@@ -10,6 +10,17 @@ recover_interrupted_operations() {
   local -a names=()
   mapfile -t names < <(incus list -c n --format csv 2>/dev/null | grep -v '^$')
 
+  # Recover interrupted reinstalls first so the original VPS keeps its port-forwards and website configs.
+  for name in "${names[@]}"; do
+    state=$(incus config get "$name" user.vpsforge.state 2>/dev/null || true)
+    [ "$state" = "reinstall-old" ] || continue
+    owner=$(incus config get "$name" user.vpsforge.state_owner 2>/dev/null || true)
+    vps_state_owner_alive "$owner" && continue
+    original=$(incus config get "$name" user.vpsforge.reinstall_of 2>/dev/null || true)
+    recover_interrupted_reinstall "$name" "$original"
+  done
+
+  mapfile -t names < <(incus list -c n --format csv 2>/dev/null | grep -v '^$')
   for name in "${names[@]}"; do
     state=$(incus config get "$name" user.vpsforge.state 2>/dev/null || true)
     [ -n "$state" ] || continue
@@ -23,10 +34,6 @@ recover_interrupted_operations() {
         echo "Recovery: '$name' was left unfinished by an interrupted $state. Removing it completely..."
         cleanup_failed_vps "$name" "$ip" "$port"
         echo "Recovery: '$name' removed, everything it reserved was released."
-        ;;
-      reinstall-old)
-        original=$(incus config get "$name" user.vpsforge.reinstall_of 2>/dev/null || true)
-        recover_interrupted_reinstall "$name" "$original"
         ;;
     esac
   done

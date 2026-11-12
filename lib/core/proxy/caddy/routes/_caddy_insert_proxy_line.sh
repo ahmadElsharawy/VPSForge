@@ -10,7 +10,7 @@ _caddy_insert_proxy_line() {
 
   local -a new_lines=()
   local in_domain=0 brace_count=0 inserted=0 line open_b close_b header depth=0
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     open_b=$(echo "$line" | tr -cd '{' | wc -c)
     close_b=$(echo "$line" | tr -cd '}' | wc -c)
     if [ $inserted -eq 0 ]; then

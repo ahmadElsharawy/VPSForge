@@ -6,7 +6,7 @@ detect_backend_scheme() {
   case "$port" in 443|8443) echo https; return 0;; esac
 
   code=$(curl -s -m 3 -o /dev/null -w '%{http_code}' "http://$ip:$port" 2>/dev/null)
-  if [ -n "$code" ] && [ "$code" != "000" ]; then echo http; return 0; fi
+  if [ -n "$code" ] && [ "$code" != "000" ] && [ "$code" != "400" ]; then echo http; return 0; fi
 
   code=$(curl -sk -m 3 -o /dev/null -w '%{http_code}' "https://$ip:$port" 2>/dev/null)
   if [ -n "$code" ] && [ "$code" != "000" ]; then echo https; return 0; fi
