@@ -1,7 +1,7 @@
-# VPSForge v2.1
+# VPSForge v3.0.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v2.1-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.0.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -16,7 +16,10 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 
 ---
 
-## ✨ What's new in v2.1.27 - v2.1.34
+## ✨ What's new in v3.0.0
+
+v3.0.0 gathers every change since v2.1.26 (v2.1.27 - v2.1.35): a full code review of every file, clean code (one function per file), safer uninstall, private backups and many fixes, all tested on two real servers.
+
 
 - **Snapshot restore keeps the current IP and SSH port.** Restoring a snapshot taken before an IP change no longer brings back the old address (which another VPS may use now).
 - **Domains with several names** (`a.com, www.a.com { ... }`) are read and edited correctly; comments and a last line without a newline no longer confuse the Caddy config reader.
@@ -25,6 +28,7 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 - **Private backups:** backup folders are `700` and backup files `600`.
 - **Cloned VPSs** get their own identity (no copied VPN), **reinstall** recovery after an interruption is safer, and a stopped or interrupted backup export no longer leaves Incus's internal backup behind.
 - **Clean code:** one function per file everywhere (also the test scripts), long functions split by job.
+- A failed reinstall of a private VPS no longer opens SSH to the internet; restoring port forwards removes stale old rules; editing a tunnel keeps its own ports.
 - Many smaller fixes from a full review (port-forward listing, IP collisions, image list on ARM, the add wizard's `0 = Back`, the VPN overview says TCP).
 
 ---
@@ -675,7 +679,7 @@ vpsforge uninstall               # Remove everything; --dry-run, --yes, --keep-b
 
 ## 11. ✅ What was tested and the known limits
 
-**Tested on a real server:** two Oracle Cloud ARM (Ampere) servers, 1 CPU, about 6 GB RAM, Ubuntu 24.04, Incus 6.0, with real VPSs on them. Results of the v2.1.32 - v2.1.34 releases:
+**Tested on a real server:** two Oracle Cloud ARM (Ampere) servers, 1 CPU, about 6 GB RAM, Ubuntu 24.04, Incus 6.0, with real VPSs on them. Results for v3.0.0 (tests run on v2.1.32 - v2.1.35, the code of this release):
 
 | Test | Result |
 |---|---|
