@@ -19,6 +19,14 @@ _dashboard_render() {
 14) Settings       refresh, network speed, updates, uninstall
 15) Exit"
 
+  # Clear the rest of every line, so nothing of the previous frame stays visible after a refresh.
+  table_output="${table_output//$'
+'/$'[K
+'}"$'[K'
+  menu="${menu//$'
+'/$'[K
+'}"
+
   if [ "$mode" = "refresh" ]; then
     printf "\033[H%s\n%s\n\033[JChoice: " "$table_output" "$menu"
   else
