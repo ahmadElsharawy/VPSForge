@@ -73,7 +73,9 @@ def get_vps_disk_usage(name, status, pool_path):
                     (int(info.get("usage", 0) or 0) for info in disk.values() if isinstance(info, dict)),
                     default=0,
                 )
-                if api_usage > 0:
+                # Without btrfs quotas Incus reports a tiny placeholder (e.g. 16 KiB): no real system
+                # is that small, so below 1 MiB measure the folder instead.
+                if api_usage >= 1024 * 1024:
                     usage_gb = api_usage / (1024**3)
                     container_found = True
         except Exception:
@@ -87,8 +89,8 @@ def get_vps_disk_usage(name, status, pool_path):
         if os.path.exists(path):
             try:
                 res = subprocess.run(
-                    ["du", "-s", "-B1", path],
-                    capture_output=True, text=True, timeout=2
+                    ["du", "-s", "-B1", "-x", path],
+                    capture_output=True, text=True, timeout=10
                 )
                 if res.returncode == 0:
                     val = int(res.stdout.split()[0])
@@ -115,7 +117,7 @@ def get_vps_disk_usage(name, status, pool_path):
                         u = info.get("usage", 0)
                         if u and int(u) > usage:
                             usage = int(u)
-                if usage > 0:
+                if usage >= 1024 * 1024:
                     usage_gb = usage / (1024**3)
                     container_found = True
         except Exception:
@@ -379,7 +381,15 @@ def main():
     # Box-drawing characters keep the borders straight in terminals whose font draws "-" narrower
     # than letters; fall back to plain ASCII when the terminal cannot show UTF-8.
     enc = (getattr(sys.stdout, "encoding", "") or "").lower()
-    if "utf" in enc:
+    on, off = "", ""
+    if os.environ.get("VPSFORGE_DRAW") == "dec":
+        # Shown on a terminal: VT100 line drawing. Every line piece is ONE byte, so a terminal that
+        # gets the screen in pieces can never split a character (that showed as "◆◆◆"),
+        # and every terminal draws these pieces exactly one cell wide.
+        on, off = "(0", "(B"
+        H, V = "q", on + "x" + off
+        TOP, MID, BOT = ("l", "w", "k"), ("t", "n", "u"), ("m", "v", "j")
+    elif "utf" in enc:
         H, V = "─", "│"
         TOP, MID, BOT = ("┌", "┬", "┐"), ("├", "┼", "┤"), ("└", "┴", "┘")
     else:
@@ -388,7 +398,7 @@ def main():
 
     def line(widths, ends):
         left, joint, right = ends
-        return left + joint.join(H * w for w in widths) + right
+        return on + left + joint.join(H * w for w in widths) + right + off
 
     def cells(values, widths):
         return V + V.join(" " + f"{v:<{w - 2}}" + " " for v, w in zip(values, widths)) + V
