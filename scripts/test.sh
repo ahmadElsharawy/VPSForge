@@ -265,6 +265,10 @@ old=$(printf '%s
 ' linux-image-7.0.0-1013-oracle linux-modules-7.0.0-1011-oracle linux-modules-7.0.0-1012-oracle linux-modules-extra-6.17.0-1020-oracle linux-modules-7.0.0-1013-oracle bash incus | select_old_kernel_packages 7.0.0-1012-oracle | tr '
 ' ' ')
 t "old kernels selected" "linux-modules-7.0.0-1011-oracle linux-modules-extra-6.17.0-1020-oracle " "$old"
+old=$(printf '%s
+' linux-oracle-6.17-headers-6.17.0-1011 linux-oracle-6.17-tools-6.17.0-1011 linux-oracle-7.0-headers-7.0.0-1013 linux-headers-7.0.0-1013-oracle linux-image-7.0.0-1013-oracle | select_old_kernel_packages 7.0.0-1013-oracle | tr '
+' ' ')
+t "old shared header/tool packages selected" "linux-oracle-6.17-headers-6.17.0-1011 linux-oracle-6.17-tools-6.17.0-1011 " "$old"
 t "no kernels: nothing" "" "$(printf 'bash
 ' | select_old_kernel_packages 7.0.0-1-oracle)"
 

@@ -1,7 +1,7 @@
-# VPSForge v3.0.4
+# VPSForge v3.0.5
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.0.4-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.0.5-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -13,6 +13,12 @@
 > **An Interactive, Enterprise-Grade Hypervisor-like Terminal Manager for lightweight Linux (Ubuntu, Debian, Alpine, etc.) VPS containers powered by Incus.**
 
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
+
+---
+
+## ✨ What's new in v3.0.5
+
+- **The weekly tidy removes every old kernel package:** the shared header and tool packages that some clouds use (for example `linux-oracle-6.17-headers-6.17.0-1011`) were missed and kept about 150MB each. Tested on Oracle: after a reboot into the new kernel, the tidy removed all old kernel packages.
 
 ---
 
