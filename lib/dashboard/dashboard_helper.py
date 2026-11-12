@@ -376,52 +376,51 @@ def main():
         disk_used_gb_total = pool_disk_gb
     host_os_gb = max(0.0, used_gb - disk_used_gb_total - backup_used_gb)
 
+    # Box-drawing characters keep the borders straight in terminals whose font draws "-" narrower
+    # than letters; fall back to plain ASCII when the terminal cannot show UTF-8.
+    enc = (getattr(sys.stdout, "encoding", "") or "").lower()
+    if "utf" in enc:
+        H, V = "─", "│"
+        TOP, MID, BOT = ("┌", "┬", "┐"), ("├", "┼", "┤"), ("└", "┴", "┘")
+    else:
+        H, V = "-", "|"
+        TOP = MID = BOT = ("+", "+", "+")
+
+    def line(widths, ends):
+        left, joint, right = ends
+        return left + joint.join(H * w for w in widths) + right
+
+    def cells(values, widths):
+        return V + V.join(" " + f"{v:<{w - 2}}" + " " for v, w in zip(values, widths)) + V
+
     # Print dashboard header
     if not only_table:
         refresh_str = f"ON ({refresh_interval}s)" if auto_refresh == "on" else "OFF"
         host_cpu_str = f"{host_cpu_count} Core" + ("" if str(host_cpu_count) == "1" else "s")
-
-        header_border = "+" + "-" * 158 + "+"
-        grid_border = "+" + "+".join([
-            "-" * 26, # AUTO REFRESH / TOTAL DISK
-            "-" * 26, # PUBLIC IP / HOST OS
-            "-" * 26, # TOTAL RAM / VPS DISK USED
-            "-" * 25, # VPS RAM LIMITS / BACKUPS
-            "-" * 25, # REMAINING RAM / VPS DISK LIMITS
-            "-" * 25  # HOST CPU / AVAILABLE DISK
-        ]) + "+"
-
-        print(header_border)
-        print(f"| {('VPSFORGE MANAGER ' + version):^156} |")
-        print(grid_border)
-        print(f"| {'AUTO REFRESH':<24} | {'PUBLIC IP':<24} | {'TOTAL RAM':<24} | {'VPS RAM LIMITS':<23} | {'REMAINING RAM':<23} | {'HOST CPU':<23} |")
-        print(grid_border)
-        print(f"| {refresh_str:<24} | {public_ip:<24} | {f'{host_total_ram_mb}MB':<24} | {f'{allocated_ram_mb}MB':<23} | {f'{remaining_ram_mb}MB':<23} | {host_cpu_str:<23} |")
-        print(grid_border)
-        print(f"| {'TOTAL DISK':<24} | {'HOST OS':<24} | {'VPS DISK USED':<24} | {'BACKUPS':<23} | {'VPS DISK LIMITS':<23} | {'AVAILABLE DISK':<23} |")
-        print(grid_border)
-        print(f"| {f'{disk_total_gb:.1f}GB':<24} | {f'{host_os_gb:.1f}GB':<24} | {f'{disk_used_gb_total:.1f}GB':<24} | {f'{backup_used_gb:.1f}GB':<23} | {f'{disk_allocated_gb}GB':<23} | {f'{disk_avail_gb:.1f}GB':<23} |")
-        print(grid_border)
+        gw = [26, 26, 26, 25, 25, 25]   # AUTO REFRESH/TOTAL DISK, PUBLIC IP/HOST OS, ... HOST CPU/AVAILABLE DISK
+        title_w = sum(gw) + len(gw) - 1
+        print(line([title_w], TOP))
+        print(V + f" {('VPSFORGE MANAGER ' + version):^{title_w - 2}} " + V)
+        print(line(gw, (MID[0], TOP[1], MID[2])))
+        print(cells(["AUTO REFRESH", "PUBLIC IP", "TOTAL RAM", "VPS RAM LIMITS", "REMAINING RAM", "HOST CPU"], gw))
+        print(line(gw, MID))
+        print(cells([refresh_str, public_ip, f"{host_total_ram_mb}MB", f"{allocated_ram_mb}MB", f"{remaining_ram_mb}MB", host_cpu_str], gw))
+        print(line(gw, MID))
+        print(cells(["TOTAL DISK", "HOST OS", "VPS DISK USED", "BACKUPS", "VPS DISK LIMITS", "AVAILABLE DISK"], gw))
+        print(line(gw, MID))
+        print(cells([f"{disk_total_gb:.1f}GB", f"{host_os_gb:.1f}GB", f"{disk_used_gb_total:.1f}GB", f"{backup_used_gb:.1f}GB", f"{disk_allocated_gb}GB", f"{disk_avail_gb:.1f}GB"], gw))
+        print(line(gw, BOT))
         print()
 
     # Print container list
-    border = "+" + "+".join([
-        "-" * 12, # NAME
-        "-" * 12, # STATUS
-        "-" * 26, # RAM
-        "-" * 22, # CPU
-        "-" * 26, # DISK
-        "-" * 28, # NETWORK_IO
-        "-" * 17, # INTERNAL_IP
-        "-" * 8   # PORT
-    ]) + "+"
-
-    print(border)
-    print(f"| {'NAME':<10} | {'STATUS':<10} | {'RAM':<24} | {'CPU':<20} | {'DISK':<24} | {'NETWORK_IO':<26} | {'INTERNAL_IP':<15} | {'PORT':<6} |")
-    print(border)
-    for row in sorted(rows, key=lambda x: x[0]):
-        print(f"| {row[0]:<10} | {row[1]:<10} | {row[2]:<24} | {row[3]:<20} | {row[4]:<24} | {row[5]:<26} | {row[6]:<15} | {row[7]:<6} |")
-        print(border)
+    tw = [12, 12, 26, 22, 26, 28, 17, 8]   # NAME, STATUS, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
+    print(line(tw, TOP))
+    print(cells(["NAME", "STATUS", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
+    ordered = sorted(rows, key=lambda x: x[0])
+    print(line(tw, MID if ordered else BOT))
+    for i, row in enumerate(ordered):
+        print(cells([str(c) for c in row[:8]], tw))
+        print(line(tw, BOT if i == len(ordered) - 1 else MID))
 
 if __name__ == "__main__":
     main()
