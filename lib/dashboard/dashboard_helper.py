@@ -53,15 +53,50 @@ def get_network_limit_mbit(vps, host_net_mbit):
                         return int(match.group(1))
     return host_net_mbit
 
+QGROUP_SIZES = None
+
+
+def get_qgroup_sizes(pool_path):
+    """Full size (bytes) of every VPS on a btrfs pool, from ONE "btrfs qgroup show" call.
+    "Referenced" is the whole system of the VPS (also the files it shares with its OS image),
+    which is what people expect; Incus reports only the part the VPS changed. Empty when the
+    pool is not btrfs or the quota data is marked inconsistent (then the numbers are wrong)."""
+    global QGROUP_SIZES
+    if QGROUP_SIZES is not None:
+        return QGROUP_SIZES
+    QGROUP_SIZES = {}
+    try:
+        res = subprocess.run(["btrfs", "qgroup", "show", "--raw", pool_path],
+                             capture_output=True, text=True, timeout=5)
+        text = res.stdout + res.stderr
+        if res.returncode == 0 and "inconsistent" not in text.lower():
+            for line in res.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 4 and parts[1].isdigit():
+                    if parts[3].startswith("containers/"):
+                        QGROUP_SIZES[parts[3][len("containers/"):]] = int(parts[1])
+                    elif parts[3].startswith("images/"):   # downloaded OS images, shared by the VPSs
+                        QGROUP_SIZES["__images__"] = QGROUP_SIZES.get("__images__", 0) + int(parts[1])
+    except Exception:
+        pass
+    return QGROUP_SIZES
+
+
 def get_vps_disk_usage(name, status, pool_path):
     usage_gb = 0.0
 
     # 1. First, try checking host-side directory size of the container (extremely fast, works for RUNNING and STOPPED)
     container_found = False
 
+    # Best: the full size btrfs keeps for every VPS (one call for all, running or stopped).
+    full_size = get_qgroup_sizes(pool_path).get(name, 0)
+    if full_size >= 1024 * 1024:
+        usage_gb = full_size / (1024**3)
+        container_found = True
+
     # 0. Fastest: ask Incus for the usage it already tracks (no directory walk).
     #    Walking a container tree with du is slow on weak disks, so du is the fallback.
-    if status == "RUNNING":
+    if status == "RUNNING" and not container_found:
         try:
             res = subprocess.run(
                 ["incus", "query", f"/1.0/instances/{name}/state"],
@@ -367,7 +402,10 @@ def main():
         if not port:
             port = "-"
 
-        rows.append((name, status, ram_str, cpu_str, disk_str, net_str, ip, port))
+        # Shown from the real Incus setting, not from a label: Full = privileged (Docker works),
+        # Isolated = unprivileged (root inside is not root on the server).
+        vps_type = "Full" if str(expanded_config.get('security.privileged', '')).lower() == "true" else "Isolated"
+        rows.append((name, status, vps_type, ram_str, cpu_str, disk_str, net_str, ip, port))
 
     # Calculate remaining host RAM
     remaining_ram_mb = host_total_ram_mb - allocated_ram_mb
@@ -381,6 +419,7 @@ def main():
     if pool_disk_gb > 0:
         disk_used_gb_total = pool_disk_gb
     host_os_gb = max(0.0, used_gb - disk_used_gb_total - backup_used_gb)
+    images_gb = min(disk_used_gb_total, get_qgroup_sizes(pool_path).get("__images__", 0) / (1024**3))
 
     # Box-drawing characters keep the borders straight in terminals whose font draws "-" narrower
     # than letters; fall back to plain ASCII when the terminal cannot show UTF-8.
@@ -405,7 +444,7 @@ def main():
     if not only_table:
         refresh_str = f"ON ({refresh_interval}s)" if auto_refresh == "on" else "OFF"
         host_cpu_str = f"{host_cpu_count} Core" + ("" if str(host_cpu_count) == "1" else "s")
-        gw = [26, 26, 26, 25, 25, 25]   # AUTO REFRESH/TOTAL DISK, PUBLIC IP/HOST OS, ... HOST CPU/AVAILABLE DISK
+        gw = [27, 27, 26, 26, 26, 26]   # AUTO REFRESH/TOTAL DISK, PUBLIC IP/HOST OS, ... HOST CPU/AVAILABLE DISK
         title_w = sum(gw) + len(gw) - 1
         print(line([title_w], TOP))
         print(V + f" {('VPSFORGE MANAGER ' + version):^{title_w - 2}} " + V)
@@ -414,20 +453,25 @@ def main():
         print(line(gw, MID))
         print(cells([refresh_str, public_ip, f"{host_total_ram_mb}MB", f"{allocated_ram_mb}MB", f"{remaining_ram_mb}MB", host_cpu_str], gw))
         print(line(gw, MID))
-        print(cells(["TOTAL DISK", "HOST OS", "VPS DISK USED", "BACKUPS", "VPS DISK LIMITS", "AVAILABLE DISK"], gw))
+        print(cells(["TOTAL DISK", "HOST OS", "VPS STORAGE", "BACKUPS", "VPS DISK LIMITS", "AVAILABLE DISK"], gw))
         print(line(gw, MID))
         print(cells([f"{disk_total_gb:.1f}GB", f"{host_os_gb:.1f}GB", f"{disk_used_gb_total:.1f}GB", f"{backup_used_gb:.1f}GB", f"{disk_allocated_gb}GB", f"{disk_avail_gb:.1f}GB"], gw))
         print(line(gw, BOT))
+        # One line that makes the disk numbers add up (each VPS row below shows its full size,
+        # which includes the OS files it shares with other VPSs, so rows can add up to more).
+        print(f"  Disk {disk_total_gb:.1f}GB = Host OS {host_os_gb:.1f} + VPS storage {disk_used_gb_total:.1f}"
+              f" + Backups {backup_used_gb:.1f} + Available {disk_avail_gb:.1f}"
+              f"   |   VPS storage = VPS data {max(0.0, round(disk_used_gb_total, 1) - round(images_gb, 1)):.1f} + OS images {images_gb:.1f} (shared)")
         print()
 
     # Print container list
-    tw = [12, 12, 26, 22, 26, 28, 17, 8]   # NAME, STATUS, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
+    tw = [12, 12, 10, 25, 20, 25, 26, 17, 8]   # NAME, STATUS, TYPE, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
     print(line(tw, TOP))
-    print(cells(["NAME", "STATUS", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
+    print(cells(["NAME", "STATUS", "TYPE", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
     ordered = sorted(rows, key=lambda x: x[0])
     print(line(tw, MID if ordered else BOT))
     for i, row in enumerate(ordered):
-        print(cells([str(c) for c in row[:8]], tw))
+        print(cells([str(c) for c in row[:9]], tw))
         print(line(tw, BOT if i == len(ordered) - 1 else MID))
 
 if __name__ == "__main__":

@@ -1,7 +1,17 @@
 #!/bin/bash
-# Apply security nesting, privileged mode, and loadable kernel modules to a container.
+# Apply the VPS type and the kernel modules it may load. Full (default): privileged, nesting and
+# no AppArmor limits, so Docker works. Isolated (user.vpsforge.type=isolated): unprivileged, no
+# nesting, Incus AppArmor kept, so root inside the VPS is NOT root on the server (safe to rent).
 apply_incus_compatibility_profile() {
   local name="$1" raw_lxc modules
+  if [ "$(incus config get "$name" user.vpsforge.type 2>/dev/null)" = "isolated" ]; then
+    incus config set "$name" security.privileged false >/dev/null 2>&1 || true
+    incus config set "$name" security.nesting false >/dev/null 2>&1 || true
+    incus config unset "$name" raw.lxc >/dev/null 2>&1 || true
+    incus config set "$name" security.syscalls.intercept.mknod true >/dev/null 2>&1 || true
+    incus config set "$name" security.syscalls.intercept.setxattr true >/dev/null 2>&1 || true
+    return 0
+  fi
 
   incus config set "$name" security.nesting true >/dev/null 2>&1 || true
   incus config set "$name" security.privileged true >/dev/null 2>&1 || true

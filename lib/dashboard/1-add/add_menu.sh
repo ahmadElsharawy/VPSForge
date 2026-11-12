@@ -2,8 +2,8 @@
 # Main wizard menu to add one or multiple VPS containers (shared or individual resource settings).
 add_menu() {
   local count=1 setup=1 first_num i n name port custom_name default_name effective_ram
-  local shared_img shared_rm shared_rv shared_cm shared_cv shared_dm shared_dv shared_nm shared_nv shared_trm shared_trx shared_ttx shared_ssh_fwd="y"
-  local -a names=() nums=() ports=() ram_modes=() ram_values=() cpu_modes=() cpu_values=() disk_modes=() disk_values=() network_modes=() network_values=() traffic_modes=() traffic_rxs=() traffic_txs=() images=() ssh_forwards=()
+  local shared_type="full" shared_img shared_rm shared_rv shared_cm shared_cv shared_dm shared_dv shared_nm shared_nv shared_trm shared_trx shared_ttx shared_ssh_fwd="y"
+  local -a names=() nums=() ports=() ram_modes=() ram_values=() cpu_modes=() cpu_values=() disk_modes=() disk_values=() network_modes=() network_values=() traffic_modes=() traffic_rxs=() traffic_txs=() images=() ssh_forwards=() vps_types=()
 
   # Main wizard loop
   local main_step=1

@@ -7,6 +7,7 @@ _add_store_single_vps() {
   nums[$((vps_i-1))]="$n"
   ports[$((vps_i-1))]="$port"
   images[$((vps_i-1))]="$cur_img"
+  vps_types[$((vps_i-1))]="$cur_type"
   ram_modes[$((vps_i-1))]="$cur_rm"
   ram_values[$((vps_i-1))]="$cur_rv"
   cpu_modes[$((vps_i-1))]="$cur_cm"

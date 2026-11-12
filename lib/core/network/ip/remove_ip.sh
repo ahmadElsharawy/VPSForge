@@ -16,9 +16,18 @@ remove_ip() {
     [ -z "$line" ] && break
     iptables -t nat -D PREROUTING "$line" 2>/dev/null || break
   done
-  # The SSH forward also added a FORWARD accept rule: remove it too, or it stays forever.
-  while iptables -D FORWARD -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null; do :; done
-  while iptables -D FORWARD ! -i incusbr0 -p tcp -d "$ip" --dport 22 -j ACCEPT 2>/dev/null; do :; done
+  # The SSH forward also added a FORWARD accept rule. It has had a few shapes over versions
+  # (plain, "! -i incusbr0", and "-m state ..."), so remove EVERY FORWARD rule that accepts
+  # port 22 to this ip by its own spec, or a stale one stays forever and could later accept
+  # traffic for a different VPS that reuses the ip.
+  local spec esc_ip
+  esc_ip="${ip//./\\.}"
+  while :; do
+    spec=$(iptables -S FORWARD 2>/dev/null | grep -m1 -E -- "-d ${esc_ip}/32 .*--dport 22")
+    [ -n "$spec" ] || break
+    # shellcheck disable=SC2086
+    iptables ${spec/-A/-D} 2>/dev/null || break
+  done
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmpf
     tmpf=$(mktemp)

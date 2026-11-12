@@ -18,7 +18,7 @@ _add_shared_collect_names() {
       add_name_is_usable "$name" "${names[@]}" && break
     done
     port=$(vps_fixed_port "$n")
-    names+=("$name"); nums+=("$n"); ports+=("$port"); images+=("$shared_img"); ssh_forwards+=("$shared_ssh_fwd")
+    names+=("$name"); nums+=("$n"); ports+=("$port"); images+=("$shared_img"); vps_types+=("$shared_type"); ssh_forwards+=("$shared_ssh_fwd")
     ram_modes+=("$shared_rm"); ram_values+=("$shared_rv")
     cpu_modes+=("$shared_cm"); cpu_values+=("$shared_cv")
     disk_modes+=("$shared_dm"); disk_values+=("$shared_dv")

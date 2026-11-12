@@ -27,6 +27,11 @@ _add_print_container_summary() {
   echo "  SSH Port:        ${ports[$idx]}"
   echo "  SSH Forwarding:  $ssh_disp"
   echo "  OS Image:        $img_disp"
+  if [ "${vps_types[$idx]:-full}" = "isolated" ]; then
+    echo "  VPS Type:        Isolated (unprivileged, Docker does NOT work)"
+  else
+    echo "  VPS Type:        Full (privileged, Docker works)"
+  fi
   echo "  RAM Limit:       $r_disp"
   echo "  CPU Limit:       $c_disp"
   echo "  Disk Limit:      $d_disp"

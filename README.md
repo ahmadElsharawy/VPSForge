@@ -1,7 +1,7 @@
-# VPSForge v3.1.0
+# VPSForge v3.2.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.1.0-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.2.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -13,6 +13,26 @@
 > **An Interactive, Enterprise-Grade Hypervisor-like Terminal Manager for lightweight Linux (Ubuntu, Debian, Alpine, etc.) VPS containers powered by Incus.**
 
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
+
+---
+
+## ✨ What's new in v3.2.0
+
+- **Choose the VPS type when you create it.** The create wizard now asks:
+  `1) Full (privileged)` - Docker works, only for you or people you trust;
+  `2) Isolated (unprivileged)` - safe to rent to strangers, Docker does NOT work.
+  The type is shown in a new **TYPE** column on the main dashboard. Tested on a real
+  server: in an Isolated VPS, root inside is an ordinary host user (uid 1000000), cannot
+  mount the host filesystem and cannot reach the host; in a Full VPS root is host root
+  (uid 0). The full test suite passes on both types (e2e 90/90 Full and Isolated, VPN 55/55).
+- **Clearer disk numbers.** The header shows `VPS STORAGE` (real pool size), and a line under
+  it adds up: `Disk = Host OS + VPS storage + Backups + Available`, and splits VPS storage into
+  `VPS data + OS images (shared)`. Each VPS row shows its full size (its data plus the OS files
+  it shares), so rows can add up to more than VPS storage; the shared images are counted once.
+- **No stale firewall rules after deleting a VPS.** An SSH-forward FORWARD rule had taken a few
+  shapes across versions, and the old cleanup knew only one, so rules for deleted VPSs piled up
+  (and could later accept traffic for a VPS that reuses the IP). Every FORWARD rule to the VPS's
+  IP on port 22 is now removed, whatever its shape.
 
 ---
 
