@@ -235,10 +235,14 @@ def main():
     # Host disk details using statvfs on root filesystem "/"
     disk_total_gb = 0
     disk_avail_gb = 0
+    disk_really_used_gb = 0
     try:
         stat = os.statvfs("/")
         disk_total_gb = (stat.f_blocks * stat.f_frsize) / (1024**3)
         disk_avail_gb = (stat.f_bavail * stat.f_frsize) / (1024**3)
+        # Blocks really written. Not total - available: ext4 keeps ~5% for root only, and that
+        # reserve is not used by anything (it made HOST OS look ~5% of the disk too big).
+        disk_really_used_gb = ((stat.f_blocks - stat.f_bfree) * stat.f_frsize) / (1024**3)
     except Exception:
         pass
 
@@ -372,7 +376,7 @@ def main():
     # server is that file's allocated size (VPS data + cached images + free space
     # not yet trimmed), so show THAT as "VPS DISK USED" and give the rest to the OS.
     # Host OS = everything else, so the columns add up to the real disk.
-    used_gb = disk_total_gb - disk_avail_gb
+    used_gb = disk_really_used_gb
     pool_disk_gb = get_pool_disk_gb()
     if pool_disk_gb > 0:
         disk_used_gb_total = pool_disk_gb

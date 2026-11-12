@@ -8,4 +8,5 @@ reclaim_pool_space() {
   [ -d "$pool_path" ] || return 0
   command -v fstrim >/dev/null 2>&1 || return 0
   fstrim "$pool_path" >/dev/null 2>&1 || true
+  repair_pool_quotas   # a delete can switch the disk limits off: switch them back on
 }

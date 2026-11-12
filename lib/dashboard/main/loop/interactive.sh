@@ -7,6 +7,7 @@ interactive() {
 
   local c is_refresh=0 INPUT_BUFFER="" char status
   load_settings
+  repair_pool_quotas   # disk limits work and the dashboard shows real usage
 
   while :; do
     if [ "$is_refresh" -eq 1 ]; then

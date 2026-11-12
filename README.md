@@ -1,7 +1,7 @@
-# VPSForge v3.0.3
+# VPSForge v3.0.4
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.0.3-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.0.4-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -13,6 +13,13 @@
 > **An Interactive, Enterprise-Grade Hypervisor-like Terminal Manager for lightweight Linux (Ubuntu, Debian, Alpine, etc.) VPS containers powered by Incus.**
 
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
+
+---
+
+## ✨ What's new in v3.0.4
+
+- **VPS disk limits are really enforced again.** Deleting a VPS, image or snapshot can make the kernel mark btrfs's quota data "inconsistent" (kernel log: `qgroup marked inconsistent`); while that mark is set **no disk limit works** (a VPS limited to 3GB could write 4.5GB) and every VPS shows a tiny usage. VPSForge now detects the mark and rescans the quotas by itself: after every delete, before a disk limit is set, when the dashboard opens and in the weekly tidy. Tested: on a server with the mark set, a 3GB VPS was stopped at 3GB (`Disk quota exceeded`).
+- **HOST OS size is exact:** the ~5% that ext4 keeps for root is no longer counted as used by the OS.
 
 ---
 
