@@ -28,7 +28,10 @@ SIP=$(get_ip "$S"); CIP=$(get_ip "$C")
 [ -n "$SIP" ] && [ -n "$CIP" ] && iso_open
 
 echo "-- create the VPN"
-ok "vpn_create" vpn_create "$S" "$PORT"
+TSNI="${VPN_TEST_SNI:-$VPN_SNI}"   # VPN_TEST_SNI=www.microsoft.com tests a chosen disguise site
+ok "the disguise site speaks TLS 1.3 + HTTP/2" vpn_sni_supported "$TSNI"
+ok "vpn_create" vpn_create "$S" "$PORT" "$TSNI"
+ok "SNI saved on the VPS" test "$(vpn_get_sni "$S")" = "$TSNI"
 ok "Xray runs inside the VPS" incus exec "$S" -- pgrep -x xray
 ok "VPN port saved on the VPS" test "$(vpn_get_port "$S")" = "$PORT"
 ok "TCP $PORT forwarded to the VPS" t_fwd
@@ -44,6 +47,7 @@ no "same name refused" vpn_add_device "$S" laptop 0 0
 no "bad name refused" vpn_add_device "$S" "bad name" 0 0
 ok "2 devices listed" test "$(vpn_list_devices "$S" | wc -l)" = "2"
 LINK=$(vpn_device_link "$S" phone)
+ok "the link carries the chosen SNI" grep -q "sni=$TSNI&" <<< "$LINK"
 ok "phone link: vless, Reality, name IP-VPS-unl-unl" t_link
 ok "laptop link name IP-VPS-30d-50GB" t_label
 ok "QR code is printed" t_qr

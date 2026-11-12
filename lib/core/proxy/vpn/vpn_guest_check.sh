@@ -4,6 +4,6 @@
 #   vpn_guest_check <vps> [collect]
 vpn_guest_check() {
   local vps="${1:?vps}"
-  incus exec "$vps" --env PORT="$(vpn_inner_port "$vps")" --env SNI="$VPN_SNI" --env API="$VPN_API_PORT" \
+  incus exec "$vps" --env PORT="$(vpn_inner_port "$vps")" --env SNI="$(vpn_get_sni "$vps")" --env API="$VPN_API_PORT" \
     -- sh "$VPN_GUEST_DIR/check.sh" ${2:+"$2"} </dev/null
 }

@@ -1,9 +1,9 @@
 #!/bin/bash
-# Create-VPN wizard step 2 of 3: the public port of the VPN on this server (TCP).
+# Create-VPN wizard step 2 of 4: the public port of the VPN on this server (TCP).
 vpn_wizard_step_port() {
   local port answer
   echo
-  echo "Step 2 of 3 - Public port"
+  echo "Step 2 of 4 - Public port"
   show_example "8443  (open TCP 8443 and 8444 in your cloud firewall: the VPN and its QR page)"
   port=$(pref_get vpn_port 8443)
   read -r -p "VPN port on this server [Enter=$port, 0=Back]: " answer </dev/tty

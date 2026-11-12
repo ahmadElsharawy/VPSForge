@@ -16,5 +16,5 @@ vpn_device_link() {
   [ -n "$id" ] && [ -n "$pub" ] || return 1
   [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1
   label=$(vpn_device_label "$vps" "$name")
-  echo "vless://${id}@${PUBLIC_IP}:${ext}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=${VPN_SNI}&fp=chrome&pbk=${pub}&sid=${sid}&type=tcp#${label}"
+  echo "vless://${id}@${PUBLIC_IP}:${ext}?encryption=none&flow=xtls-rprx-vision&security=reality&sni=$(vpn_get_sni "$vps")&fp=chrome&pbk=${pub}&sid=${sid}&type=tcp#${label}"
 }

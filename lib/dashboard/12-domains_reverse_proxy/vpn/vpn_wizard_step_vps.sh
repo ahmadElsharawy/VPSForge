@@ -1,8 +1,8 @@
 #!/bin/bash
-# Create-VPN wizard step 1 of 3: which VPS carries the VPN. Warns when its speed is limited.
+# Create-VPN wizard step 1 of 4: which VPS carries the VPN. Warns when its speed is limited.
 vpn_wizard_step_vps() {
   local limit
-  echo "Step 1 of 3 - Which VPS will carry the VPN?"
+  echo "Step 1 of 4 - Which VPS will carry the VPN?"
   show_example "a running VPS; your devices connect to it and use its internet"
   select_vps || return "$WIZARD_BACK"
   VW_VPS="$SELECTED"

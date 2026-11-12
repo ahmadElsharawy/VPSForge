@@ -1,13 +1,13 @@
 #!/bin/bash
 # Create a VPN on a VPS, then offer to add the first device right away.
 vpn_create_wizard() {
-  VW_VPS=""; VW_PORT=""
+  VW_VPS=""; VW_PORT=""; VW_SNI=""
   clear
   echo "================================================================"
   echo "                        CREATE A VPN"
   echo "================================================================"
-  run_wizard vpn_wizard_step_vps vpn_wizard_step_port vpn_wizard_step_confirm || return
-  if ! vpn_create "$VW_VPS" "$VW_PORT"; then
+  run_wizard vpn_wizard_step_vps vpn_wizard_step_port vpn_wizard_step_sni vpn_wizard_step_confirm || return
+  if ! vpn_create "$VW_VPS" "$VW_PORT" "$VW_SNI"; then
     echo "ERROR: the VPN could not be created. Nothing was left on the server."
     pause; return
   fi

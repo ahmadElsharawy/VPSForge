@@ -1,7 +1,7 @@
-# VPSForge v3.0.6
+# VPSForge v3.1.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.0.6-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.1.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -13,6 +13,12 @@
 > **An Interactive, Enterprise-Grade Hypervisor-like Terminal Manager for lightweight Linux (Ubuntu, Debian, Alpine, etc.) VPS containers powered by Incus.**
 
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
+
+---
+
+## ✨ What's new in v3.1.0
+
+- **Choose the VPN's disguise site (Reality SNI).** Creating a VPN now asks which HTTPS site the VPN looks like to anyone watching the network (default `www.speedtest.net`, the last answer is offered next time). VPSForge checks that the site answers with TLS 1.3 + HTTP/2 before using it. The SNI is saved per VPN, so VPNs made earlier keep working unchanged. A device link carries the SNI: a VPN with another SNI needs new links. Tested: `www.microsoft.com` 55/55 (real connection through the VPN), the wizard with `www.apple.com`.
 
 ---
 

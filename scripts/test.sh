@@ -272,6 +272,12 @@ t "old shared header/tool packages selected" "linux-oracle-6.17-headers-6.17.0-1
 t "no kernels: nothing" "" "$(printf 'bash
 ' | select_old_kernel_packages 7.0.0-1-oracle)"
 
+# VPN SNI names
+t "sni ok" ok "$(is_valid_vpn_sni www.microsoft.com && echo ok || echo bad)"
+t "sni with scheme refused" bad "$(is_valid_vpn_sni https://www.microsoft.com && echo ok || echo bad)"
+t "sni with space refused" bad "$(is_valid_vpn_sni 'a b.com' && echo ok || echo bad)"
+t "sni single word refused" bad "$(is_valid_vpn_sni localhost && echo ok || echo bad)"
+
 # tunnel records (fake incus keeps the metadata in a file)
 tunnel_store=$(mktemp)
 incus() {

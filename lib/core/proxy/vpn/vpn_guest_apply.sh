@@ -3,6 +3,6 @@
 #   vpn_guest_apply <vps>
 vpn_guest_apply() {
   local vps="${1:?vps}"
-  incus exec "$vps" --env PORT="$(vpn_inner_port "$vps")" --env SNI="$VPN_SNI" --env API="$VPN_API_PORT" \
+  incus exec "$vps" --env PORT="$(vpn_inner_port "$vps")" --env SNI="$(vpn_get_sni "$vps")" --env API="$VPN_API_PORT" \
     -- sh "$VPN_GUEST_DIR/apply.sh" </dev/null
 }
