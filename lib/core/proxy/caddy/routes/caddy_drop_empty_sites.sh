@@ -1,6 +1,6 @@
 #!/bin/bash
 # Remove every website block that has no route left (no reverse_proxy inside) from a Caddy file,
-# and print the domain of each block removed. A VPS's file can hold several domains, so removing
+# and print every domain of each block removed (one per line). A VPS's file can hold several domains, so removing
 # the last route of the second domain must not leave an empty "domain { }" behind.
 #   caddy_drop_empty_sites <caddy_file>
 caddy_drop_empty_sites() {
@@ -11,7 +11,7 @@ caddy_drop_empty_sites() {
     function flush() {
       if (nb == 0) return
       if (has_route) { for (i = 1; i <= nb; i++) print buf[i] > out }
-      else { d = buf[1]; sub(/[[:space:]]*\{.*/, "", d); sub(/,.*/, "", d); print d }
+      else { d = buf[1]; sub(/[[:space:]]*\{.*/, "", d); gsub(/,/, " ", d); nd = split(d, ds, /[[:space:]]+/); for (k = 1; k <= nd; k++) if (ds[k] != "") print ds[k] }
       nb = 0; has_route = 0
     }
     {

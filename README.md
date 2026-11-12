@@ -16,6 +16,19 @@ VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-ten
 
 ---
 
+## ✨ What's new in v2.1.27 - v2.1.34
+
+- **Snapshot restore keeps the current IP and SSH port.** Restoring a snapshot taken before an IP change no longer brings back the old address (which another VPS may use now).
+- **Domains with several names** (`a.com, www.a.com { ... }`) are read and edited correctly; comments and a last line without a newline no longer confuse the Caddy config reader.
+- **Tunnels of stopped VPSs** and **disabled port forwards** are respected on restore and import; importing a backup with domains installs Caddy first when the host has none.
+- **Safer uninstall:** other Incus projects, storage pools and containers that VPSForge did not make are kept; the packages and iptables rules go back to the record taken before the install.
+- **Private backups:** backup folders are `700` and backup files `600`.
+- **Cloned VPSs** get their own identity (no copied VPN), **reinstall** recovery after an interruption is safer, and a stopped or interrupted backup export no longer leaves Incus's internal backup behind.
+- **Clean code:** one function per file everywhere (also the test scripts), long functions split by job.
+- Many smaller fixes from a full review (port-forward listing, IP collisions, image list on ARM, the add wizard's `0 = Back`, the VPN overview says TCP).
+
+---
+
 ## ✨ What's new in v2.1.26
 
 - **README brought up to date** (no code change): the dashboard map and the file directory now include the tunnels and the VPN, the CLI reference shows `port-forward edit`, the Windows tunnel chapter explains how the site address is chosen, and a new chapter, [11. What was tested and the known limits](#11--what-was-tested-and-the-known-limits), says exactly what has been tried on a real server and what has not.
@@ -662,19 +675,19 @@ vpsforge uninstall               # Remove everything; --dry-run, --yes, --keep-b
 
 ## 11. ✅ What was tested and the known limits
 
-**Tested on a real server:** Oracle Cloud ARM (Ampere), 1 CPU, about 6 GB RAM, Ubuntu 24.04, with real VPSs on it. Results of the v2.1.24 / v2.1.25 releases:
+**Tested on a real server:** two Oracle Cloud ARM (Ampere) servers, 1 CPU, about 6 GB RAM, Ubuntu 24.04, Incus 6.0, with real VPSs on them. Results of the v2.1.32 - v2.1.34 releases:
 
 | Test | Result |
 |---|---|
-| `scripts/test.sh` (offline, no root) | 100 / 100 |
-| `scripts/e2e.sh` (creates its own VPS and tries every feature) | 90 / 90 |
-| `scripts/ui-test.py` (types into every real menu, nothing skipped) | 142 / 142 |
-| `scripts/vpn-test.sh` (VPN devices, limits, QR page, removal) | 49 / 49 |
+| `scripts/test.sh` (offline, no root) | 113 / 113 |
+| `vpsforge selftest` (Incus compatibility) | 14 / 14 |
+| `scripts/e2e.sh` (creates its own VPS and tries every feature) | 90 / 90 and 89 / 89 |
+| `scripts/ui-test.py` (types into every real menu) | 87 / 87 |
+| `scripts/vpn-test.sh` (VPN devices, limits, QR page, removal) | 52 / 52 |
 | `scripts/space-test.sh` (snapshots, backups, deleted VPSs leave no files behind) | clean |
+| `vpsforge uninstall` on a server with other Incus containers, then reinstall | packages and iptables back as before, other containers kept |
 
 The Windows tunnel script was tried on Windows 10 with Windows OpenSSH against a real tunnel.
-
-**Fixed in the code but not tried on a server:** the BTRFS migration (skipping containers VPSForge did not make, and finishing after an interruption), `vpsforge uninstall` on a server that already had Incus, and the recovery of a reinstall that was killed half-way.
 
 **Not tried at all:** x86 servers, other cloud providers, other host systems than Ubuntu 24.04, the VPN inside Alpine / Debian / Rocky VPSs (the installer has paths for them), and the Linux / macOS tunnel line with a site that listens on one address only.
 

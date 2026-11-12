@@ -7,7 +7,7 @@ _details_print_proxy_domains() {
   if [ -f "$caddy_file" ]; then
     local line_domain
     while read -r line_domain; do
-      if [[ "$line_domain" =~ ^([a-zA-Z0-9_.-]+)[[:space:]]*\{ ]]; then
+      if [[ "$line_domain" =~ ^([a-zA-Z0-9_.*-]+([,[:space:]]+[a-zA-Z0-9_.*-]+)*)[[:space:]]*\{ ]]; then
         proxy_domains+=("${BASH_REMATCH[1]}")
       fi
     done < "$caddy_file"

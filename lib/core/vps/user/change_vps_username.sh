@@ -26,7 +26,7 @@ change_vps_username() {
     mkdir -p /etc/sudoers.d
     echo "$NEW_USER ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/$NEW_USER"
     chmod 0440 "/etc/sudoers.d/$NEW_USER"
-    cp -rn /root/.ssh "/home/$NEW_USER/.ssh" 2>/dev/null || true
+    mkdir -p "/home/$NEW_USER/.ssh" && cp -rn /root/.ssh/. "/home/$NEW_USER/.ssh/" 2>/dev/null || true
     chown -R "$NEW_USER:$NEW_USER" "/home/$NEW_USER" 2>/dev/null || true
   ' || { echo "ERROR: Failed to create user $new_user in $name."; return 1; }
 

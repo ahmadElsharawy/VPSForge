@@ -7,6 +7,10 @@ tunnel_wizard_step_ports() {
   show_example "8080 inside the VPS  <-  3000 on your computer (where your site runs)"
   tport=$(pref_get tunnel_port 8080)
   lport=$(pref_get tunnel_local_port 3000)
+  # Editing a tunnel: Enter keeps THIS tunnel's ports, not the last ones typed anywhere.
+  if [ -n "${TW_EDIT_TPORT:-}" ]; then
+    tport="${TW_TPORT:-$tport}"; lport="${TW_LPORT:-$lport}"
+  fi
 
   read -r -p "Port to open on the VPS [Enter=$tport, 0=Back]: " answer </dev/tty
   [ "$answer" = "0" ] && return "$WIZARD_BACK"

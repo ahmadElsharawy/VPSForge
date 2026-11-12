@@ -17,7 +17,7 @@ _add_configure_single_vps() {
   local cur_trm="${traffic_modes[$((vps_i-1))]:-}"
   local cur_trx="${traffic_rxs[$((vps_i-1))]:-0}"
   local cur_ttx="${traffic_txs[$((vps_i-1))]:-0}"
-  local cur_ssh_fwd="${ssh_forwards[$((vps_i-1))]:-y}"
+  local cur_ssh_fwd="${ssh_forwards[$((vps_i-1))]:-}"
 
   local ind_step=1 custom_name
   while [ $ind_step -ge 1 ] && [ $ind_step -le 8 ]; do

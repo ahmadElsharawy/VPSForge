@@ -29,7 +29,7 @@ recover_interrupted_reinstall() {
     mark_vps_state "$original" ""
     incus config unset "$original" user.vpsforge.reinstall_of >/dev/null 2>&1 || true
     incus start "$original" >/dev/null 2>&1 || true
-    [ -n "$ip" ] && [ -n "$port" ] && add_forward_rule "$ip" "$port" >/dev/null 2>&1
+    [ -n "$ip" ] && [ -n "$port" ] && vps_ssh_forward_enabled "$original" && add_forward_rule "$ip" "$port" >/dev/null 2>&1
     echo "Recovery: '$original' is back, unchanged."
   else
     echo "Recovery: could not rename '$old' back to '$original'. It is still intact under the name '$old'."
