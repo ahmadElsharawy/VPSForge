@@ -10,7 +10,7 @@ ask_distro() {
     "Alpine        (tiny: about 10MB RAM, best for weak servers)"
     "Rocky Linux   (RHEL compatible)"
     "AlmaLinux     (RHEL compatible)"
-    "Fedora        (newest packages)"
+    "Fedora        (newest packages; needs a strong VPS: 2GB+ RAM)"
     "Arch Linux    (rolling release)"
     "CentOS Stream"
   )
