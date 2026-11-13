@@ -8,5 +8,6 @@ cleanup() {
   incus delete "${T}-r" --force >/dev/null 2>&1 || true
   incus delete "${T}-imp" --force >/dev/null 2>&1 || true
   rm -f "$CADDY_CONF_DIR/$T.caddy" /tmp/e2e_askpass.sh 2>/dev/null
+  sweep_stale_forward_rules   # forwards of the clones deleted above (live and saved)
   save_iptables
 }

@@ -234,9 +234,15 @@ def section_details(ui):
     pause(ui)
     main_choice(ui, 9)
     step(ui, "select vps", r"Select VPS by number, name, or A for All.*?: ", "uit1\r")
-    time.sleep(2)
-    ui.send("echo SHELL$((20+22))OK\r")
-    check("9) shell opens inside the VPS", ui.expect(r"SHELL42OK", 30), ui.tail())
+    # The shell may need a few seconds to open on a weak host: type the probe again until it answers.
+    shell_ok = False
+    for attempt in range(4):
+        time.sleep(2)
+        ui.send("echo SHELL$((20+22))OK\r")
+        if ui.expect(r"SHELL42OK", 15):
+            shell_ok = True
+            break
+    check("9) shell opens inside the VPS", shell_ok, ui.tail())
     ui.send("exit\r")
     check("9) exit returns to the menu", to_menu(ui, 30))
 
@@ -355,7 +361,10 @@ def section_edit(ui):
     new_ip = prefix + ".150"
     step(ui, "edit menu", sub_prompt, "10\r")
     step(ui, "new ip", r"New Internal IP.*?: ", new_ip + "\r")
-    time.sleep(6)
+    # The VPS restarts with the new address: wait for it (a weak host needs longer) instead of a fixed time.
+    end = time.time() + 120 * float(os.environ.get("UI_TEST_TIMEOUT_SCALE", "1"))
+    while time.time() < end and ip_of("uit1") != new_ip:
+        time.sleep(3)
     check("7.10 change internal IP", ip_of("uit1") == new_ip and login("uiuser", "UiPass123", new_ip), ip_of("uit1"))
     step(ui, "edit menu", sub_prompt, "10\r")
     step(ui, "ip back", r"New Internal IP.*?: ", orig_ip + "\r")
