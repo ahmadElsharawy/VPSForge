@@ -402,10 +402,7 @@ def main():
         if not port:
             port = "-"
 
-        # Shown from the real Incus setting, not from a label: Full = privileged (Docker works),
-        # Isolated = unprivileged (root inside is not root on the server).
-        vps_type = "Full" if str(expanded_config.get('security.privileged', '')).lower() == "true" else "Isolated"
-        rows.append((name, status, vps_type, ram_str, cpu_str, disk_str, net_str, ip, port))
+        rows.append((name, status, ram_str, cpu_str, disk_str, net_str, ip, port))
 
     # Calculate remaining host RAM
     remaining_ram_mb = host_total_ram_mb - allocated_ram_mb
@@ -465,13 +462,13 @@ def main():
         print()
 
     # Print container list
-    tw = [12, 12, 10, 25, 20, 25, 26, 17, 8]   # NAME, STATUS, TYPE, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
+    tw = [12, 12, 25, 20, 25, 26, 17, 8]   # NAME, STATUS, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
     print(line(tw, TOP))
-    print(cells(["NAME", "STATUS", "TYPE", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
+    print(cells(["NAME", "STATUS", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
     ordered = sorted(rows, key=lambda x: x[0])
     print(line(tw, MID if ordered else BOT))
     for i, row in enumerate(ordered):
-        print(cells([str(c) for c in row[:9]], tw))
+        print(cells([str(c) for c in row[:8]], tw))
         print(line(tw, BOT if i == len(ordered) - 1 else MID))
 
 if __name__ == "__main__":

@@ -5,9 +5,7 @@ _add_shared_wizard() {
   while [ $s_step -ge 1 ] && [ $s_step -le 7 ]; do
     case "$s_step" in
       1)
-        ask_vps_type "all new VPS containers" || { s_step=0; continue; }
-        shared_type="$VPS_TYPE_RESULT"
-        ask_vps_image "all new VPS containers" || continue
+        ask_vps_image "all new VPS containers" || { s_step=0; continue; }
         shared_img="$SELECTED_IMAGE"
         s_step=2
         ;;

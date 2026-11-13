@@ -15,7 +15,6 @@ NAMES = ["uit1", "uit2", "uit3"]
 # UI_TEST_SAFE=1: for a server that holds real VPSs. Skips everything that could touch things the test
 # did not create (settings, websites/Caddy, backups folder, "delete ALL port forwards", log trimming).
 SAFE = os.environ.get("UI_TEST_SAFE") == "1"
-VPS_TYPE = os.environ.get("UI_VPS_TYPE", "1")   # 1 = Full (privileged), 2 = Isolated (unprivileged)
 SAFE_SKIPPED = ("settings", "websites", "snapshots")
 
 
@@ -179,7 +178,6 @@ def section_create(ui):
     main_choice(ui, 1)
     step(ui, "how many", r"How many VPS containers.*?: ", "\r")
     step(ui, "name", r"Enter VPS Name \[default.*?\]: ", "uit1\r")
-    step(ui, "vps type", r"VPS type for.*?Choice \[0=Back, Enter=\d\]: ", VPS_TYPE + "\r")
     step(ui, "distro", r"Choice \[0=Back, Enter=\d\]: ", "\r")                 # Ubuntu
     step(ui, "version", r"Choice \[0=Back, Enter=default.*?\]: ", "\r")        # default image
     step(ui, "ram mode", r"RAM Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
@@ -199,7 +197,6 @@ def section_create(ui):
     main_choice(ui, 1)
     step(ui, "how many", r"How many VPS containers.*?: ", "2\r")
     step(ui, "setup mode", r"Choice \[0=Back, Enter=\d\]: ", "2\r")             # same for all
-    step(ui, "vps type", r"VPS type for.*?Choice \[0=Back, Enter=\d\]: ", VPS_TYPE + "\r")
     step(ui, "distro", r"Choice \[0=Back, Enter=\d\]: ", "\r")
     step(ui, "version", r"Choice \[0=Back, Enter=default.*?\]: ", "\r")
     step(ui, "ram mode", r"RAM Mode.*?Choice \[0=Back, Enter=\d\]: ", "2\r")

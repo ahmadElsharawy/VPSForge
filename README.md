@@ -1,7 +1,7 @@
-# VPSForge v3.2.8
+# VPSForge v3.3.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.2.8-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.3.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,38 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.3.0
+
+- **One VPS type: Isolated, and Docker works in it.** The Full (privileged) type is gone: every VPS is
+  unprivileged (root inside is an ordinary host user, uid 1000000), so it is safe to rent, and Docker
+  still runs in it. The TYPE column left the dashboard and the create wizard no longer asks for a type.
+- **How Docker runs unprivileged:** Ubuntu's runc 1.3 cannot start containers in an unprivileged VPS
+  (it reopens /proc files the VPS may not touch). VPSForge now copies crun 1.19.1 and fuse-overlayfs
+  (pinned, sha256-checked, downloaded once per server) into each VPS, turns on nesting and /dev/fuse,
+  and writes /etc/docker/daemon.json, so however Docker is installed later, it just works. Docker
+  itself is not pre-installed, so small servers stay light.
+- A VPS made by an older version becomes Isolated when it is repaired or reinstalled.
+
+## ✨ What's new in v3.2.8
+
+- **All eight distros verified; Fedora is marked as needing a strong VPS (2GB+ RAM).** With 256MB its
+  package install timed out; with 2GB it creates in about 30 seconds.
+
+## ✨ What's new in v3.2.7
+
+- **Alpine is back in the distro menu.** It was dropped by mistake: BusyBox `ss` lists no sockets, so a
+  test wrongly saw no SSH. An Alpine VPS does answer on port 22.
+
+## ✨ What's new in v3.2.6
+
+- **Rocky / Alma / RHEL 10 VPSs are created correctly.** NetworkManager's own DHCP connection beat the
+  static one and left eth0 down; VPSForge now disables it, waits for NetworkManager and activates its
+  own connection. Verified to survive a restart.
+
+## ✨ What's new in v3.2.5
+
+- Alpine was temporarily removed from the distro menu (restored in v3.2.7).
 
 ## ✨ What's new in v3.2.4
 
@@ -789,7 +821,8 @@ The Windows tunnel script was tried on Windows 10 with Windows OpenSSH against a
 **Not tried at all:** x86 servers, other cloud providers, other host systems than Ubuntu 24.04, the VPN inside Alpine / Debian / Rocky VPSs (the installer has paths for them), and the Linux / macOS tunnel line with a site that listens on one address only.
 
 **Limits you should know:**
-- VPSs are **privileged on purpose** (Docker and the VPN need it). Whoever has root inside a VPS can affect the whole server: give a VPS only to people you trust.
+- Every VPS is **Isolated (unprivileged)**: root inside a VPS is an ordinary user on the server (uid 1000000), so a VPS can be rented to strangers. Docker works in it through crun + fuse-overlayfs. CPU, RAM, network and normal disk use run at full speed; only writes inside a Docker container's own layer (image pulls, builds) go through FUSE and are slower, so keep heavy data in Docker volumes (`-v`), which are native.
+- The Docker helpers (crun and fuse-overlayfs) are downloaded once per server from their GitHub releases (sha256 checked); without internet access to GitHub, Docker inside new VPSs will not start.
 - The **VPN speed is limited by the CPU of the server**: about 410 Mbit/s down / 570 up on 1 ARM CPU (Frankfurt to Jeddah, Ookla). More CPUs give more speed. Your own internet and the route to the server are limits too.
 - The VPN needs TCP ports (the VPN port and the next one for the QR page) open in the **cloud provider's firewall**, not only on the server.
 - Xray is downloaded from its GitHub release (checksum checked) when a VPN is created, so the VPS needs internet access to GitHub.

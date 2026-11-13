@@ -6,7 +6,6 @@ _add_configure_single_vps() {
   local default_name="${VPS_PREFIX}${n}"
   local cur_name="${names[$((vps_i-1))]:-$default_name}"
   local cur_img="${images[$((vps_i-1))]:-}"
-  local cur_type="${vps_types[$((vps_i-1))]:-full}"
   local cur_rm="${ram_modes[$((vps_i-1))]:-}"
   local cur_rv="${ram_values[$((vps_i-1))]:-}"
   local cur_cm="${cpu_modes[$((vps_i-1))]:-}"
@@ -36,9 +35,7 @@ _add_configure_single_vps() {
         ind_step=2
         ;;
       2)
-        ask_vps_type "$cur_name" || { ind_step=1; continue; }
-        cur_type="$VPS_TYPE_RESULT"
-        ask_vps_image "$cur_name" || continue
+        ask_vps_image "$cur_name" || { ind_step=1; continue; }
         cur_img="$SELECTED_IMAGE"
         ind_step=3
         ;;

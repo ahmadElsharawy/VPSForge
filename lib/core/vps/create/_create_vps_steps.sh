@@ -54,5 +54,7 @@ _create_vps_steps() {
   _install_ssh "$name" "$ip" "$port" || return 1
 
   _configure_guest_optimizations "$name"
+  # The helpers that let Docker run in the VPS although it is unprivileged.
+  _prepare_guest_docker "$name"
   _finalize_vps_access "$name" "$ip" "$port" "$open_ssh"
 }

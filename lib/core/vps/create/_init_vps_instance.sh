@@ -11,7 +11,6 @@ _init_vps_instance() {
     echo "Launching $name with image ($cand)..."
     if incus init "$cand" "$name" 2>/dev/null; then
       incus config set "$name" user.vpsforge.image "$cand" || true
-      [ "${VPS_TYPE:-full}" = "isolated" ] && incus config set "$name" user.vpsforge.type isolated
       return 0
     fi
   done
@@ -21,7 +20,6 @@ _init_vps_instance() {
     [ -n "$cand" ] || continue
     if incus init "$cand" "$name"; then
       incus config set "$name" user.vpsforge.image "$cand" || true
-      [ "${VPS_TYPE:-full}" = "isolated" ] && incus config set "$name" user.vpsforge.type isolated
       return 0
     fi
   done

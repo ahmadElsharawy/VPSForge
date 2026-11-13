@@ -4,7 +4,7 @@ _add_execute_creations() {
   local ok=0 failed=0 i effective_ram
   for ((i=0; i<${#names[@]}; i++)); do
     effective_ram="${ram_values[$i]:-$MIN_RAM_MB}"
-    if VPS_TYPE="${vps_types[$i]:-full}" create_vps "${names[$i]}" "${nums[$i]}" "$effective_ram" "${ports[$i]}" \
+    if create_vps "${names[$i]}" "${nums[$i]}" "$effective_ram" "${ports[$i]}" \
         "${ram_modes[$i]}" "${cpu_modes[$i]}" "${cpu_values[$i]}" \
         "${disk_modes[$i]}" "${disk_values[$i]}" "${network_modes[$i]}" "${network_values[$i]}" \
         "${images[$i]:-$VPS_IMAGE}" \
