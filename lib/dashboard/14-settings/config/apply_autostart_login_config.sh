@@ -3,7 +3,7 @@
 apply_autostart_login_config() {
   local autostart_file="/etc/profile.d/vpsforge-autostart.sh"
   if [ "${AUTO_START_ON_LOGIN:-off}" = "on" ]; then
-    if [ -d /etc/profile.d ] && { [ -w /etc/profile.d 2>/dev/null ] || [ "${EUID:-$(id -u)}" -eq 0 ]; }; then
+    if [ -d /etc/profile.d ] && { [ -w /etc/profile.d ] || [ "${EUID:-$(id -u)}" -eq 0 ]; }; then
       cat > "$autostart_file" <<'EOF_AUTOSTART'
 # VPSForge Auto-Start on Interactive SSH / Terminal Login
 if [ -t 0 ] && [ -n "${TERM:-}" ] && [ -z "${VPSFORGE_SESSION_ACTIVE:-}" ]; then
