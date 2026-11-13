@@ -9,15 +9,24 @@ run_guarded() {
   local cleanup="${1:?cleanup command}"; shift
   local log rc old_traps reason
 
+  local cmd_pid
   log=$(mktemp)
   old_traps=$(trap -p INT TERM HUP)
   GUARD_INTERRUPTED=0
   GUARD_REASON=""
-  # Survive the signal in this shell: the running command still gets it and stops.
-  trap 'GUARD_INTERRUPTED=1' INT TERM HUP
 
-  "$@" 2>&1 | tee "$log"
-  rc=${PIPESTATUS[0]}
+  # Run the command in the background and wait for it, so a Ctrl-C (or kill)
+  # reaches us AT ONCE: 'wait' is interrupted by the trap even while a slow step
+  # (for example an in-container apt) is still running. We then stop the command
+  # and the cleanup below tears down everything the half-made operation reserved
+  # (incus delete --force also kills whatever was still running inside it).
+  # Output still streams live through tee.
+  "$@" > >(tee "$log") 2>&1 &
+  cmd_pid=$!
+  trap 'GUARD_INTERRUPTED=1; kill -TERM "$cmd_pid" 2>/dev/null' INT TERM HUP
+  wait "$cmd_pid"; rc=$?
+  # If the signal cut the first wait short before the child was reaped, reap it now.
+  wait "$cmd_pid" 2>/dev/null
 
   trap - INT TERM HUP
   [ -n "$old_traps" ] && eval "$old_traps"

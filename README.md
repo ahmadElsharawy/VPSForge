@@ -1,7 +1,7 @@
-# VPSForge v3.2.1
+# VPSForge v3.2.2
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.2.1-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.2.2-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,14 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.2.2
+
+- **Ctrl-C now cancels a running create/clone/backup at once.** A long step (such as the
+  in-container package install) used to swallow the interrupt, so the operation ran to the end
+  instead of stopping. `run_guarded` now runs the work in the background and waits on it, so a
+  Ctrl-C, closed terminal or kill is acted on immediately: the operation stops and everything it
+  had reserved (instance, IP, port, firewall rules) is cleaned up, leaving nothing behind.
 
 ## ✨ What's new in v3.2.1
 
