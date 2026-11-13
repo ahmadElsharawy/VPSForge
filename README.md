@@ -1,7 +1,7 @@
-# VPSForge v3.2.3
+# VPSForge v3.2.4
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.2.3-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.2.4-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,14 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.2.4
+
+- **`vpsforge uninstall` removes its packages again (clean-host promise).** It read the pre-install
+  record from a file name the capture step never writes (`packages_installed.txt` vs the actual
+  `packages_present.txt`), so on every current install it printed "older VPSForge, none removed"
+  and left Incus, Caddy and the rest behind. It now walks VPSForge's own package list, keeps any
+  that were already on the server before install, and purges the ones it added.
 
 ## ✨ What's new in v3.2.3
 
