@@ -31,7 +31,13 @@ vpn_share_link() {
     iptables -D INPUT -p tcp --dport "$1" -j ACCEPT 2>/dev/null
     rm -f "$3" "$4"
   ' _ "$port" "$helper" "$tmp" "$png" "$secret" "$label" "$((minutes * 60))" </dev/null >/dev/null 2>&1 &
-  sleep 1
+  # Give the link only once the page answers, however long Python takes to start on this server.
+  # Stop waiting only if the page's server itself ended (it failed to start).
+  local server_pid=$!
+  while [ -z "$(host_port_owner "$port" tcp)" ]; do
+    kill -0 "$server_pid" 2>/dev/null || { echo "ERROR: the page could not be started."; return 1; }
+    sleep 0.5
+  done
   VPN_SHARE_URL="http://${PUBLIC_IP}:${port}/${secret}/"
   echo "$VPN_SHARE_URL"
 }

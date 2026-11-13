@@ -10,12 +10,12 @@ restore_vps_snapshot() {
   if is_vps_running "$name"; then
     was_running=true
     echo "Container $name is currently running. Stopping it to restore snapshot..."
-    incus stop "$name" --force 2>/dev/null || true
-    local wait_count=0
-    while is_vps_running "$name" && [ $wait_count -lt 15 ]; do
-      sleep 1
-      wait_count=$((wait_count + 1))
-    done
+    # wait for the real stop; if the stop command itself failed there is nothing to wait for
+    if incus stop "$name" --force 2>/dev/null; then
+      while is_vps_running "$name"; do
+        sleep 1
+      done
+    fi
   fi
 
   local kept_tunnels cur_ip cur_port

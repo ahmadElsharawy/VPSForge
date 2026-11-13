@@ -20,12 +20,12 @@ _move_instances_to_temp_pool() {
   for inst in "${instances[@]}"; do
     [ -n "$inst" ] || continue
     if is_vps_running "$inst"; then
-      incus stop "$inst" --force >/dev/null 2>&1 || true
-      local wait_count=0
-      while is_vps_running "$inst" && [ "$wait_count" -lt 15 ]; do
-        sleep 1
-        wait_count=$((wait_count + 1))
-      done
+      # wait for the real stop; if the stop command itself failed there is nothing to wait for
+      if incus stop "$inst" --force >/dev/null 2>&1; then
+        while is_vps_running "$inst"; do
+          sleep 1
+        done
+      fi
     fi
     if ! incus move "$inst" "$inst" -s "$POOL_MIGRATION_TEMP" >/dev/null 2>&1; then
       echo "WARNING: could not move '$inst' to the temporary pool. Storage migration cancelled; nothing was deleted." >&2

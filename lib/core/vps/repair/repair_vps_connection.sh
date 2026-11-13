@@ -29,7 +29,7 @@ repair_vps_connection() {
 
   ensure_ssh_ready "$name" || { echo "FAILED: SSH could not start in $name."; return 1; }
 
-  _wait_for_ssh_port "$ip" || { echo "FAILED: Host cannot reach $ip:22."; return 1; }
+  _wait_for_ssh_port "$ip" "$name" || { echo "FAILED: Host cannot reach $ip:22."; return 1; }
 
   vps_ssh_forward_enabled "$name" && add_forward_rule "$ip" "$port"
   if vps_ssh_forward_enabled "$name"; then

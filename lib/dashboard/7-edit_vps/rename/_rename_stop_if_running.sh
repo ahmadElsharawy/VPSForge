@@ -4,12 +4,12 @@ _rename_stop_if_running() {
   local old_name="$1"
   if is_vps_running "$old_name"; then
     echo "Stopping $old_name..."
-    incus stop "$old_name" --force >/dev/null 2>&1 || true
-    local wait_count=0
-    while is_vps_running "$old_name" && [ $wait_count -lt 15 ]; do
-      sleep 1
-      wait_count=$((wait_count + 1))
-    done
+    # wait for the real stop; if the stop command itself failed there is nothing to wait for
+    if incus stop "$old_name" --force >/dev/null 2>&1; then
+      while is_vps_running "$old_name"; do
+        sleep 1
+      done
+    fi
     return 1
   fi
   return 0

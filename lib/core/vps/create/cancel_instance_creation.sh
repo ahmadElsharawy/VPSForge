@@ -5,7 +5,7 @@
 #   cancel_instance_creation <name>
 cancel_instance_creation() {
   local name="${1:?name}" op waited=0
-  while [ "$waited" -lt 60 ]; do
+  while [ "$waited" -lt 600 ]; do
     op=$(incus query "/1.0/operations?recursion=1" 2>/dev/null | python3 -c '
 import sys, json, re
 name = sys.argv[1]

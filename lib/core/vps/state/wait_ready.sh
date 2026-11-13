@@ -1,10 +1,11 @@
 #!/bin/bash
-# Poll container until it reaches RUNNING state (up to 30 seconds).
+# Wait until the VPS is RUNNING. Gives up only when it is gone or stopped (it failed to start).
 wait_ready() {
-  local name="$1" attempt
-  for attempt in $(seq 1 30); do
-    is_vps_running "$name" && return 0
+  local name="$1" state
+  while :; do
+    state=$(get_state "$name")
+    [ "$state" = "RUNNING" ] && return 0
+    { [ -z "$state" ] || [ "$state" = "STOPPED" ]; } && return 1
     sleep 1
   done
-  return 1
 }

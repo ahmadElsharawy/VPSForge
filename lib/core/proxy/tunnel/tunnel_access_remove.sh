@@ -14,7 +14,7 @@ tunnel_access_remove() {
     # A tunnel that is still connected is cut first. Its processes take a moment to end,
     # and userdel refuses a user that still runs something, so try a few times.
     i=0
-    while id "$TUSER" >/dev/null 2>&1 && [ "$i" -lt 10 ]; do
+    while id "$TUSER" >/dev/null 2>&1 && [ "$i" -lt 60 ]; do
       pkill -KILL -u "$TUSER" >/dev/null 2>&1 || true
       userdel -f -r "$TUSER" >/dev/null 2>&1 || deluser --remove-home "$TUSER" >/dev/null 2>&1 || true
       id "$TUSER" >/dev/null 2>&1 && sleep 1

@@ -19,9 +19,10 @@ _setup_guest_networking() {
     return 1
   }
 
-  # Some systems (Alpine's dhcpcd) rewrite DNS a moment after boot: re-apply it a few times before giving up.
+  # Some systems (Alpine's dhcpcd) rewrite DNS a moment after boot: re-apply it until it holds. Stops early if
+  # the VPS is no longer running; the cap only ends a wait on a configuration that never becomes right.
   local net_try=0
-  until guest_network_config_ok "$name" "$ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || [ "$net_try" -ge 4 ]; do
+  until guest_network_config_ok "$name" "$ip" "$INCUS_GATEWAY" "${INCUS_NETMASK:-24}" || [ "$net_try" -ge 20 ] || ! is_vps_running "$name"; do
     net_try=$((net_try + 1))
     sleep 3
     configure_guest_dns "$name" >/dev/null 2>&1 || true

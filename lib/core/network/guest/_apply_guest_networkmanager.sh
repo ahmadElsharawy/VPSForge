@@ -38,7 +38,7 @@ EOF
         # Right after boot NetworkManager may still be starting, so its commands would no-op
         # and it would later grab eth0 itself. Wait for it to be ready first.
         i=0
-        while [ "$i" -lt 25 ]; do
+        while [ "$i" -lt 120 ]; do
           state=$(nmcli -t -f STATE general 2>/dev/null || true)
           [ -n "$state" ] && [ "$state" != "unknown" ] && [ "$state" != "asleep" ] && break
           sleep 1; i=$((i + 1))
