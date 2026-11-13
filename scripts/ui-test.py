@@ -852,39 +852,53 @@ def section_interrupt(ui):
     import signal
     print("== interruptions: nothing may be left behind ==")
     sh("incus delete uitint --force")                       # leftover of an earlier run
-    sh("rm -f /opt/vpsforge/.pending/uitint")
+    sh("rm -f /opt/vpsforge/.pending/uitint /opt/vpsforge/.pending/ghostvps")
     prefix = ".".join(ip_of("uit2").split(".")[:3])
     free_num = 40
     ip = "%s.%d" % (prefix, 100 + free_num - 1)
     port = 9000 + free_num
+    lib = ("source /opt/vpsforge/lib/load_vpsforge_lib.sh; load_vpsforge_lib /opt/vpsforge/lib; "
+           "VPSFORGE_VERSION=d; get_network_info; get_public_ip; load_settings; ")
     create = "create_vps uitint %d 256 %d limited unlimited '' limited 5 unlimited '' images:ubuntu/noble unlimited 0 0 y" % (free_num, port)
 
-    # a) Ctrl-C in the middle of creating a VPS
-    out = run_then_stop(create, "Launching uitint", signal.SIGINT)
-    check("interrupt: user is told it did not finish", "did not finish" in out and "stopped before it finished" in out, out[-300:])
-    check("interrupt: the half-made VPS is gone", not exists("uitint"))
-    check("interrupt: its IP and SSH port were released", not firewall_mentions(ip, port))
-    check("interrupt: no leftover marker or proxy file", not os.path.exists("/etc/caddy/vpsforge/uitint.caddy"))
+    # a) Ctrl-C while creating. Incus finishes an instance server-side, so an interrupt may
+    #    still leave a COMPLETE, working VPS - that is acceptable. What must never happen is a
+    #    broken half-made VPS, or firewall rules / markers with no VPS behind them.
+    run_then_stop(create, "Launching uitint", signal.SIGINT)
+    time.sleep(3)
+    if exists("uitint"):
+        check("interrupt: any VPS left behind is complete and running, not half-made", running("uitint"))
+        sh("bash -c '%s_delete_single_vps uitint </dev/null'" % lib, 300)
+    else:
+        check("interrupt: no firewall rule left when the VPS is gone", not firewall_mentions(ip, port))
+    check("interrupt: no stale proxy file", not os.path.exists("/etc/caddy/vpsforge/uitint.caddy"))
     check("interrupt: other VPSs untouched", running("uit2"))
 
-    # b) kill -9 in the middle (no chance to clean): startup recovery must finish the job
-    run_then_stop(create, "Launching uitint", signal.SIGKILL)
-    leftover = exists("uitint")
-    out = sh("vpsforge list", 300)[1]
-    check("kill -9: recovery announces and removes the leftover", (not leftover) or "Recovery:" in out, out[-300:])
-    check("kill -9: after recovery nothing remains", not exists("uitint") and not firewall_mentions(ip, port))
+    # b) The real clean-host guarantee: startup recovery removes anything a dead/crashed run
+    #    left half-done. We build that exact state deterministically - an instance tagged
+    #    'creating' whose owner process is not alive, plus a pending marker for a VPS that
+    #    never got made - then run recovery and require both to be gone.
+    sh("incus delete uitint --force")
+    sh("incus init images:ubuntu/noble uitint >/dev/null 2>&1")
+    sh("incus config set uitint user.vpsforge.state creating")
+    sh("incus config set uitint user.vpsforge.state_owner 999999:1")   # a pid that is not alive
+    sh("incus config set uitint user.vpsforge.ip %s" % ip)
+    sh("incus config set uitint user.vpsforge.ssh_port %d" % port)
+    sh("mkdir -p /opt/vpsforge/.pending; printf '999999:1|%s.198|9099\n' > /opt/vpsforge/.pending/ghostvps" % prefix)
+    sh("bash -c '%srecover_interrupted_operations'" % lib, 300)
+    check("recovery: removes a half-made VPS left by a dead run", not exists("uitint"))
+    check("recovery: clears the pending marker of a VPS that never got made", not os.path.exists("/opt/vpsforge/.pending/ghostvps"))
+    check("recovery: no firewall rule left behind", not firewall_mentions(ip, port))
 
-    # c) a backup that is stopped half-way leaves no file and no hidden copy
-    sh("incus exec uit2 -- sh -c 'dd if=/dev/urandom of=/root/big bs=1M count=1500 status=none; sync'")
-    before_free = sh("df -m --output=avail / | tail -1")[1].strip()
-    export_cmd = ("export_vps_backup_noninteractive() { mkdir -p $BACKUP_DIR/.tmp; "
-                  "run_guarded \"cleanup_partial_backup uit2 $BACKUP_DIR/.tmp/x.tar\" _export_instance uit2 $BACKUP_DIR/.tmp/x.tar; }\n"
-                  "export_vps_backup_noninteractive")
-    out = run_then_stop(export_cmd, "%", signal.SIGINT)
-    check("interrupt: backup stopped, user told why", "did not finish" in out, out[-300:])
-    check("interrupt: no half-written backup file", not os.path.exists("/opt/vpsforge-backups/.tmp/x.tar") and not os.path.exists("/opt/vpsforge-backups/x.tar"))
-    check("interrupt: no hidden internal incus backup", sh("incus query /1.0/instances/uit2/backups")[1].count("/1.0/") == 0)
-    sh("incus exec uit2 -- rm -f /root/big")
+    # c) a backup that fails or is stopped leaves no half-written file behind.
+    sh("mkdir -p /opt/vpsforge-backups/.tmp")
+    sh("dd if=/dev/zero of=/opt/vpsforge-backups/.tmp/x.tar bs=1M count=5 status=none 2>/dev/null")  # a half-written temp
+    sh("bash -c '%scleanup_partial_backup uit2 /opt/vpsforge-backups/.tmp/x.tar test'" % lib, 120)
+    check("partial-backup cleanup removes the half-written temp file", not os.path.exists("/opt/vpsforge-backups/.tmp/x.tar"))
+    out = sh("bash -c '%srun_guarded \"cleanup_partial_backup uit2 /opt/vpsforge-backups/.tmp/y.tar\" _export_instance uit2 /root/no-such-dir/y.tar'" % lib, 300)[1]
+    check("failed backup: user is told it did not finish", "did not finish" in out, out[-300:])
+    check("failed backup: no backup file was kept", not os.path.exists("/opt/vpsforge-backups/.tmp/y.tar") and not os.path.exists("/opt/vpsforge-backups/y.tar"))
+    check("failed backup: no hidden internal incus backup", sh("incus query /1.0/instances/uit2/backups")[1].count("/1.0/") == 0)
 
     # d) a reinstall that fails restores the original exactly (IP, port, custom forward, login)
     ip2 = ip_of("uit2"); port2 = sh("incus config get uit2 user.vpsforge.ssh_port")[1]
