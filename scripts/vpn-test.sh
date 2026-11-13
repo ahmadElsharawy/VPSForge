@@ -110,7 +110,7 @@ no "TCP forward is gone" t_fwd
 no "forward file is clean" grep -q "|$PORT|" "$PORT_FORWARD_RULES_FILE"
 
 echo "-- interrupted create leaves nothing"
-( vpn_create "$S" "$PORT" >/dev/null 2>&1 & p=$!; sleep 6; kill -TERM $p; wait $p ) 2>/dev/null
+( vpn_create "$S" "$PORT" >/dev/null 2>&1 & p=$!; sleep 2; kill -TERM $p; wait $p ) 2>/dev/null
 sleep 2
 no "no VPN record after an interrupted create" test -n "$(vpn_get_port "$S")"
 no "no forward after an interrupted create" t_fwd

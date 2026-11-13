@@ -17,6 +17,8 @@ uninstall_remove_firewall() {
     [ -n "$gw" ] && uninstall_run iptables -D FORWARD -i incusbr0 -s "$subnet" -d "$gw" -j ACCEPT
   fi
   uninstall_run iptables -D FORWARD -i incusbr0 -o incusbr0 -j DROP
+  uninstall_run iptables -t mangle -D FORWARD -i incusbr0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1380
+  uninstall_run iptables -t mangle -D FORWARD -o incusbr0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1380
   uninstall_run iptables -D FORWARD -i incusbr0 ! -o incusbr0 -j ACCEPT
   uninstall_run iptables -D FORWARD -m conntrack --ctstate DNAT -j ACCEPT
   uninstall_run iptables -D FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT

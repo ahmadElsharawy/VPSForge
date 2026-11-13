@@ -33,6 +33,15 @@ setup_inter_vps_isolation() {
   iptables -C FORWARD -s "$subnet" -d "$subnet" -j DROP 2>/dev/null || \
     iptables -A FORWARD -s "$subnet" -d "$subnet" -j DROP
 
+  # A VPS's network card has MTU 1420, but programs inside it (Docker's own network: 1500) can
+  # announce bigger TCP segments; those big replies are lost and HTTPS hangs. Clamp every TCP
+  # connection through the bridge to what fits in 1420 (1420 - 40 bytes of headers).
+  local dir
+  for dir in -i -o; do
+    iptables -t mangle -C FORWARD "$dir" incusbr0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1380 2>/dev/null || \
+      iptables -t mangle -A FORWARD "$dir" incusbr0 -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1380 2>/dev/null || true
+  done
+
   if command -v ip6tables >/dev/null 2>&1; then   # the bridge may carry IPv6 too: no VPS-to-VPS traffic there either
     ip6tables -C FORWARD -i incusbr0 -o incusbr0 -j DROP 2>/dev/null || \
       ip6tables -I FORWARD 1 -i incusbr0 -o incusbr0 -j DROP 2>/dev/null || true
