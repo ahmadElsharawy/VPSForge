@@ -20,5 +20,9 @@ _settings_menu_print() {
   echo "5) Host Network Speed Configuration   e.g. 1000 = 1 Gbit/s"
   echo "6) Enable / Disable Auto Start on Login   open VPSForge automatically when you log in by SSH"
   echo "7) Uninstall VPSForge (remove everything, server returns to clean)"
+  # Offered only while the pool is not ZFS and the server can use ZFS.
+  if [ "$(get_pool_driver default)" != "zfs" ] && { command -v zpool >/dev/null 2>&1 || modinfo zfs >/dev/null 2>&1; }; then
+    echo "8) Move VPSs to ZFS storage   each VPS shows only its own disk size"
+  fi
   echo
 }

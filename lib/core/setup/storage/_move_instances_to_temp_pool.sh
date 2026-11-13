@@ -1,5 +1,5 @@
 #!/bin/bash
-# Stop and move instances from default pool to temp-btrfs, saving migration state.
+# Stop and move instances from the default pool to the temporary pool, saving migration state.
 #   _move_instances_to_temp_pool <state_file> <failed_marker> [instance1 instance2 ...]
 _move_instances_to_temp_pool() {
   local state_file="${1:?state_file}" failed_marker="${2:?failed_marker}"
@@ -27,7 +27,7 @@ _move_instances_to_temp_pool() {
         wait_count=$((wait_count + 1))
       done
     fi
-    if ! incus move "$inst" "$inst" -s temp-btrfs >/dev/null 2>&1; then
+    if ! incus move "$inst" "$inst" -s "$POOL_MIGRATION_TEMP" >/dev/null 2>&1; then
       echo "WARNING: could not move '$inst' to the temporary pool. Storage migration cancelled; nothing was deleted." >&2
       touch "$failed_marker"
       for back in "${instances[@]}"; do
@@ -35,7 +35,7 @@ _move_instances_to_temp_pool() {
         incus move "$back" "$back" -s default >/dev/null 2>&1 || true
       done
       for back in "${state_map[@]}"; do incus start "$back" >/dev/null 2>&1 || true; done
-      incus storage delete temp-btrfs >/dev/null 2>&1 || true
+      incus storage delete "$POOL_MIGRATION_TEMP" >/dev/null 2>&1 || true
       rm -f "$state_file"
       return 1
     fi

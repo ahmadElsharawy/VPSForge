@@ -21,6 +21,12 @@ t "ram MiB"  512  "$(ram_mb 512MiB)"
 t "ram GiB"  2048 "$(ram_mb 2GiB)"
 t "ram unlimited" 0 "$(ram_mb Unlimited)"
 
+# ZFS ARC cap: RAM/8, never below 64MiB
+t "arc 8GiB host" 1073741824 "$(zfs_arc_max_bytes 8388608)"
+t "arc 1GiB host floor" 134217728 "$(zfs_arc_max_bytes 1048576)"
+t "arc 256MiB host min 64MiB" 67108864 "$(zfs_arc_max_bytes 262144)"
+zfs_arc_max_bytes abc >/dev/null && r=ok || r=bad; t "arc bad input refused" bad "$r"
+
 # forward rules read from backups must be safe
 is_valid_port_forward_rule tcp "" 8080 80 && r=ok || r=bad; t "rule ok" ok "$r"
 is_valid_port_forward_rule tcp any 8080 80 && r=ok || r=bad; t "rule any ext_ip ok" ok "$r"

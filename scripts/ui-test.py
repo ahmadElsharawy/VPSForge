@@ -56,7 +56,8 @@ class UI:
 
     def expect(self, pattern, timeout=60):
         rx = re.compile(pattern, re.S)
-        end = time.time() + timeout
+        # Weak hosts (1GB RAM, slow mirrors) need longer: UI_TEST_TIMEOUT_SCALE=3 triples every wait.
+        end = time.time() + timeout * float(os.environ.get("UI_TEST_TIMEOUT_SCALE", "1"))
         while time.time() < end:
             m = rx.search(self.buf, self.pos)
             if m:

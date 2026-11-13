@@ -82,8 +82,38 @@ def get_qgroup_sizes(pool_path):
     return QGROUP_SIZES
 
 
+ZFS_SIZES = None
+
+
+def get_zfs_sizes():
+    """Size (bytes) of every VPS on a ZFS pool, from ONE "zfs list" call. "used" is the VPS dataset
+    plus its snapshots. Empty when ZFS is not installed or the pool has no containers dataset."""
+    global ZFS_SIZES
+    if ZFS_SIZES is not None:
+        return ZFS_SIZES
+    ZFS_SIZES = {}
+    try:
+        res = subprocess.run(["zfs", "list", "-Hp", "-t", "filesystem", "-o", "name,used"],
+                             capture_output=True, text=True, timeout=5)
+        if res.returncode == 0:
+            for line in res.stdout.splitlines():
+                parts = line.split("	")
+                names = parts[0].split("/") if parts else []
+                # Incus layout: <pool>/containers/<vps>
+                if len(parts) == 2 and len(names) == 3 and names[1] == "containers" and parts[1].isdigit():
+                    ZFS_SIZES[names[2]] = int(parts[1])
+    except Exception:
+        pass
+    return ZFS_SIZES
+
+
 def get_vps_disk_usage(name, status, pool_path):
     usage_gb = 0.0
+
+    # ZFS pool: "used" already includes the snapshots, for running and stopped VPSs alike.
+    zfs_size = get_zfs_sizes().get(name, 0)
+    if zfs_size > 0:
+        return zfs_size / (1024**3)
 
     # 1. First, try checking host-side directory size of the container (extremely fast, works for RUNNING and STOPPED)
     container_found = False

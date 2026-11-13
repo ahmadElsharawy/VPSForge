@@ -7,7 +7,7 @@ uninstall_remove_system_files() {
 
   uninstall_run rm -f /etc/cron.d/vpsforge-quota /etc/profile.d/vpsforge-autostart.sh \
     /etc/modules-load.d/vpsforge.conf /etc/sysctl.d/99-vpsforge-nesting.conf /etc/sysctl.d/99-incus-forwarding.conf \
-    /etc/systemd/journald.conf.d/vpsforge.conf
+    /etc/systemd/journald.conf.d/vpsforge.conf /etc/modprobe.d/vpsforge-zfs.conf
 
   if [ -e "$SWAPFILE_PATH" ]; then
     uninstall_run swapoff "$SWAPFILE_PATH"

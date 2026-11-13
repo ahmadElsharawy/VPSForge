@@ -1,7 +1,7 @@
 #!/bin/bash
-# Last part of the BTRFS migration, also used to finish one that was stopped half-way:
+# Last part of the storage migration, also used to finish one that was stopped half-way:
 # the new default pool is made if missing, profiles get their root disk again, every VPS is
-# moved back from temp-btrfs, the temporary pool is removed and the VPSs that ran are started.
+# moved back from the temporary pool, the temporary pool is removed and the VPSs that ran are started.
 # The temporary pool is kept (and a warning shown) if a VPS could not be moved back.
 #   _resume_pool_migration <state_file>
 _resume_pool_migration() {
@@ -21,17 +21,17 @@ _resume_pool_migration() {
   done
   for name in "${instances[@]}"; do
     incus info "$name" >/dev/null 2>&1 || continue
-    incus config show "$name" --expanded 2>/dev/null | grep -q 'pool: temp-btrfs' || continue
+    incus config show "$name" --expanded 2>/dev/null | grep -q "pool: $POOL_MIGRATION_TEMP" || continue
     if ! incus move "$name" "$name" -s default >/dev/null 2>&1; then
-      echo "WARNING: '$name' could not be moved back to the default pool; it keeps working from 'temp-btrfs'." >&2
+      echo "WARNING: '$name' could not be moved back to the default pool; it keeps working from '$POOL_MIGRATION_TEMP'." >&2
       ok=0
     fi
   done
-  [ "$ok" -eq 1 ] && incus storage delete temp-btrfs >/dev/null 2>&1
+  [ "$ok" -eq 1 ] && incus storage delete "$POOL_MIGRATION_TEMP" >/dev/null 2>&1
   for name in "${running[@]}"; do
     incus start "$name" >/dev/null 2>&1 || true
   done
   [ "$ok" -eq 1 ] && rm -f "$state_file"
-  [ "$ok" -eq 1 ] && echo "BTRFS storage optimization completed successfully." >&2
+  [ "$ok" -eq 1 ] && echo "Storage migration completed successfully." >&2
   return 0
 }

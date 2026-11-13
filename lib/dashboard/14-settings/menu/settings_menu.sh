@@ -24,6 +24,7 @@ settings_menu() {
         fi
         pause
         ;;
+      8) move_vps_to_zfs_menu; pause;;
       0) return;;
       *) sleep 1;;
     esac

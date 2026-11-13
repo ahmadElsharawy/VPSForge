@@ -14,6 +14,7 @@ _ensure_setup_prerequisites() {
   command -v zstd >/dev/null 2>&1 || vpsforge_apt_install zstd
   command -v pigz >/dev/null 2>&1 || vpsforge_apt_install pigz
   command -v fuser >/dev/null 2>&1 || vpsforge_apt_install psmisc
+  command -v zpool >/dev/null 2>&1 || vpsforge_apt_install zfsutils-linux || true   # no ZFS: the pool falls back to btrfs
   command -v mkfs.btrfs >/dev/null 2>&1 || vpsforge_apt_install btrfs-progs
 
   incus network show incusbr0 >/dev/null 2>&1 || incus admin init --minimal

@@ -1,7 +1,7 @@
 #!/bin/bash
-# Replace the dir default pool with BTRFS, or roll back if deletion fails.
-#   _recreate_default_btrfs_pool <state_file> <failed_marker>
-_recreate_default_btrfs_pool() {
+# Delete the old default pool and create the new one (create_storage_pool), or roll back if deletion fails.
+#   _recreate_default_pool <state_file> <failed_marker>
+_recreate_default_pool() {
   local state_file="${1:?state_file}" failed_marker="${2:?failed_marker}"
   local kind name prof inst run_inst
   local -a instances=() profiles=() state_map=()
@@ -21,9 +21,9 @@ _recreate_default_btrfs_pool() {
     incus profile device remove "$prof" root >/dev/null 2>&1 || true
   done
 
-  # 3. Delete the old dir pool and recreate it as BTRFS
+  # 3. Delete the old pool and recreate it with the better driver
   incus storage delete default >/dev/null 2>&1 || true
-  if incus storage show default 2>/dev/null | grep -q 'driver: dir'; then
+  if incus storage show default >/dev/null 2>&1; then
     # The old pool could not be deleted (it holds something else): put everything back and stop trying.
     echo "WARNING: the old storage pool could not be replaced. Everything was put back; migration cancelled." >&2
     for prof in "${profiles[@]}"; do
@@ -34,7 +34,7 @@ _recreate_default_btrfs_pool() {
       [ -n "$inst" ] || continue
       incus move "$inst" "$inst" -s default >/dev/null 2>&1 || true
     done
-    incus storage delete temp-btrfs >/dev/null 2>&1 || true
+    incus storage delete "$POOL_MIGRATION_TEMP" >/dev/null 2>&1 || true
     for run_inst in "${state_map[@]}"; do incus start "$run_inst" >/dev/null 2>&1 || true; done
     touch "$failed_marker"
     rm -f "$state_file"

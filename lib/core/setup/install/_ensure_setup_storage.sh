@@ -1,7 +1,7 @@
 #!/bin/bash
 # Initialize or optimize the default Incus storage pool and root profile device.
 _ensure_setup_storage() {
-  # Optimize storage: recreate default dir pool as BTRFS for instant snapshots
+  # Optimize storage: move an old dir pool to a better one (ZFS or BTRFS)
   if [ -f /opt/vpsforge/.pool_migration_running ]; then
     migrate_default_pool_to_btrfs   # a migration was stopped half-way: finish it first
   elif incus storage show default >/dev/null 2>&1; then

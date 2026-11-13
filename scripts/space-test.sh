@@ -60,8 +60,8 @@ report "5. VPS deleted"
 echo "   leftover subvolumes of $T: $(btrfs subvolume list "$POOL_DIR" 2>/dev/null | grep -c "$T")"
 echo "   leftover backup files for it: $(ls "$BACKUP_DIR" | grep -c space-test-backup)  ($(du -sh "$BACKUP_DIR"/space-test-backup* 2>/dev/null | head -1 | cut -f1))"
 
-echo "-- reclaiming freed space (fstrim on the pool)"
-fstrim -v "$POOL_DIR" 2>&1 | sed 's/^/   /'
+echo "-- reclaiming freed space (reclaim_pool_space: fstrim on btrfs, zpool trim on zfs)"
+reclaim_pool_space; sleep 20
 report "6. after fstrim"
 
 # --- interrupted backup leftovers ---

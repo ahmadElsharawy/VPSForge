@@ -40,6 +40,17 @@ sweep_stale_forward_rules() {
     iptables -t nat -D PREROUTING ${spec#-A PREROUTING } 2>/dev/null && removed=$((removed + 1))
   done < <(iptables -t nat -S PREROUTING 2>/dev/null | grep -- '-j DNAT' | grep -- "--to-destination ${NETWORK_PREFIX//./\\.}\.")
 
+  # The saved list too: otherwise the rule comes back at the next boot and its port stays taken.
+  local saved_ip
+  if [ -f "${PORT_FORWARD_RULES_FILE:-}" ]; then
+    while read -r saved_ip; do
+      [ -n "$saved_ip" ] || continue
+      [ "$saved_ip" = "${INCUS_GATEWAY:-}" ] && continue
+      [ -n "${owned[$saved_ip]:-}" ] && continue
+      port_forward_delete_rules_for_ip "$saved_ip" >/dev/null 2>&1
+      removed=$((removed + 1))
+    done < <(awk -F'|' -v p="${NETWORK_PREFIX}." 'index($4, p) == 1 {print $4}' "$PORT_FORWARD_RULES_FILE" | sort -u)
+  fi
   [ "$removed" -gt 0 ] && save_iptables 2>/dev/null
   return 0
 }

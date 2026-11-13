@@ -1,7 +1,7 @@
-# VPSForge v3.3.0
+# VPSForge v3.4.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.3.0-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.4.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,13 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.4.0
+
+- **Each VPS sees only its own disk:** new servers use ZFS storage, so `df -h` inside a VPS shows its own limit (not the whole server). Existing servers can switch from **Settings → 8) Move VPSs to ZFS storage** (every VPS is stopped and moved safely; limits, IPs and ports are kept).
+- Snapshots no longer use up the customer's disk limit; ZFS memory use is capped (1/8 of RAM) for small servers; freed space goes back to the real disk.
+- Backing up a VPS whose disk is full now shows a clear message (free some space, then retry) instead of a raw Incus error.
+- Port forwards of deleted VPSs are now also removed from the saved list, so they never come back after a reboot.
 
 ## ✨ What's new in v3.3.0
 

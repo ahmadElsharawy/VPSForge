@@ -19,6 +19,20 @@ _export_instance() {
     return 0
   fi
   reason=$(tr '\r' '\n' < "$err" | grep -v '^ *$' | grep -vi 'backing up\|exporting' | tail -n 1)
+  # A full VPS disk stops the export (Incus writes a small file inside the VPS first). Space just
+  # freed inside the VPS comes back after a few seconds on ZFS, so try once more after a short wait.
+  # The VPS's disk limit is never raised for this: ZFS cannot lower it back once the space is used.
+  if printf '%s' "$reason" | grep -qi 'quota'; then
+    sleep 15
+    rm -f "$file"
+    if incus export "$name" "$file" "${compress_args[@]}" 2>"$err"; then
+      rm -f "$err"
+      return 0
+    fi
+    rm -f "$err"
+    echo "ERROR: the disk of $name is full, so it cannot be backed up. Free some space inside the VPS, then try again."
+    return 1
+  fi
   rm -f "$err"
   echo "ERROR: incus could not export $name${reason:+: $reason}"
   return 1
