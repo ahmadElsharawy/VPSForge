@@ -24,7 +24,7 @@ if [ ! -d "$PRE" ]; then
   command -v ufw >/dev/null 2>&1 && ufw status > "$PRE/ufw.status" 2>/dev/null || true
   dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' 2>/dev/null | awk '$1=="ii"{print $2}' | sort > "$PRE/packages_all.txt" || true
   : > "$PRE/packages_present.txt"
-  for pkg in incus iptables iptables-persistent netfilter-persistent curl git python3 zstd pigz psmisc btrfs-progs caddy; do
+  for pkg in incus iptables iptables-persistent netfilter-persistent curl git python3 zstd pigz psmisc btrfs-progs zfsutils-linux zfs-zed caddy; do
     dpkg -s "$pkg" >/dev/null 2>&1 && echo "$pkg" >> "$PRE/packages_present.txt"
   done
   date -u '+%Y-%m-%d %H:%M:%S UTC' > "$PRE/captured_at"

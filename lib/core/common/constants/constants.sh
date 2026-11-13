@@ -19,7 +19,7 @@ MAIN_CADDYFILE="/etc/caddy/Caddyfile"
 # "vpsforge uninstall" can put the server back exactly as it was.
 PRE_INSTALL_DIR="/opt/vpsforge/.pre_install"
 # Packages VPSForge may install on the host.
-VPSFORGE_PACKAGES="incus iptables iptables-persistent netfilter-persistent curl git python3 zstd pigz psmisc btrfs-progs zfsutils-linux caddy"
+VPSFORGE_PACKAGES="incus iptables iptables-persistent netfilter-persistent curl git python3 zstd pigz psmisc btrfs-progs zfsutils-linux zfs-zed caddy"
 # Incus major version VPSForge is tested with (Ubuntu 24.04 LTS ships 6.0.x).
 TESTED_INCUS_MAJOR=6
 SWAPFILE_PATH="/swapfile.vpsforge"
