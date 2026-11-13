@@ -3,10 +3,11 @@
 # Sets SELECTED_DISTRO. Returns 1 when the user chooses Back.
 ask_distro() {
   local target="$1" choice idx default_index=1 last_distro mark
-  local -a names=(ubuntu debian rockylinux almalinux fedora archlinux centos)
+  local -a names=(ubuntu debian alpine rockylinux almalinux fedora archlinux centos)
   local -a labels=(
     "Ubuntu        (best compatibility)"
     "Debian        (stable and lightweight)"
+    "Alpine        (tiny: about 10MB RAM, best for weak servers)"
     "Rocky Linux   (RHEL compatible)"
     "AlmaLinux     (RHEL compatible)"
     "Fedora        (newest packages)"
