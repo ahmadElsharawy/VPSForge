@@ -16,11 +16,14 @@ _vpn_create_steps() {
   incus config set "$vps" user.vpsforge.vpn_tls_sni "$tls_sni" || return 1
   incus config set "$vps" user.vpsforge.vpn_hy_sni "$hy_sni" || return 1
   vpn_server_setup "$vps" || return 1
-  echo "[3/3] Opening TCP $ext, UDP $ext and TCP $tls_ext on the server..."
+  local hy_ext
+  hy_ext=$(_vpn_pick_hy_port "$ext")
+  incus config set "$vps" user.vpsforge.vpn_hy_port "$hy_ext" || return 1
+  echo "[3/3] Opening TCP $ext, UDP $hy_ext and TCP $tls_ext on the server..."
   port_forward_apply_rule tcp 0.0.0.0 "$ext" "$ip" "$ext" || { echo "ERROR: iptables refused the rule."; return 1; }
   port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$ext" "$ip" "$ext"
-  port_forward_apply_rule udp 0.0.0.0 "$ext" "$ip" "$VPN_HY_INNER_PORT" || { echo "ERROR: iptables refused the UDP rule."; return 1; }
-  port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" udp 0.0.0.0 "$ext" "$ip" "$VPN_HY_INNER_PORT"
+  port_forward_apply_rule udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT" || { echo "ERROR: iptables refused the UDP rule."; return 1; }
+  port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT"
   port_forward_apply_rule tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT" || { echo "ERROR: iptables refused the TLS rule."; return 1; }
   port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT"
   save_iptables

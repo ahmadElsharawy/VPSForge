@@ -14,6 +14,6 @@ vpn_device_sub() {
   label=$(vpn_device_label "$vps" "$name")
   echo "$reality"
   # Hysteria2: the password is the device's UUID (the server also accepts <name>:<uuid> from older links)
-  echo "hysteria2://${id}@${PUBLIC_IP}:${ext}/?insecure=1&sni=$(vpn_get_sni "$vps" hy)#${label}-HY2"
+  echo "hysteria2://${id}@${PUBLIC_IP}:$(vpn_get_hy_port "$vps")/?insecure=1&sni=$(vpn_get_sni "$vps" hy)#${label}-HY2"
   echo "vless://${id}@${PUBLIC_IP}:$((ext + VPN_TLS_PORT_OFFSET))?security=tls&encryption=none&alpn=http/1.1&allowInsecure=1&insecure=1&fp=ios&type=tcp&sni=$(vpn_get_sni "$vps" tls)#${label}-TLS"
 }

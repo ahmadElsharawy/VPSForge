@@ -16,6 +16,7 @@ _reset_cloned_vps_identity() {
   incus config unset "$new" user.vpsforge.vpn_sni >/dev/null 2>&1 || true
   incus config unset "$new" user.vpsforge.vpn_tls_sni >/dev/null 2>&1 || true
   incus config unset "$new" user.vpsforge.vpn_hy_sni >/dev/null 2>&1 || true
+  incus config unset "$new" user.vpsforge.vpn_hy_port >/dev/null 2>&1 || true
   # The clone may be stopped (incus exec would fail): remove the service's boot link directly.
   incus file delete "$new/etc/systemd/system/multi-user.target.wants/vpsforge-vpn.service" >/dev/null 2>&1 || true
   incus file delete "$new/etc/systemd/system/multi-user.target.wants/vpsforge-hy2.service" >/dev/null 2>&1 || true

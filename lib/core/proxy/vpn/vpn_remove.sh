@@ -3,8 +3,9 @@
 # Safe to repeat, and safe on a stopped VPS (only the server side is removed then).
 #   vpn_remove <vps>
 vpn_remove() {
-  local vps="${1:?vps}" ext ip tls_ext
+  local vps="${1:?vps}" ext ip tls_ext hy_ext
   ext=$(vpn_get_port "$vps")
+  hy_ext=$(vpn_get_hy_port "$vps")
   ip=$(get_ip "$vps" 2>/dev/null || true)
   if [ -n "$ext" ]; then
     # close an open QR/subscription page of this VPN: its links stop working now
@@ -14,8 +15,8 @@ vpn_remove() {
       tls_ext=$((ext + VPN_TLS_PORT_OFFSET))
       port_forward_delete_rule tcp 0.0.0.0 "$ext" "$ip" "$ext"
       port_forward_remove_rule_from_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$ext" "$ip" "$ext"
-      port_forward_delete_rule udp 0.0.0.0 "$ext" "$ip" "$VPN_HY_INNER_PORT"
-      port_forward_remove_rule_from_file "$PORT_FORWARD_RULES_FILE" udp 0.0.0.0 "$ext" "$ip" "$VPN_HY_INNER_PORT"
+      port_forward_delete_rule udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT"
+      port_forward_remove_rule_from_file "$PORT_FORWARD_RULES_FILE" udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT"
       port_forward_delete_rule tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT"
       port_forward_remove_rule_from_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT"
       save_iptables
@@ -41,6 +42,7 @@ vpn_remove() {
   incus config unset "$vps" user.vpsforge.vpn_sni >/dev/null 2>&1 || true
   incus config unset "$vps" user.vpsforge.vpn_tls_sni >/dev/null 2>&1 || true
   incus config unset "$vps" user.vpsforge.vpn_hy_sni >/dev/null 2>&1 || true
+  incus config unset "$vps" user.vpsforge.vpn_hy_port >/dev/null 2>&1 || true
   sync_vps_metadata "$vps" >/dev/null 2>&1 || true
   return 0
 }

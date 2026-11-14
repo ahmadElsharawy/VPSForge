@@ -12,6 +12,7 @@ _vpn_action_edit_vpn() {
     echo "3) Change the Hysteria2 SNI"
     echo "4) Reset keys              new keys; every device needs its new link (limits and usage stay)"
     echo "5) Restart the VPN         fixes a VPN that stopped answering; links stay the same"
+    echo "6) Change the Hysteria2 UDP port   now $(vpn_get_hy_port "$VPN_VPS") (443 passes most networks)"
     echo "0) Back"
     read -r -p "Choice [0=Back]: " c </dev/tty
     case "$c" in
@@ -28,6 +29,10 @@ _vpn_action_edit_vpn() {
         [[ "${answer,,}" =~ ^y ]] || continue
         vpn_reset_keys "$VPN_VPS" "$kind" && echo "DONE. Send every device its new link (main VPN menu 3).";;
       5) vpn_guest_apply "$VPN_VPS" && echo "DONE. The VPN was restarted.";;
+      6)
+        read -r -p "New UDP port [0=Back]: " answer </dev/tty
+        [ -z "$answer" ] || [ "$answer" = "0" ] && continue
+        vpn_set_hy_port "$VPN_VPS" "$answer" && echo "Every device must import its links again (main VPN menu 3).";;
       0|"") return;;
       *) echo "Invalid choice.";;
     esac

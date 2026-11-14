@@ -13,7 +13,7 @@ vpn_create_wizard() {
   fi
   echo
   echo "DONE. VPN is running on $VW_VPS (port $VW_PORT TCP)."
-  echo "Remember: open TCP $VW_PORT and $((VW_PORT + 1)) in your cloud firewall (the VPN and its QR page)."
+  echo "Remember: open TCP $VW_PORT, $((VW_PORT + 1)) and $((VW_PORT + VPN_TLS_PORT_OFFSET)), and UDP $(vpn_get_hy_port "$VW_VPS") in your cloud firewall."
   echo
   local answer
   read -r -p "Add your first device now? [Y/n]: " answer </dev/tty
