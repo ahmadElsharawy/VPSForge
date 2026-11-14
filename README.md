@@ -1,7 +1,7 @@
-# VPSForge v3.4.7
+# VPSForge v3.4.8
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.4.7-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.4.8-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,13 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.4.8
+
+- **One subscription link per device:** the 10-minute device page gives one QR code with all three links and a subscription link (`.../sub`) that adds Reality, Hysteria2 and TLS together in v2rayNG, Hiddify or v2rayN.
+- **Hysteria2 passes UDP-filtering networks:** each VPN's Hysteria2 takes the first free UDP port of a tested list (443, 2053, 2083, ...), so it works on mobile networks that block other UDP ports. It also accepts both login forms apps send (`<uuid>` or `<name>:<uuid>`), which fixes v2rayNG.
+- **Choose the SNI of each protocol** when creating a VPN (default `www.speedtest.net`).
+- **Edit a VPN** (VPN menu 7): change the SNI of each protocol, reset keys, restart, or move Hysteria2 to another UDP port.
 
 ## ✨ What's new in v3.4.7
 
