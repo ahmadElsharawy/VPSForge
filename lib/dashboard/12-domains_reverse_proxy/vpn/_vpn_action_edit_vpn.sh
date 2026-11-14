@@ -12,7 +12,7 @@ _vpn_action_edit_vpn() {
     echo "3) Change the Hysteria2 SNI"
     echo "4) Reset keys              new keys; every device needs its new link (limits and usage stay)"
     echo "5) Restart the VPN         fixes a VPN that stopped answering; links stay the same"
-    echo "6) Change the Hysteria2 UDP port   now $(vpn_get_hy_port "$VPN_VPS") (443, 2053, 2083, 2087, 2096, 4443 pass most networks)"
+    echo "6) Change the Hysteria2 UDP port   now $(vpn_get_hy_port "$VPN_VPS") (443, 2053, 2083, 2087, 2096, 4443, 8080... pass most networks)"
     echo "0) Back"
     read -r -p "Choice [0=Back]: " c </dev/tty
     case "$c" in

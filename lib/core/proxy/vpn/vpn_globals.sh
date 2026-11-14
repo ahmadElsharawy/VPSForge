@@ -14,5 +14,5 @@ VPN_TLS_SNI="www.speedtest.net"                 # VLESS+TLS: name in the self-si
 VPN_HY_SNI="www.speedtest.net"            # Hysteria2: name in the self-signed certificate and in the link
 VPN_HY_MASQUERADE_URL="https://www.bing.com/"   # Hysteria2: what a browser sees when it visits the port
 # Hysteria2 public UDP ports, tried in this order for each new VPN (first one free on this server).
-# Tested from a mobile network that blocks other UDP ports (8443 and high ports were blocked there).
-VPN_HY_PORTS="443 2053 2083 2087 2096 4443"
+# All 17 tested from a mobile network that blocks other UDP ports (8443, 3478 and high ports were blocked there).
+VPN_HY_PORTS="443 2053 2083 2087 2096 4443 80 2052 2082 2086 2095 8080 8880 500 4500 1194 5060"
