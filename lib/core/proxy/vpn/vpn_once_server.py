@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """VPSForge: a short-lived page for ONE VPN device, then stop.
-   /<secret>/   a page with the QR code of the VLESS link and a "Copy link" button
+   /<secret>/     a page with the QR code of the subscription link and "Copy" buttons
+   /<secret>/sub  the subscription: all the device's links (one per line), base64, for the VPN app
    vpn_once_server.py <link_file> <qr_png_file> <secret> <port> <label> <seconds>"""
 import base64, html, http.server, os, sys, threading
 
 link_path, png_path, secret, port, label, seconds = (
     sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4]), sys.argv[5], int(sys.argv[6]))
 with open(link_path) as f:
-    link = f.read().strip()
+    link = f.read().strip()   # one link per line (Reality, Hysteria2, TLS)
 with open(png_path, "rb") as f:
     qr = base64.b64encode(f.read()).decode()
 for p in (link_path, png_path):
@@ -16,6 +17,7 @@ for p in (link_path, png_path):
     except OSError:
         pass
 minutes = max(1, seconds // 60)
+sub_body = base64.b64encode((link + chr(10)).encode())
 PAGE = """<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex"><title>VPN - %(label)s</title>
 <style>body{font-family:system-ui,sans-serif;max-width:560px;margin:24px auto;padding:0 16px;color:#1a1a1a;background:#fff}
@@ -25,16 +27,25 @@ button{display:block;width:100%%;margin:8px 0 16px;padding:14px;border:0;border-
 ol{line-height:1.7}.n{color:#666;font-size:14px}</style></head><body>
 <h2>VPN: %(label)s</h2>
 <img src="data:image/png;base64,%(qr)s" alt="QR code">
+<p><b>One link with all 3 connections</b> (Reality, Hysteria2, TLS):</p>
+<textarea id="s" readonly>%(sub)s</textarea>
+<button onclick="cp('s',this)">Copy subscription link</button>
+<p class="n">Or the 3 links themselves:</p>
 <textarea id="l" readonly>%(link)s</textarea>
-<button onclick="var t=document.getElementById('l');t.select();t.setSelectionRange(0,99999);document.execCommand('copy');this.textContent='Copied'">Copy link</button>
+<button onclick="cp('l',this)">Copy the 3 links</button>
+<script>function cp(i,b){var t=document.getElementById(i);t.select();t.setSelectionRange(0,99999);document.execCommand('copy');b.textContent='Copied'}</script>
 <ol>
-<li>Install a free app: <b>v2rayNG</b> (Android), <b>Streisand</b> or <b>V2Box</b> (iPhone), <b>v2rayN</b> (Windows).</li>
-<li>Phone: in the app tap <b>+</b> &gt; <b>Scan QR code</b> and scan the code above (open this page on another screen).<br>
-On this device: tap <b>Copy link</b>, then in the app tap <b>+</b> &gt; <b>Import from clipboard</b>.</li>
-<li>The name <b>%(label)s</b> is filled in by itself. Connect.</li>
+<li>Install a free app: <b>v2rayNG</b> or <b>Hiddify</b> (Android), <b>Streisand</b> or <b>V2Box</b> (iPhone), <b>v2rayN</b> or <b>Hiddify</b> (Windows).</li>
+<li>Phone: in the app tap <b>+</b> &gt; <b>Scan QR code</b> and scan the code above (open this page on another screen).
+It adds all 3 connections at once.<br>
+On this device: tap <b>Copy subscription link</b>, then in the app add it as a subscription
+(v2rayNG: menu &gt; <b>Subscription group</b> &gt; <b>+</b>, then <b>Update subscription</b>).
+If your app has no subscriptions: tap <b>Copy the 3 links</b>, then <b>+</b> &gt; <b>Import from clipboard</b>.</li>
+<li>The names <b>%(label)s</b>, <b>-HY2</b> and <b>-TLS</b> are filled in by themselves. Connect to the one that works best.</li>
 </ol>
 <p class="n">This page works for %(m)d minutes only. Keep it private: anyone with this QR code or link can use this VPN.</p>
-</body></html>""" % {"label": html.escape(label), "qr": qr, "link": html.escape(link), "m": minutes}
+</body></html>""" % {"label": html.escape(label), "qr": qr, "link": html.escape(link), "m": minutes,
+       "sub": html.escape("http://%s:%d%s/sub" % (os.environ.get("VPN_PUBLIC_IP", ""), port, "/" + secret))}
 page = PAGE.encode()
 base = "/" + secret + "/"
 
@@ -45,6 +56,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in (base, base.rstrip("/")):
             body, code, ctype = page, 200, "text/html; charset=utf-8"
+        elif self.path in (base + "sub", base + "sub/"):
+            body, code, ctype = sub_body, 200, "text/plain; charset=utf-8"
         else:
             body, code, ctype = b"Not found", 404, "text/plain"
         self.send_response(code)
