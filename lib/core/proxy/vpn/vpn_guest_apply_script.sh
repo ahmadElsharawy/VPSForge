@@ -17,8 +17,7 @@ clients=""
 while IFS='|' read -r name id mode f4 f5 limit expires state; do
   [ -n "$id" ] || continue
   [ -z "$state" ] || [ "$state" = "on" ] || continue   # over its data limit or out of days
-  # Plain REALITY, no xtls-rprx-vision flow: works with every client (sing-box/Karing too), not only Xray.
-  c="{\"id\":\"$id\",\"email\":\"$name\",\"level\":0}"
+  c="{\"id\":\"$id\",\"flow\":\"xtls-rprx-vision\",\"email\":\"$name\",\"level\":0}"
   if [ -z "$clients" ]; then clients="$c"; else clients="$clients,$c"; fi
 done < devices.txt
 priv=$(cat server.key)
