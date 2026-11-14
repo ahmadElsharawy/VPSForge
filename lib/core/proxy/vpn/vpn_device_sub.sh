@@ -13,7 +13,7 @@ vpn_device_sub() {
   [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1
   label=$(vpn_device_label "$vps" "$name")
   echo "$reality"
-  # Hysteria2 userpass auth needs username:password, where the device name is the user and its UUID the password.
-  echo "hysteria2://${name}:${id}@${PUBLIC_IP}:${ext}/?insecure=1&sni=$(vpn_get_sni "$vps" hy)#${label}-HY2"
+  # Hysteria2: the password is the device's UUID (the server also accepts <name>:<uuid> from older links)
+  echo "hysteria2://${id}@${PUBLIC_IP}:${ext}/?insecure=1&sni=$(vpn_get_sni "$vps" hy)#${label}-HY2"
   echo "vless://${id}@${PUBLIC_IP}:$((ext + VPN_TLS_PORT_OFFSET))?security=tls&encryption=none&alpn=http/1.1&allowInsecure=1&insecure=1&fp=ios&type=tcp&sni=$(vpn_get_sni "$vps" tls)#${label}-TLS"
 }

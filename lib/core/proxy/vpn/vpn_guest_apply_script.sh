@@ -26,7 +26,7 @@ while IFS='|' read -r name id mode f4 f5 limit expires state; do
   if [ -z "$clients" ]; then clients="$c"; else clients="$clients,$c"; fi
   t="{\"id\":\"$id\",\"email\":\"$name\",\"level\":0}"   # the TLS inbound has no flow: apps connect to it without one
   if [ -z "$tls_clients" ]; then tls_clients="$t"; else tls_clients="$tls_clients,$t"; fi
-  hy_users="$hy_users    \"$name\": \"$id\"
+  hy_users="$hy_users$name|$id
 "
 done < devices.txt
 priv=$(cat server.key)
@@ -107,15 +107,31 @@ fi
   echo "  cert: $D/hy.crt"
   echo "  key: $D/hy.key"
   echo "auth:"
-  echo "  type: userpass"
-  echo "  userpass:"
-  printf '%s' "$hy_users"
+  echo "  type: command"
+  echo "  command: $D/hy_auth.sh"
   echo "masquerade:"
   echo "  type: proxy"
   echo "  proxy:"
   echo "    url: $HY_MASQ"
   echo "    rewriteHost: true"
 } > hy.yaml.new
+# Hysteria2 login: apps send either "<uuid>" or "<name>:<uuid>" (v2rayNG and the official
+# client differ), so a small script accepts both. It prints the device name (used as its id).
+printf '%s' "$hy_users" > hy_users.new
+mv -f hy_users.new hy_users.txt
+cat > hy_auth.sh.new <<'EOA'
+#!/bin/sh
+# called by Hysteria2 as: hy_auth.sh <client_addr> <auth> <tx>; exit 0 = allowed
+a=$(printf '%s' "$2" | sed 's/%3[Aa]/:/g')
+id=${a##*:}
+[ -n "$id" ] || exit 1
+name=$(awk -F'|' -v id="$id" '$2 == id { print $1; exit }' "$(dirname "$0")/hy_users.txt")
+[ -n "$name" ] || exit 1
+case "$a" in *:*) [ "${a%:*}" = "$name" ] || exit 1;; esac
+echo "$name"
+EOA
+chmod 755 hy_auth.sh.new
+mv -f hy_auth.sh.new hy_auth.sh
 mv -f hy.yaml.new hy.yaml
 hy_ok=1
 if [ ! -x /usr/local/bin/hysteria ]; then
