@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """VPSForge: a short-lived page for ONE VPN device, then stop.
-   /<secret>/     a page with the QR code of the subscription link and "Copy" buttons
+   /<secret>/     a page with one QR code holding all the links and "Copy" buttons
    /<secret>/sub  the subscription: all the device's links (one per line), base64, for the VPN app
    vpn_once_server.py <link_file> <qr_png_file> <secret> <port> <label> <seconds>"""
 import base64, html, http.server, os, sys, threading
@@ -38,9 +38,9 @@ ol{line-height:1.7}.n{color:#666;font-size:14px}</style></head><body>
 <li>Install a free app: <b>v2rayNG</b> or <b>Hiddify</b> (Android), <b>Streisand</b> or <b>V2Box</b> (iPhone), <b>v2rayN</b> or <b>Hiddify</b> (Windows).</li>
 <li>Phone: in the app tap <b>+</b> &gt; <b>Scan QR code</b> and scan the code above (open this page on another screen).
 It adds all 3 connections at once.<br>
-On this device: tap <b>Copy subscription link</b>, then in the app add it as a subscription
-(v2rayNG: menu &gt; <b>Subscription group</b> &gt; <b>+</b>, then <b>Update subscription</b>).
-If your app has no subscriptions: tap <b>Copy the 3 links</b>, then <b>+</b> &gt; <b>Import from clipboard</b>.</li>
+On this device: tap <b>Copy the 3 links</b>, then in the app tap <b>+</b> &gt; <b>Import from clipboard</b>.<br>
+Apps with subscriptions (Hiddify, v2rayN): you can add the subscription link instead.<br>
+</li>
 <li>The names <b>%(label)s</b>, <b>-HY2</b> and <b>-TLS</b> are filled in by themselves. Connect to the one that works best.</li>
 </ol>
 <p class="n">This page works for %(m)d minutes only. Keep it private: anyone with this QR code or link can use this VPN.</p>

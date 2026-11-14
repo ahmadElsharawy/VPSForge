@@ -20,16 +20,15 @@ vpn_share_link() {
   label=$(printf '%s\n' "$link" | head -n 1)
   label="${label##*#}"
   secret=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
-  # the QR code holds the subscription link: one scan adds all three connections
   # vpn_device_sub ran in a subshell, so find the public IP here too
   [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1
   [ -n "${PUBLIC_IP:-}" ] || { echo "ERROR: could not find this server's public IP."; return 1; }
-  local sub_url="http://${PUBLIC_IP}:${port}/${secret}/sub"
   tmp=$(mktemp /run/vpsforge-vpn-XXXXXX) || return 1
   png=$(mktemp /run/vpsforge-vpnqr-XXXXXX) || { rm -f "$tmp"; return 1; }
   chmod 600 "$tmp" "$png"
   printf '%s' "$link" > "$tmp"
-  printf '%s' "$sub_url" | incus exec "$vps" -- qrencode -t png -s 10 -m 2 -o - > "$png" 2>/dev/null
+  # the QR code holds the three links themselves: one scan adds all three (no download needed)
+  printf '%s' "$link" | incus exec "$vps" -- qrencode -t png -s 10 -m 2 -o - > "$png" 2>/dev/null
   [ -s "$png" ] || { rm -f "$tmp" "$png"; echo "ERROR: could not make the QR code."; return 1; }
   # open the port only for the page's lifetime, then close it again (runs in the background)
   VPN_PUBLIC_IP="$PUBLIC_IP" setsid bash -c '
