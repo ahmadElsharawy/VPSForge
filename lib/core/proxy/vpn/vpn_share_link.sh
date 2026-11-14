@@ -21,6 +21,9 @@ vpn_share_link() {
   label="${label##*#}"
   secret=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
   # the QR code holds the subscription link: one scan adds all three connections
+  # vpn_device_sub ran in a subshell, so find the public IP here too
+  [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1
+  [ -n "${PUBLIC_IP:-}" ] || { echo "ERROR: could not find this server's public IP."; return 1; }
   local sub_url="http://${PUBLIC_IP}:${port}/${secret}/sub"
   tmp=$(mktemp /run/vpsforge-vpn-XXXXXX) || return 1
   png=$(mktemp /run/vpsforge-vpnqr-XXXXXX) || { rm -f "$tmp"; return 1; }
