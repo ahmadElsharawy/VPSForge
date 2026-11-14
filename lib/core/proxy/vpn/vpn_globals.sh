@@ -13,3 +13,6 @@ VPN_TLS_PORT_OFFSET=10000             # public VLESS+TLS port = public VPN port 
 VPN_TLS_SNI="www.speedtest.net"                 # VLESS+TLS: name in the self-signed certificate and in the link
 VPN_HY_SNI="www.speedtest.net"            # Hysteria2: name in the self-signed certificate and in the link
 VPN_HY_MASQUERADE_URL="https://www.bing.com/"   # Hysteria2: what a browser sees when it visits the port
+# Hysteria2 public UDP ports, tried in this order for each new VPN (first one free on this server).
+# Tested from a mobile network that blocks other UDP ports (8443 and high ports were blocked there).
+VPN_HY_PORTS="443 2053 2083 2087 2096 4443"
