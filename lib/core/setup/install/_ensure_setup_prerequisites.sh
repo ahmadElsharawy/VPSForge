@@ -2,7 +2,8 @@
 # Install core packages and initialize Incus network if not already present.
 _ensure_setup_prerequisites() {
   # Check the package (not just the "incus" command: the client alone has no daemon).
-  dpkg -s incus >/dev/null 2>&1 || { apt-get update && vpsforge_apt_install incus; }
+  dpkg -s incus >/dev/null 2>&1 || { wait_for_apt_lock; apt-get update && vpsforge_apt_install incus; }
+  ensure_incus_usable
   systemctl enable --now incus.socket incus.service >/dev/null 2>&1 || true
   incus admin waitready --timeout=60 >/dev/null 2>&1 || true
   check_incus_version

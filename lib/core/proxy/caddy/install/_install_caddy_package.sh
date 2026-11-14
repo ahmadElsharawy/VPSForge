@@ -2,6 +2,7 @@
 # Download repository signing keys and install Caddy package via apt.
 _install_caddy_package() {
   echo "Installing Caddy..."
+  wait_for_apt_lock
   apt-get update >/dev/null 2>&1
   vpsforge_apt_install debian-keyring debian-archive-keyring apt-transport-https curl gnupg >/dev/null 2>&1
 
@@ -11,6 +12,7 @@ _install_caddy_package() {
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | \
     tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
 
+  wait_for_apt_lock
   apt-get update >/dev/null 2>&1
   vpsforge_apt_install caddy >/dev/null 2>&1
 

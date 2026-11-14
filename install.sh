@@ -32,6 +32,16 @@ fi
 
 installed_packages() { dpkg-query -W -f='${db:Status-Abbrev} ${binary:Package}\n' 2>/dev/null | awk '$1=="ii"{print $2}' | sort; }
 
+# A fresh cloud VM runs Ubuntu's automatic updates on first boot and holds the apt lock:
+# wait (max ~300s) until it is free, then repair any half-configured packages.
+if command -v fuser >/dev/null 2>&1; then
+  for _ in $(seq 1 100); do
+    fuser /var/lib/dpkg/lock-frontend /var/lib/dpkg/lock /var/lib/apt/lists/lock /var/cache/apt/archives/lock >/dev/null 2>&1 || break
+    sleep 3
+  done
+fi
+dpkg --configure -a >/dev/null 2>&1 || true
+
 apt-get update
 installed_packages > "$PRE/.before_install"
 apt-get install -y curl git

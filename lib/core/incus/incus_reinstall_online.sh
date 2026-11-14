@@ -2,6 +2,7 @@
 # Put Incus back from the internet (the stable Ubuntu package) after it was deleted or broken.
 incus_reinstall_online() {
   echo "Reinstalling Incus from the internet..."
+  wait_for_apt_lock
   apt-get update >/dev/null 2>&1 || true
   vpsforge_apt_install incus || { echo "ERROR: could not install Incus (check the internet connection)."; return 1; }
   systemctl enable --now incus.socket incus.service >/dev/null 2>&1 || true
