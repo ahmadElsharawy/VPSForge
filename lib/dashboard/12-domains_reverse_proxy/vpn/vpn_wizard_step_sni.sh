@@ -1,5 +1,6 @@
 #!/bin/bash
-# Create-VPN wizard step 3 of 4: the HTTPS site the VPN looks like to anyone watching (Reality SNI).
+# Create-VPN wizard step 3 of 4: the site each protocol looks like to anyone watching (SNI):
+# Reality first (checked for TLS 1.3 + HTTP/2), then VLESS+TLS and Hysteria2.
 vpn_wizard_step_sni() {
   local sni answer
   echo
@@ -14,5 +15,8 @@ vpn_wizard_step_sni() {
   vpn_sni_supported "$sni" || { echo "ERROR: $sni does not answer with TLS 1.3 + HTTP/2 from this server. Pick another site."; return 1; }
   VW_SNI="$sni"
   pref_set vpn_sni "$sni"
+  # VLESS+TLS and Hysteria2 use a self-signed certificate: any site name works, it is only what a watcher sees
+  VW_TLS_SNI=$(_vpn_wizard_ask_sni vpn_tls_sni "$sni" "VLESS+TLS") || return 1
+  VW_HY_SNI=$(_vpn_wizard_ask_sni vpn_hy_sni "$sni" "Hysteria2") || return 1
   return 0
 }

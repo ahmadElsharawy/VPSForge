@@ -3,6 +3,8 @@
 VW_VPS=""          # VPS that carries the VPN
 VW_PORT=""         # public TCP port of the VPN on this server
 VW_SNI=""          # site the VPN looks like (Reality SNI)
+VW_TLS_SNI=""      # name shown by the VLESS+TLS link (SNI)
+VW_HY_SNI=""       # name shown by the Hysteria2 link (SNI)
 VW_DEVICE=""       # device name
 VW_GB=0            # data limit in GB (0 = unlimited)
 VW_DAYS=0          # days the device works (0 = unlimited)

@@ -5,7 +5,7 @@ vpn_server_setup() {
   local vps="${1:?vps}"
   vpn_guest_check_script | incus exec "$vps" --env D="$VPN_GUEST_DIR" -- sh -c 'umask 077; mkdir -p "$D"; cat > "$D/check.sh"' \
     || { echo "ERROR: could not write the VPN limits checker inside $vps."; return 1; }
-  vpn_guest_apply_script | incus exec "$vps" --env D="$VPN_GUEST_DIR" --env TLS_SNI="$VPN_TLS_SNI" --env HY_SNI="$VPN_HY_SNI" -- sh -c '
+  vpn_guest_apply_script | incus exec "$vps" --env D="$VPN_GUEST_DIR" --env TLS_SNI="$(vpn_get_sni "$vps" tls)" --env HY_SNI="$(vpn_get_sni "$vps" hy)" -- sh -c '
     set -e
     umask 077
     mkdir -p "$D"

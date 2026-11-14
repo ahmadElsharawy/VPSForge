@@ -10,6 +10,6 @@ VPN_API_PORT=10085                    # Xray statistics API, only on 127.0.0.1 i
 VPN_TLS_INNER_PORT=18443              # port Xray's VLESS+TLS inbound listens on inside the VPS (TCP)
 VPN_HY_INNER_PORT=18444               # port Hysteria2 listens on inside the VPS (UDP)
 VPN_TLS_PORT_OFFSET=10000             # public VLESS+TLS port = public VPN port + this (TCP)
-VPN_TLS_SNI="ea.com"                  # VLESS+TLS: name in the self-signed certificate and in the link
-VPN_HY_SNI="www.bing.com"             # Hysteria2: name in the self-signed certificate and in the link
+VPN_TLS_SNI="www.speedtest.net"                 # VLESS+TLS: name in the self-signed certificate and in the link
+VPN_HY_SNI="www.speedtest.net"            # Hysteria2: name in the self-signed certificate and in the link
 VPN_HY_MASQUERADE_URL="https://www.bing.com/"   # Hysteria2: what a browser sees when it visits the port

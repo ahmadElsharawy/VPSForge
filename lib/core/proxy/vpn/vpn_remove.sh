@@ -37,6 +37,8 @@ vpn_remove() {
   fi
   incus config unset "$vps" user.vpsforge.vpn >/dev/null 2>&1 || true
   incus config unset "$vps" user.vpsforge.vpn_sni >/dev/null 2>&1 || true
+  incus config unset "$vps" user.vpsforge.vpn_tls_sni >/dev/null 2>&1 || true
+  incus config unset "$vps" user.vpsforge.vpn_hy_sni >/dev/null 2>&1 || true
   sync_vps_metadata "$vps" >/dev/null 2>&1 || true
   return 0
 }
