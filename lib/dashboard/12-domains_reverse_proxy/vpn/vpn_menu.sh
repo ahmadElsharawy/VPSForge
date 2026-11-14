@@ -18,6 +18,7 @@ vpn_menu() {
     echo "4) Renew a device            new GB / days from today (usage starts again)"
     echo "5) Remove a device"
     echo "6) Remove a VPN              the VPS stays, only the VPN is removed"
+    echo "7) Edit a VPN                SNI of each protocol, reset keys, restart"
     echo "0) Back"
     echo "================================================================"
     read -r -p "Choice [0=Back, Enter=2]: " choice
@@ -30,6 +31,7 @@ vpn_menu() {
       4) _vpn_action_renew_device ;;
       5) _vpn_action_remove_device ;;
       6) _vpn_action_remove_vpn ;;
+      7) _vpn_action_edit_vpn ;;
       *) echo "Invalid option."; sleep 1 ;;
     esac
   done
