@@ -18,6 +18,9 @@ _clone_vps_steps() {
   incus start "$new" || { echo "ERROR: the copy $new did not start."; return 1; }
   wait_ready "$new" || { echo "ERROR: the copy $new did not become ready."; return 1; }
   incus exec "$new" -- rm -f /.dockerenv >/dev/null 2>&1 || true
+  # The copy has a fresh identity and no VPN of its own, so clear the source's VPN files it inherited
+  # (device list, keys, Xray config). Leaving them makes the copy look like it has a VPN that never runs.
+  incus exec "$new" -- rm -rf /etc/vpsforge-vpn >/dev/null 2>&1 || true
   wait_guest_eth0 "$new" || { echo "ERROR: the network of $new did not come up."; return 1; }
 
   local tport

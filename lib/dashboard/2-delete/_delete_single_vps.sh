@@ -2,7 +2,8 @@
 # Deletes network rules, snapshots, swapfile locks, and container instance for a single VPS.
 _delete_single_vps() {
   local n="$1"
-  local ip p del_retry del_err
+  local ip p del_retry del_err existed=0
+  incus info "$n" >/dev/null 2>&1 && existed=1
 
   echo "Deleting $n..."
   ip=$(get_ip "$n")
@@ -35,8 +36,10 @@ _delete_single_vps() {
   done
   if incus list -c n --format csv 2>/dev/null | grep -Fxq "$n"; then
     echo "WARNING: $n still appears in Incus. Details: ${del_err:-Unknown error}"
-  else
+  elif [ "$existed" = 1 ]; then
     echo "Deleted $n"
     delete_vps_backups_prompt "$n"
+  else
+    echo "No VPS named '$n' was found (cleaned up any leftover rules just in case)."
   fi
 }

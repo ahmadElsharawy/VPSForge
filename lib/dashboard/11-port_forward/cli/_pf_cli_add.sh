@@ -24,6 +24,17 @@ _pf_cli_add() {
     is_valid_port_forward_rule "$proto" "$external_ip" "$external_port" "$internal_port" || { echo "ERROR: invalid rule (IPv4, ports 1-65535, not 22/80/443)."; return 1; }
   done
   [[ "$internal_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || { echo "ERROR: the internal address must be an IPv4 address."; return 1; }
+  # One external port can forward to only ONE destination. Refuse a second rule on a port already
+  # forwarded elsewhere: iptables would keep both DNAT rules but only the first ever fires, so the user
+  # would be told the forward was "applied" while it silently never works.
+  local busy existing
+  for proto in $(resolve_protocols "$protocol"); do
+    existing=$(awk -F'|' -v p="$proto" -v ep="$external_port" '$1==p && $3==ep {print $4":"$5; exit}' "$target_file" 2>/dev/null)
+    if [ -n "$existing" ] && [ "$existing" != "$internal_ip:$internal_port" ]; then
+      echo "ERROR: external port $external_port ($proto) already forwards to $existing. Delete that rule first."
+      return 1
+    fi
+  done
   for proto in $(resolve_protocols "$protocol"); do
     port_forward_apply_rule "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port" || { echo "ERROR: iptables refused the rule."; return 1; }
     port_forward_append_rule_to_file "$target_file" "$proto" "$external_ip" "$external_port" "$internal_ip" "$internal_port"
