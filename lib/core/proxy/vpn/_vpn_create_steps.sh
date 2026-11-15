@@ -17,13 +17,19 @@ _vpn_create_steps() {
   incus config set "$vps" user.vpsforge.vpn_hy_sni "$hy_sni" || return 1
   vpn_server_setup "$vps" || return 1
   local hy_ext
+  # Pick and reserve the Hysteria UDP port under a lock, so two VPNs created at the same moment never
+  # grab the same port. The rules file is written only below, so without this they would all pick the
+  # first free one; the lock is held until the UDP DNAT rule exists for the next picker to see.
+  exec 201>"${PENDING_DIR:-/tmp}/.vpn-hyport.lock" 2>/dev/null || true
+  flock 201 2>/dev/null || true
   hy_ext=$(_vpn_pick_hy_port "$ext")
-  incus config set "$vps" user.vpsforge.vpn_hy_port "$hy_ext" || return 1
+  incus config set "$vps" user.vpsforge.vpn_hy_port "$hy_ext" || { flock -u 201 2>/dev/null || true; return 1; }
   echo "[3/3] Opening TCP $ext, UDP $hy_ext and TCP $tls_ext on the server..."
-  port_forward_apply_rule tcp 0.0.0.0 "$ext" "$ip" "$ext" || { echo "ERROR: iptables refused the rule."; return 1; }
+  port_forward_apply_rule tcp 0.0.0.0 "$ext" "$ip" "$ext" || { flock -u 201 2>/dev/null || true; echo "ERROR: iptables refused the rule."; return 1; }
   port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$ext" "$ip" "$ext"
-  port_forward_apply_rule udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT" || { echo "ERROR: iptables refused the UDP rule."; return 1; }
+  port_forward_apply_rule udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT" || { flock -u 201 2>/dev/null || true; echo "ERROR: iptables refused the UDP rule."; return 1; }
   port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" udp 0.0.0.0 "$hy_ext" "$ip" "$VPN_HY_INNER_PORT"
+  flock -u 201 2>/dev/null || true
   port_forward_apply_rule tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT" || { echo "ERROR: iptables refused the TLS rule."; return 1; }
   port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT"
   save_iptables
