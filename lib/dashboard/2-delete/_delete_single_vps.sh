@@ -12,6 +12,11 @@ _delete_single_vps() {
   remove_vps_forward_rules "$ip"
   [ -n "$ip" ] && port_forward_delete_rules_for_ip "$ip"
   rm -f "/etc/caddy/vpsforge/${n}.caddy"
+  # Remove the VPN too (while the VPS still exists): its subscription web server, tokens, the three
+  # port forwards and their firewall rules. Without this, deleting a VPS that had a VPN left a stray
+  # sub-server process, its token directory and open forwards behind - a broken clean-host promise,
+  # and a hazard if a new VPS later reused the same IP or VPN port.
+  vpn_remove "$n" >/dev/null 2>&1 || true
 
   _delete_vps_snapshots "$n"
   _delete_clear_container_swap "$n"
