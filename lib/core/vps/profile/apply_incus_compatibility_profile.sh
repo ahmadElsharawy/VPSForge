@@ -21,5 +21,7 @@ apply_incus_compatibility_profile() {
   if [ -e /dev/fuse ] && ! incus config device get "$name" fuse type >/dev/null 2>&1; then
     incus config device add "$name" fuse unix-char source=/dev/fuse path=/dev/fuse >/dev/null 2>&1 || true
   fi
+  # Anti-spoofing + fork-bomb cap so one tenant cannot MITM a neighbour or crash the host.
+  harden_vps_security "$name"
   return 0
 }
