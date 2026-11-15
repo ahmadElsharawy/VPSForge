@@ -5,8 +5,8 @@ next_num() {
   while IFS= read -r name; do
     [ -z "$name" ] && continue
     num=$(get_num "$name" 2>/dev/null || true)
-    if [[ "$num" =~ ^[0-9]+$ ]] && (( num > highest )); then
-      highest="$num"
+    if [[ "$num" =~ ^[0-9]+$ ]] && (( 10#$num > highest )); then
+      highest=$((10#$num))
     fi
   done < <(incus list -c n --format csv 2>/dev/null || true)
   echo $((highest + 1))

@@ -7,6 +7,8 @@ _capture_inventory_ssh_ports() {
   while IFS='|' read -r inst inst_ip inst_port; do
     [ -n "$inst" ] || continue
     [ -z "$inst_port" ] && inst_port=$(get_port "$inst_ip" 2>/dev/null || true)
+    # the owner turned off the public SSH forward of this VPS: do not add it back
+    [ "$(incus config get "$inst" user.vpsforge.ssh_forward 2>/dev/null || true)" = "n" ] && continue
     if [ -n "$inst_ip" ] && [ "$inst_ip" != "-" ] && [[ "$inst_port" =~ ^[0-9]+$ ]]; then
       ssh_entry="tcp|0.0.0.0|${inst_port}|${inst_ip}|22"
       if ! awk -F'|' -v port="$inst_port" -v ip="$inst_ip" '$1 == "tcp" && $3 == port && $4 == ip && $5 == "22" { f = 1; exit } END { exit !f }' "$target_file" 2>/dev/null; then

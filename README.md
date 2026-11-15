@@ -1,7 +1,7 @@
-# VPSForge v3.4.9
+# VPSForge v3.5.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.4.9-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.5.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,20 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.5.0
+
+Fixes from a full line-by-line audit of the project (each issue reproduced before it was fixed):
+- **VPN security:** Hysteria2 users can no longer reach this server, the other VPSs or the cloud metadata service (169.254.169.254); like Xray, they reach the internet only.
+- **Host SSH protected:** a port written with a leading zero (`022`) no longer slips past the check that keeps ports 22, 80 and 443 for the server.
+- **SSH choice kept:** rebuilding the port-forward list no longer turns back on the public SSH forward of a VPS where it was switched off.
+- **Subscription link** still works when the VPN app adds `?...` to it.
+- **VPN overview** shows the real Hysteria2 UDP port of each VPN.
+- **Dashboard disk sizes** are no longer sometimes shown as 0 (a cache was read while it was still being filled).
+- `vpsforge setup` now says when it failed instead of "Setup completed.".
+- Names like `vps08` no longer break the next VPS number; VPS number 0 (the bridge's own address) is refused.
+- A tunnel with neither a public port nor a domain gets a clear error.
+- Shell menu: no misleading "A for All", and a clear message for a stopped VPS. Rename shows the real name rules.
 
 ## ✨ What's new in v3.4.9
 

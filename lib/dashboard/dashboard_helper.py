@@ -64,7 +64,7 @@ def get_qgroup_sizes(pool_path):
     global QGROUP_SIZES
     if QGROUP_SIZES is not None:
         return QGROUP_SIZES
-    QGROUP_SIZES = {}
+    sizes = {}
     try:
         res = subprocess.run(["btrfs", "qgroup", "show", "--raw", pool_path],
                              capture_output=True, text=True, timeout=5)
@@ -74,11 +74,12 @@ def get_qgroup_sizes(pool_path):
                 parts = line.split()
                 if len(parts) >= 4 and parts[1].isdigit():
                     if parts[3].startswith("containers/"):
-                        QGROUP_SIZES[parts[3][len("containers/"):]] = int(parts[1])
+                        sizes[parts[3][len("containers/"):]] = int(parts[1])
                     elif parts[3].startswith("images/"):   # downloaded OS images, shared by the VPSs
-                        QGROUP_SIZES["__images__"] = QGROUP_SIZES.get("__images__", 0) + int(parts[1])
+                        sizes["__images__"] = sizes.get("__images__", 0) + int(parts[1])
     except Exception:
         pass
+    QGROUP_SIZES = sizes
     return QGROUP_SIZES
 
 
@@ -91,7 +92,7 @@ def get_zfs_sizes():
     global ZFS_SIZES
     if ZFS_SIZES is not None:
         return ZFS_SIZES
-    ZFS_SIZES = {}
+    sizes = {}
     try:
         res = subprocess.run(["zfs", "list", "-Hp", "-t", "filesystem", "-o", "name,used"],
                              capture_output=True, text=True, timeout=5)
@@ -101,9 +102,10 @@ def get_zfs_sizes():
                 names = parts[0].split("/") if parts else []
                 # Incus layout: <pool>/containers/<vps>
                 if len(parts) == 2 and len(names) == 3 and names[1] == "containers" and parts[1].isdigit():
-                    ZFS_SIZES[names[2]] = int(parts[1])
+                    sizes[names[2]] = int(parts[1])
     except Exception:
         pass
+    ZFS_SIZES = sizes
     return ZFS_SIZES
 
 

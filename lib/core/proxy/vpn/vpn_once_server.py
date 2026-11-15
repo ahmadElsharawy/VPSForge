@@ -54,9 +54,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 10   # a browser that opens a connection and sends nothing must not hold the server
 
     def do_GET(self):
-        if self.path in (base, base.rstrip("/")):
+        path = self.path.split("?", 1)[0]   # apps may add ?flag=... to the subscription link
+        if path in (base, base.rstrip("/")):
             body, code, ctype = page, 200, "text/html; charset=utf-8"
-        elif self.path in (base + "sub", base + "sub/"):
+        elif path in (base + "sub", base + "sub/"):
             body, code, ctype = sub_body, 200, "text/plain; charset=utf-8"
         else:
             body, code, ctype = b"Not found", 404, "text/plain"

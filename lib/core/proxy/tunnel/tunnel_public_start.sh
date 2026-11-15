@@ -5,6 +5,7 @@ tunnel_public_start() {
   local vps="${1:?vps}" tport="${2:?tunnel port}" ext="${3:-}" domain="${4:-}" ip route
   ip=$(get_ip "$vps")
   [ -n "$ip" ] || { echo "ERROR: $vps has no IP address."; return 1; }
+  [ -n "$ext" ] || [ -n "$domain" ] || { echo "ERROR: a tunnel needs a public port or a domain."; return 1; }
 
   if [ -n "$domain" ]; then
     ensure_caddy_installed || return 1

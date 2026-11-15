@@ -7,7 +7,7 @@ vpn_print_overview() {
     [ -n "$row" ] || continue
     any=1
     vps="${row%%|*}"; port="${row#*|}"
-    echo "VPN on $vps   ->  ${PUBLIC_IP:-SERVER}:$port (TCP+UDP), TLS $((port + VPN_TLS_PORT_OFFSET))"
+    echo "VPN on $vps   ->  ${PUBLIC_IP:-SERVER}  Reality TCP $port, Hysteria2 UDP $(vpn_get_hy_port "$vps"), TLS TCP $((port + VPN_TLS_PORT_OFFSET))"
     while IFS= read -r line; do
       [ -n "$line" ] || continue
       IFS='|' read -r dev_name dev_ip dev_mac ago used limit expires state <<< "$line"

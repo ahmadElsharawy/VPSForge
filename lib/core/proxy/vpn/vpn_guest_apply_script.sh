@@ -114,6 +114,13 @@ fi
   echo "  proxy:"
   echo "    url: $HY_MASQ"
   echo "    rewriteHost: true"
+  # like Xray: VPN users reach the internet only, never this server, the other VPSs or the cloud metadata service
+  echo "acl:"
+  echo "  inline:"
+  for net in 0.0.0.0/8 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8 169.254.0.0/16 172.16.0.0/12 192.168.0.0/16 ::1/128 fc00::/7 fe80::/10; do
+    echo "    - reject($net)"
+  done
+  echo "    - direct(all)"
 } > hy.yaml.new
 # Hysteria2 login: apps send either "<uuid>" or "<name>:<uuid>" (v2rayNG and the official
 # client differ), so a small script accepts both. It prints the device name (used as its id).

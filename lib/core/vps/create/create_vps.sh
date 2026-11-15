@@ -11,7 +11,7 @@ create_vps() {
     echo "ERROR: Invalid VPS name '$name'. Use letters, digits and dashes only (no dots, underscores or spaces; not only digits; no dash at the start or end)."
     return 1
   fi
-  [[ "$num" =~ ^[0-9]+$ ]] || { echo "ERROR: Invalid VPS number '$num'."; return 1; }
+  [[ "$num" =~ ^[1-9][0-9]*$ ]] || { echo "ERROR: Invalid VPS number '$num'."; return 1; }
   if incus info "$name" >/dev/null 2>&1; then
     echo "ERROR: A VPS named '$name' already exists. Choose another name."
     return 1

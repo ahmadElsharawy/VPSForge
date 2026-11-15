@@ -8,8 +8,8 @@ is_valid_port_forward_rule() {
   if [ -n "$ext_ip" ] && [ "$ext_ip" != "0.0.0.0" ] && [ "$ext_ip" != "any" ]; then
     [[ "$ext_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
   fi
-  [[ "$ext_port" =~ ^[0-9]{1,5}$ ]] && [ "$ext_port" -ge 1 ] && [ "$ext_port" -le 65535 ] || return 1
-  [[ "$int_port" =~ ^[0-9]{1,5}$ ]] && [ "$int_port" -ge 1 ] && [ "$int_port" -le 65535 ] || return 1
+  [[ "$ext_port" =~ ^[1-9][0-9]{0,4}$ ]] && [ "$ext_port" -ge 1 ] && [ "$ext_port" -le 65535 ] || return 1
+  [[ "$int_port" =~ ^[1-9][0-9]{0,4}$ ]] && [ "$int_port" -ge 1 ] && [ "$int_port" -le 65535 ] || return 1
   case "$ext_port" in 22|80|443) return 1;; esac
   return 0
 }

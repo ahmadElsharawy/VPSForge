@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v3.4.9"
+VPSFORGE_VERSION="v3.5.0"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -48,7 +48,7 @@ fi
 
 sync_active_from_repo 2>/dev/null || true
 if [ "${1:-}" = "setup" ]; then
-  ensure_setup force
+  ensure_setup force || { echo "Setup failed. Read the messages above."; exit 1; }
   echo "Setup completed."
   exit 0
 fi
