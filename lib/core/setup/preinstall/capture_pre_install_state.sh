@@ -3,7 +3,11 @@
 # firewall rules, which packages already existed, and the ip_forward value.
 # "vpsforge uninstall" uses this to restore the server exactly as it was.
 capture_pre_install_state() {
-  [ -d "$PRE_INSTALL_DIR" ] && return 0
+  # Done already (captured_at is written last), or VPSForge already installed packages: too late to record.
+  # A folder with neither is a capture that was cut off before anything else ran: record it again.
+  [ -f "$PRE_INSTALL_DIR/captured_at" ] && return 0
+  [ -f "$PRE_INSTALL_DIR/packages_installed.txt" ] && return 0
+  [ -s "$PRE_INSTALL_DIR/packages_all.txt" ] && return 0   # an older record (before captured_at existed)
   mkdir -p "$PRE_INSTALL_DIR" || return 0
 
   iptables-save > "$PRE_INSTALL_DIR/iptables.rules" 2>/dev/null || true

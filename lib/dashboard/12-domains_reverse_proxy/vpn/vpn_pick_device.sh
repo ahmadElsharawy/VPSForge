@@ -11,11 +11,12 @@ vpn_pick_device() {
   fi
   for i in "${!rows[@]}"; do
     IFS='|' read -r n _ _ _ _ lim _ st <<< "${rows[$i]}"
-    echo "  $((i + 1))) $n   (limit ${lim:-0} GB, $st)"
+    if [ "${lim:-0}" -gt 0 ] 2>/dev/null; then lim="limit $lim GB"; else lim="no data limit"; fi
+    echo "  $((i + 1))) $n   ($lim, $st)"
   done
   read -r -p "$prompt [0=Back, Enter=1]: " choice </dev/tty
   choice="${choice:-1}"
   [ "$choice" = "0" ] && return 1
   [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#rows[@]}" ] || { echo "Invalid choice."; return 1; }
-  VPN_DEVICE="${rows[$((choice - 1))]%%|*}"
+  VPN_DEVICE="${rows[$((10#$choice - 1))]%%|*}"
 }

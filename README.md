@@ -1,7 +1,7 @@
-# VPSForge v3.5.0
+# VPSForge v3.5.1
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.5.0-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.5.1-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,18 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.5.1
+
+Second pass of the audit, every fix tested on a real server (`scripts/e2e.sh` 90/90, `scripts/vpn-test.sh` all passed):
+- **VPSs are isolated again:** setup ran before it read the VPS network, so the rules that keep VPSs from reaching each other were silently skipped. They are now always applied (or a clear warning is shown). Run `vpsforge setup` once after updating.
+- **VPN data limits and days really switch a device off:** the limit check rebuilt the VPN config without the TLS/Hysteria2 ports, so the switch-off failed and the device kept working. All three protocols now stop for that device, and a failed switch-off is retried.
+- **Hysteria2 is pinned** to a tested version (v2.13.0) and checked against its published checksum, like Xray.
+- **The forwards list can no longer be emptied by a failed write** (for example a full disk).
+- IP change / swap keeps the SSH forward of older VPSs; IP-conflict repair reads the network itself.
+- Numbers typed with a leading zero (`08`) work in every menu; typos in the distro, port, folder and bind-IP steps ask again instead of leaving the wizard.
+- Smaller fixes: offline update check says it could not reach GitHub, uninstall `--dry-run` changes nothing, waiting for a VPS no longer hangs on an ERROR/FROZEN state, Caddy reinstall replaces its key, unused generic kernel headers are cleaned, clearer messages in several menus.
+- `scripts/vpn-test.sh` now tests all three protocols, that none reaches a private address, and that limits cut all three.
 
 ## ✨ What's new in v3.5.0
 

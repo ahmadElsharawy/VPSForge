@@ -20,8 +20,8 @@ parse_number_selection() {
     [ -z "$token" ] && continue
 
     if [[ "$token" =~ ^([0-9]+)-([0-9]+)$ ]]; then
-      start="${BASH_REMATCH[1]}"
-      end="${BASH_REMATCH[2]}"
+      start="$((10#${BASH_REMATCH[1]}))"   # base 10: "08" is eight, not a bad octal number
+      end="$((10#${BASH_REMATCH[2]}))"
       if [ "$start" -le "$end" ]; then
         for ((i=start; i<=end; i++)); do
           if [ "$i" -ge 1 ] && [ "$i" -le "$max_val" ]; then
@@ -30,6 +30,7 @@ parse_number_selection() {
         done
       fi
     elif [[ "$token" =~ ^[0-9]+$ ]]; then
+      token=$((10#$token))
       if [ "$token" -ge 1 ] && [ "$token" -le "$max_val" ]; then
         [[ " ${SELECTED_NUMS[*]} " == *" $token "* ]] || SELECTED_NUMS+=("$token")
       fi

@@ -3,6 +3,7 @@
 # Xray encrypts with AES-GCM, which modern CPUs (x86 AES-NI, ARM crypto extensions) do in hardware:
 # measured 3.5x faster than WireGuard on a 1-CPU ARM server.
 VPN_XRAY_VERSION="v26.11.9"           # tested release from github.com/XTLS/Xray-core
+VPN_HY_VERSION="v2.13.0"              # tested release from github.com/apernet/hysteria (checked against its hashes.txt)
 VPN_INNER_PORT=8443                   # port Xray listens on inside the VPS (TCP)
 VPN_GUEST_DIR="/etc/vpsforge-vpn"     # config, keys, device list inside the VPS
 VPN_SNI="www.speedtest.net"           # Reality: the VPN looks like a visit to this HTTPS site (TLS 1.3 + HTTP/2)

@@ -13,6 +13,25 @@ set -e
 D=/etc/vpsforge-vpn
 cd "$D"
 umask 077
+# The settings come from the server (vpn_guest_apply). They are saved here, so a run started from
+# inside the VPS (check.sh switching a device off) builds exactly the same configs.
+if [ -n "${PORT:-}" ] && [ -n "${TLS_PORT:-}" ] && [ -n "${HY_PORT:-}" ] && [ -n "${HY_MASQ:-}" ]; then
+  {
+    echo "PORT='$PORT'"
+    echo "SNI='$SNI'"
+    echo "API='$API'"
+    echo "TLS_PORT='$TLS_PORT'"
+    echo "HY_PORT='$HY_PORT'"
+    echo "HY_MASQ='$HY_MASQ'"
+  } > apply.env.new
+  mv -f apply.env.new apply.env
+elif [ -f apply.env ]; then
+  . ./apply.env
+fi
+for v in PORT SNI API TLS_PORT HY_PORT HY_MASQ; do
+  eval "val=\${$v:-}"
+  [ -n "$val" ] || { echo "ERROR: VPN setting $v is missing; nothing was changed." >&2; exit 1; }
+done
 touch devices.txt
 # count what was used so far: restarting Xray clears its counters
 if [ -f check.sh ]; then sh check.sh collect >/dev/null 2>&1 || true; fi

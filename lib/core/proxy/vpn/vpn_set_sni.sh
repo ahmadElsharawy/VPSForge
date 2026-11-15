@@ -6,6 +6,7 @@
 vpn_set_sni() {
   local vps="${1:?vps}" kind="${2:?reality|tls|hy}" sni="${3:?site}" key files
   [ -n "$(vpn_get_port "$vps")" ] || { echo "ERROR: $vps has no VPN."; return 1; }
+  is_vps_running "$vps" || { echo "ERROR: $vps is not running. Start it first (main menu 3)."; return 1; }
   sni="${sni,,}"
   is_valid_vpn_sni "$sni" || { echo "ERROR: '$sni' is not a site name (example: www.microsoft.com)."; return 1; }
   case "$kind" in

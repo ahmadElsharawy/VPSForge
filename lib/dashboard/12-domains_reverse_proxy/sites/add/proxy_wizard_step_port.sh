@@ -25,14 +25,14 @@ proxy_wizard_step_port() {
   PW_PORT="$default_port"
   if [[ "$choice" =~ ^[0-9]+$ ]]; then
     if [ "$choice" -ge 1 ] && [ "$choice" -le "${#ports[@]}" ]; then
-      PW_PORT="${ports[$((choice - 1))]}"
+      PW_PORT="${ports[$((10#$choice - 1))]}"
     elif [ "$choice" -ge 1 ] && [ "$choice" -le 65535 ]; then
-      PW_PORT="$choice"
+      PW_PORT="$((10#$choice))"   # "080" is port 80
     else
-      echo "Invalid port."; return 1
+      echo "Invalid port (1-65535)."; proxy_wizard_step_port; return $?   # ask again, keep the wizard
     fi
   elif [ -n "$choice" ]; then
-    echo "Invalid choice."; return 1
+    echo "Invalid choice."; proxy_wizard_step_port; return $?   # ask again, keep the wizard
   fi
   pref_set proxy_port "$PW_PORT"
   return 0

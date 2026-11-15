@@ -8,7 +8,8 @@ uninstall_remove_packages() {
   local pkg
   local -a to_remove=()
   echo "[6/7] Removing packages installed by VPSForge..."
-  apt-mark unhold incus incus-base incus-client >/dev/null 2>&1 || true   # the update hold was ours
+  # the update hold was ours (a dry run changes nothing)
+  [ "${UNINSTALL_DRY_RUN:-0}" = "1" ] || apt-mark unhold incus incus-base incus-client >/dev/null 2>&1 || true
 
   if [ ! -d "$PRE_INSTALL_DIR" ] || [ ! -f "$PRE_INSTALL_DIR/packages_all.txt" ]; then
     echo "  (no pre-install record: this server was set up by an older VPSForge, none removed)"

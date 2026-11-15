@@ -6,7 +6,7 @@
 vps_fixed_port() {
   local num="$1"
   if [[ "$num" =~ ^[0-9]+$ ]]; then
-    echo $((SSH_PORT_BASE + num))
+    echo $((SSH_PORT_BASE + 10#$num))   # base 10: "08" is eight
   else
     local hash
     hash=$(echo -n "$num" | cksum | awk '{print $1}')

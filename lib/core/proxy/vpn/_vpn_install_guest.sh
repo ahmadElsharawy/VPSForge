@@ -3,7 +3,7 @@
 #   _vpn_install_guest <vps>
 _vpn_install_guest() {
   local vps="${1:?vps}"
-  incus exec "$vps" --env VER="$VPN_XRAY_VERSION" -- sh -c '
+  incus exec "$vps" --env VER="$VPN_XRAY_VERSION" --env HYVER="$VPN_HY_VERSION" -- sh -c '
     set -e
     if command -v apt-get >/dev/null 2>&1; then
       export DEBIAN_FRONTEND=noninteractive
@@ -33,14 +33,19 @@ _vpn_install_guest() {
       install -m 755 "$t/xray" /usr/local/bin/xray
       rm -rf "$t"
     fi
-    if ! /usr/local/bin/hysteria version >/dev/null 2>&1; then
+    if ! /usr/local/bin/hysteria version 2>/dev/null | grep -q "Version:.*${HYVER}$"; then
       case "$(uname -m)" in
         x86_64|amd64) h=amd64 ;;
         aarch64|arm64) h=arm64 ;;
         *) echo "Unsupported CPU: $(uname -m)"; exit 1 ;;
       esac
       t=$(mktemp -d)
-      curl -4 -fsSL -o "$t/hysteria" "https://github.com/apernet/hysteria/releases/latest/download/hysteria-linux-$h"
+      hu="https://github.com/apernet/hysteria/releases/download/app/$HYVER"
+      curl -4 -fsSL -o "$t/hysteria" "$hu/hysteria-linux-$h"
+      curl -4 -fsSL -o "$t/hashes.txt" "$hu/hashes.txt"
+      want=$(awk -v f="build/hysteria-linux-$h" "\$2 == f { print \$1; exit }" "$t/hashes.txt")
+      have=$(sha256sum "$t/hysteria" | cut -d" " -f1)
+      [ -n "$want" ] && [ "$want" = "$have" ] || { echo "Hysteria download checksum mismatch."; rm -rf "$t"; exit 1; }
       chmod +x "$t/hysteria"
       "$t/hysteria" version >/dev/null 2>&1 || { echo "Hysteria download is not a working binary."; rm -rf "$t"; exit 1; }
       install -m 755 "$t/hysteria" /usr/local/bin/hysteria

@@ -25,7 +25,7 @@ proxy_my_sites_menu() {
     read -r -p "Pick a number to test or remove it [0=Back]: " choice </dev/tty
     [ "${choice:-0}" = "0" ] && return
     if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#routes[@]}" ]; then
-      proxy_site_actions "${routes[$((choice - 1))]}"
+      proxy_site_actions "${routes[$((10#$choice - 1))]}"
     else
       echo "Invalid number."; sleep 1
     fi

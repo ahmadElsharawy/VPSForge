@@ -14,7 +14,7 @@ add_forward_rule() {
 
   mkdir -p "$(dirname "$PORT_FORWARD_RULES_FILE")" 2>/dev/null || true
   touch "$PORT_FORWARD_RULES_FILE" 2>/dev/null || true
-  if ! grep -q "tcp|0.0.0.0|${port}|${ip}|22" "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
+  if ! grep -qxF "tcp|0.0.0.0|${port}|${ip}|22" "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then   # whole line, literal
     echo "tcp|0.0.0.0|${port}|${ip}|22" >> "$PORT_FORWARD_RULES_FILE"
   fi
   local name

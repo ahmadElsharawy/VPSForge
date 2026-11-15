@@ -7,7 +7,7 @@ _install_caddy_package() {
   vpsforge_apt_install debian-keyring debian-archive-keyring apt-transport-https curl gnupg >/dev/null 2>&1
 
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | \
-    gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg 2>/dev/null
+    gpg --batch --yes --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg 2>/dev/null   # --yes: a reinstall replaces the old key
 
   curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | \
     tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null

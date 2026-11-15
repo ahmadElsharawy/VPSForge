@@ -8,7 +8,8 @@ port_forward_auto_sync_active_rules() {
   local tmpf
   tmpf=$(mktemp)
   touch "$tmpf"
-  [ -f "$file" ] && cp "$file" "$tmpf"
+  # a copy that failed (full disk) must not replace the real list at the end
+  if [ -f "$file" ] && ! cp "$file" "$tmpf"; then rm -f "$tmpf"; return 1; fi
 
   # 1. Capture any active iptables DNAT rules into the rules file if missing
   _capture_active_dnat_rules "$tmpf"

@@ -24,7 +24,7 @@ tunnel_my_tunnels_menu() {
       b) tunnel_bulk_menu ;;
       *)
         if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#rows[@]}" ]; then
-          IFS='|' read -r vps tport _ <<< "${rows[$((choice - 1))]}"
+          IFS='|' read -r vps tport _ <<< "${rows[$((10#$choice - 1))]}"
           tunnel_actions_menu "$vps" "$tport"
         else
           echo "Invalid option."; sleep 1

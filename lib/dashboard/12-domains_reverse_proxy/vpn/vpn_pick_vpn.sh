@@ -22,6 +22,6 @@ vpn_pick_vpn() {
   choice="${choice:-$last}"
   [ "$choice" = "0" ] && return 1
   [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#rows[@]}" ] || { echo "Invalid choice."; return 1; }
-  VPN_VPS="${rows[$((choice - 1))]%%|*}"
+  VPN_VPS="${rows[$((10#$choice - 1))]%%|*}"
   pref_set vpn_vps "$choice"
 }

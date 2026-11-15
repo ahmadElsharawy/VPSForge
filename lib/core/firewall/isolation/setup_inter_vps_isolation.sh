@@ -1,7 +1,12 @@
 #!/bin/bash
 # Set up firewall rules to isolate VPS traffic and allow Internet routing.
 setup_inter_vps_isolation() {
-  [ -n "${NETWORK_PREFIX:-}" ] || return 0
+  # setup runs before the main script reads the network: read it here, never skip isolation silently
+  [ -n "${NETWORK_PREFIX:-}" ] && [ -n "${INCUS_GATEWAY:-}" ] || get_network_info >/dev/null 2>&1 || true
+  if [ -z "${NETWORK_PREFIX:-}" ]; then
+    echo "WARNING: could not read the VPS network, so VPSs are NOT isolated from each other yet. Run 'vpsforge setup' again." >&2
+    return 1
+  fi
   local subnet="${NETWORK_PREFIX}.0/24"
 
   modprobe br_netfilter 2>/dev/null || true

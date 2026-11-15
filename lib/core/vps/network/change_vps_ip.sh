@@ -20,6 +20,8 @@ change_vps_ip() {
   old_ip=$(get_ip "$name")
   port=$(get_port "$old_ip" 2>/dev/null || true)
   [ -n "$port" ] || port=$(get_vps_saved_port "$name")
+  # no live rule and no saved port (an older VPS): its SSH port is the fixed one of its number
+  [ -n "$port" ] || port=$(vps_fixed_port "$(get_num "$name")" 2>/dev/null || true)
 
   _set_vps_ip_safe "$name" "$new_ip" "$old_ip" || return 1
   incus config set "$name" user.vpsforge.ip "$new_ip" 2>/dev/null || true

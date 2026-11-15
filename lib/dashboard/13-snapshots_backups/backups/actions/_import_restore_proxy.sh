@@ -17,7 +17,7 @@ _import_restore_proxy() {
   local conf_file="$CADDY_CONF_DIR/${target_name}.caddy" skipped_dom
   mkdir -p "$CADDY_CONF_DIR"
   local joined_domains
-  joined_domains=$(local IFS=", "; echo "${domains_to_apply[*]}")
+  joined_domains=$(printf '%s, ' "${domains_to_apply[@]}"); joined_domains="${joined_domains%, }"   # "a.com, b.com"
 
   printf '%s\n' "$proxy_decoded" > "$conf_file"
   for skipped_dom in "${domains_skipped[@]}"; do

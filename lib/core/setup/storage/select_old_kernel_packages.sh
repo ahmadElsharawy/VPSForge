@@ -12,6 +12,8 @@ select_old_kernel_packages() {
       pkgs+=("$pkg"); vers+=("${BASH_REMATCH[2]}")
     elif [[ "$pkg" =~ ^linux-[a-z0-9]+-[0-9]+\.[0-9]+-(headers|tools)-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+)$ ]]; then
       pkgs+=("$pkg"); vers+=("${BASH_REMATCH[2]}")
+    elif [[ "$pkg" =~ ^linux-(headers|tools)-([0-9]+\.[0-9]+\.[0-9]+-[0-9]+)$ ]]; then
+      pkgs+=("$pkg"); vers+=("${BASH_REMATCH[2]}")   # the shared part of the generic kernel: linux-headers-6.8.0-49
     fi
   done
   running="${running%-*}"

@@ -9,6 +9,9 @@ swap_vps_ips_and_ports() {
   port_a=$(get_port "$ip_a" 2>/dev/null || true); port_b=$(get_port "$ip_b" 2>/dev/null || true)
   [ -n "$port_a" ] || port_a=$(get_vps_saved_port "$name_a")
   [ -n "$port_b" ] || port_b=$(get_vps_saved_port "$name_b")
+  # no live rule and no saved port (an older VPS): its SSH port is the fixed one of its number
+  [ -n "$port_a" ] || port_a=$(vps_fixed_port "$(get_num "$name_a")" 2>/dev/null || true)
+  [ -n "$port_b" ] || port_b=$(vps_fixed_port "$(get_num "$name_b")" 2>/dev/null || true)
 
   [ -n "$ip_a" ] && [ -n "$ip_b" ] || { echo "ERROR: Both VPS must have IPs."; return 1; }
   [ "$ip_a" != "$ip_b" ] || { echo "ERROR: both VPSs have the same IP ($ip_a). Use Settings > Repair first."; return 1; }

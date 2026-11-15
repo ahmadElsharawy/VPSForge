@@ -5,6 +5,8 @@
 # One `incus list` call to find them.
 resolve_ip_collisions() {
   local ip names keep name new_ip num_name port_name
+  # read the network here: free_vps_ip runs in a subshell, so what it reads would not reach this function
+  [ -n "${NETWORK_PREFIX:-}" ] && [ -n "${INCUS_GATEWAY:-}" ] || get_network_info >/dev/null 2>&1 || return 0
   while IFS='|' read -r ip keep names; do
     [ -n "$ip" ] || continue
     for name in $names; do

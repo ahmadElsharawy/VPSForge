@@ -44,8 +44,17 @@ awk -F'|' -v now="$now" -v us=usage.txt -v newdev=devices.txt.new '
     print $1 "|" $2 "|" $3 "|" $4 "|" $5 "|" limit "|" ex "|" state > newdev
   }
 ' devices.txt > .events
+cp -f devices.txt devices.txt.old
 mv -f devices.txt.new devices.txt
 cat .events
-if [ -s .events ]; then rm -f .events; sh "$D/apply.sh"; else rm -f .events; fi
+if [ -s .events ]; then
+  rm -f .events
+  # if the switch-off could not be applied, put the old states back so the next check tries again
+  # (otherwise the device would stay marked "off" but keep working with no limit)
+  sh "$D/apply.sh" || mv -f devices.txt.old devices.txt
+else
+  rm -f .events
+fi
+rm -f devices.txt.old
 EOF_CHECK
 }

@@ -7,10 +7,12 @@ _set_aside_vps_for_reinstall() {
     return 1
   fi
   incus delete "$old" --force >/dev/null 2>&1 || true
+  local was_running=0
+  is_vps_running "$name" && was_running=1
   incus stop "$name" --force >/dev/null 2>&1 || true
   if ! incus rename "$name" "$old"; then
     echo "ERROR: could not set the original VPS aside; nothing was changed."
-    incus start "$name" >/dev/null 2>&1 || true
+    [ "$was_running" -eq 1 ] && incus start "$name" >/dev/null 2>&1   # only a VPS that was running is started again
     return 1
   fi
   mark_vps_state "$old" reinstall-old

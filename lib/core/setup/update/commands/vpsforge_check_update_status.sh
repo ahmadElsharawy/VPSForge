@@ -14,7 +14,8 @@ vpsforge_check_update_status() {
     return 1
   fi
 
-  git -C "$repo_dir" fetch origin main --quiet 2>/dev/null || true
+  local fetched=1
+  git -C "$repo_dir" fetch origin main --quiet 2>/dev/null || fetched=0
   repo_commit=$(git -C "$repo_dir" rev-parse --short HEAD 2>/dev/null || echo "unknown")
   remote_commit=$(git -C "$repo_dir" rev-parse --short origin/main 2>/dev/null || echo "unknown")
 
@@ -22,7 +23,9 @@ vpsforge_check_update_status() {
   echo "Local repository commit:    $repo_commit ($repo_dir)"
   echo "Remote origin/main commit:  $remote_commit"
 
-  if [ "$active_commit" = "$remote_commit" ] && [ "$repo_commit" = "$remote_commit" ]; then
+  if [ "$fetched" -eq 0 ]; then
+    echo "Status: could not reach GitHub, so it is unknown whether an update exists (check the internet connection)."
+  elif [ "$active_commit" = "$remote_commit" ] && [ "$repo_commit" = "$remote_commit" ]; then
     echo "Status: Up to date & Synced with origin/main."
   elif [ "$active_commit" != "$repo_commit" ]; then
     echo "Status: OUT OF SYNC (Active installation is behind local repository). Run 'vpsforge update' to sync."

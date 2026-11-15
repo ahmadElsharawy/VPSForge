@@ -31,7 +31,10 @@ remove_ip() {
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmpf
     tmpf=$(mktemp)
-    awk -F'|' -v target="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 999))" '($4 != target || $5 != 22 || $3 + 0 < lo || $3 + 0 > hi)' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null || true
-    mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+    if awk -F'|' -v target="$ip" -v lo="$((SSH_PORT_BASE + 1))" -v hi="$((SSH_PORT_BASE + 999))" '($4 != target || $5 != 22 || $3 + 0 < lo || $3 + 0 > hi)' "$PORT_FORWARD_RULES_FILE" > "$tmpf" 2>/dev/null; then
+      mv -f "$tmpf" "$PORT_FORWARD_RULES_FILE"
+    else
+      rm -f "$tmpf"   # awk failed (full disk): keep the list as it was
+    fi
   fi
 }

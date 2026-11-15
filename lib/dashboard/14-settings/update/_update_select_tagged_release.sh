@@ -20,10 +20,10 @@ _update_select_tagged_release() {
 
   _update_print_available_tags "${tags[@]}"
 
-  read -r -p "Choose version number, or press Enter to cancel: " v_choice
-  [ -n "$v_choice" ] || return
+  read -r -p "Choose version number, or press Enter / 0 to cancel: " v_choice
+  { [ -n "$v_choice" ] && [ "$v_choice" != "0" ]; } || return
   if [[ "$v_choice" =~ ^[0-9]+$ ]] && [ "$v_choice" -ge 1 ] && [ "$v_choice" -le "${#tags[@]}" ]; then
-    target="${tags[$((v_choice-1))]}"
+    target="${tags[$((10#$v_choice - 1))]}"
     vpsforge_with_update_lock vpsforge_perform_update "$target"
     pause
   else

@@ -275,6 +275,8 @@ old=$(printf '%s
 ' linux-oracle-6.17-headers-6.17.0-1011 linux-oracle-6.17-tools-6.17.0-1011 linux-oracle-7.0-headers-7.0.0-1013 linux-headers-7.0.0-1013-oracle linux-image-7.0.0-1013-oracle | select_old_kernel_packages 7.0.0-1013-oracle | tr '
 ' ' ')
 t "old shared header/tool packages selected" "linux-oracle-6.17-headers-6.17.0-1011 linux-oracle-6.17-tools-6.17.0-1011 " "$old"
+old=$(printf '%s\n' linux-headers-6.8.0-49 linux-headers-6.8.0-49-generic linux-image-6.8.0-49-generic linux-headers-6.8.0-50 linux-image-6.8.0-50-generic linux-image-6.8.0-51-generic | select_old_kernel_packages 6.8.0-50-generic | tr '\n' ' ')
+t "generic kernel: its shared headers package goes too" "linux-headers-6.8.0-49 linux-headers-6.8.0-49-generic linux-image-6.8.0-49-generic " "$old"
 t "no kernels: nothing" "" "$(printf 'bash
 ' | select_old_kernel_packages 7.0.0-1-oracle)"
 

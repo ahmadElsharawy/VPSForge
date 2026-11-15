@@ -6,7 +6,7 @@ _import_handle_existing_vps() {
   echo "0) Cancel (Default)"
   echo "1) Import under a different name"
   echo "2) Overwrite / Replace current '$target_name' with backup"
-  read -r -p "Choice [0=Cancel, 1-2, Enter=0]: " c
+  read -r -p "Choice [0=Cancel, 1-2, Enter=0]: " c </dev/tty
   c="${c:-0}"
   case "$c" in
     1)

@@ -18,5 +18,6 @@ _ensure_setup_prerequisites() {
   command -v zpool >/dev/null 2>&1 || vpsforge_apt_install zfsutils-linux || true   # no ZFS: the pool falls back to btrfs
   command -v mkfs.btrfs >/dev/null 2>&1 || vpsforge_apt_install btrfs-progs
 
-  incus network show incusbr0 >/dev/null 2>&1 || incus admin init --minimal
+  # first setup: init Incus; an Incus that is set up already but lost its bridge only needs the bridge
+  incus network show incusbr0 >/dev/null 2>&1 || incus admin init --minimal 2>/dev/null || incus network create incusbr0
 }

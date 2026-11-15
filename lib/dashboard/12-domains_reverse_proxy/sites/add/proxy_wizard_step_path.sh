@@ -8,9 +8,13 @@ proxy_wizard_step_path() {
   show_example "whole domain: https://app.mydomain.com    one folder (/api): https://app.mydomain.com/api"
   echo "   1) The whole domain$([ "$last" = "1" ] && echo '   <- last used')"
   echo "   2) Only one folder, for example /api$([ "$last" = "2" ] && echo '   <- last used')"
-  read -r -p "Choice [Enter=$last, 0=Back]: " choice </dev/tty
-  choice="${choice:-$last}"
-  [ "$choice" = "0" ] && return "$WIZARD_BACK"
+  while :; do
+    read -r -p "Choice [Enter=$last, 0=Back]: " choice </dev/tty || return "$WIZARD_BACK"
+    choice="${choice:-$last}"
+    [ "$choice" = "0" ] && return "$WIZARD_BACK"
+    [ "$choice" = "1" ] || [ "$choice" = "2" ] && break
+    echo "Type 1 or 2."
+  done
   PW_PATH=""
   pref_set proxy_path_choice "$choice"
   if [ "$choice" = "2" ]; then
@@ -20,6 +24,7 @@ proxy_wizard_step_path() {
     [ "$folder" = "0" ] && return "$WIZARD_BACK"
     folder="${folder:-$last_folder}"
     [ -n "$folder" ] || { echo "No folder given."; return 1; }
+    [ "${folder#/}" = "$folder" ] && folder="/$folder"   # "api" means /api
     PW_PATH="$folder"
     pref_set proxy_folder "$folder"
   fi

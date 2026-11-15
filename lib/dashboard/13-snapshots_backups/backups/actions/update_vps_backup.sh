@@ -17,8 +17,8 @@ update_vps_backup() {
       local tmp_file_path="${tmp_dir}/$(basename "$SELECTED_BACKUP_FILE")"
 
       # Automatically disable and remove non-functional container swapfiles to prevent backup bloat
-      incus exec "$name" -- sh -c "swapoff /swapfile 2>/dev/null || true"
-      incus exec "$name" -- sh -c "rm -f /swapfile 2>/dev/null || true"
+      incus exec "$name" -- sh -c "swapoff /swapfile 2>/dev/null || true" >/dev/null 2>&1
+      incus exec "$name" -- sh -c "rm -f /swapfile 2>/dev/null || true" >/dev/null 2>&1
 
       echo "Exporting fresh backup for $name to temporary storage..."
       backup_space_check "$name" || return 1

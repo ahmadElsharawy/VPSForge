@@ -1,11 +1,11 @@
 #!/bin/bash
-# VPN (Xray, VLESS + Reality) test on a REAL host:   sudo bash scripts/vpn-test.sh
-# Makes two test VPSs (vpnt-s = VPN server, vpnt-c = a "device" running an Xray client),
-# connects through the VPN, checks limits, the QR page and the clean removal.
+# VPN test on a REAL host (Reality, Hysteria2 and VLESS+TLS):   sudo bash scripts/vpn-test.sh
+# Makes two test VPSs (vpnt-s = VPN server, vpnt-c = a "device" running Xray and Hysteria2 clients),
+# connects with all three protocols, checks none reaches a private address, limits, the QR page and removal.
 # The two test VPSs are kept for the next run (faster); CLEAN=1 removes them at the end.
 set -uo pipefail
 LIB_DIR="${LIB_DIR:-/opt/vpsforge/lib}"
-S=vpnt-s; C=vpnt-c; PORT=51990
+S=vpnt-s; C=vpnt-c; PORT="${VPN_TEST_PORT:-51990}"   # VPN_TEST_PORT=... on a server whose real VPN uses 51990
 PASS=0; FAILN=0
 export TERM=dumb
 source "$LIB_DIR/load_vpsforge_lib.sh"; load_vpsforge_lib "$LIB_DIR"
@@ -61,12 +61,27 @@ ok "phone goes online through the VPN" online
 in_c 'curl -4 -s -m 40 --socks5-hostname 127.0.0.1:1080 -o /dev/null https://proof.ovh.net/files/100Mb.dat' >/dev/null 2>&1
 ok "its traffic is counted (MB used, last active)" t_used
 
+echo "-- all three protocols, and none reaches a private address (other VPSs, this server, cloud metadata)"
+client_up_hy phone
+ok "phone goes online through Hysteria2" online_via 1081
+client_up_tls phone
+ok "phone goes online through VLESS+TLS" online_via 1082
+private_targets_up
+ok "Reality cannot reach private addresses" private_blocked 1080
+ok "Hysteria2 cannot reach private addresses" private_blocked 1081
+ok "VLESS+TLS cannot reach private addresses" private_blocked 1082
+private_targets_down
+in_c 'pkill -x hysteria; pkill -f "[x]ray run -c /root/t.json"' >/dev/null 2>&1
+
 echo "-- data limit and days"
 ok "give phone a 1 GB limit" vpn_set_device_limits "$S" phone 1 0
 incus exec "$S" -- sh -c "awk -F'|' -v OFS='|' '\$1 == \"phone\" { \$2 = 2000000000 } { print }' $VPN_GUEST_DIR/usage.txt > /tmp/u && mv /tmp/u $VPN_GUEST_DIR/usage.txt" </dev/null
 vpn_check_limits
 ok "phone is switched off after its 1 GB" t_state phone off-data
 no "phone can no longer go online" online
+client_up_hy phone; no "phone can no longer go online through Hysteria2" online_via 1081
+client_up_tls phone; no "phone can no longer go online through VLESS+TLS" online_via 1082
+in_c 'pkill -x hysteria; pkill -f "[x]ray run -c /root/t.json"' >/dev/null 2>&1
 ok "renew phone (unlimited)" vpn_set_device_limits "$S" phone 0 0
 ok "phone is on again" t_state phone on
 client_up phone
@@ -116,6 +131,7 @@ no "no VPN record after an interrupted create" test -n "$(vpn_get_port "$S")"
 no "no forward after an interrupted create" t_fwd
 
 echo "-- cleanup"
+private_targets_down
 [ -n "$SIP" ] && [ -n "$CIP" ] && iso_close
 vpn_remove "$S" >/dev/null 2>&1 || true
 [ "${CLEAN:-0}" = "1" ] && cleanup

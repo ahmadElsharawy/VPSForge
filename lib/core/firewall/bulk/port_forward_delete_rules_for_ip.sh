@@ -13,7 +13,11 @@ port_forward_delete_rules_for_ip() {
 
   local tmpf
   tmpf=$(mktemp)
-  awk -F'|' -v ip="$target_ip" '$4 != ip' "$file" > "$tmpf" 2>/dev/null || true
-  mv -f "$tmpf" "$file"
+  # replace the file only if awk really wrote the new list (a full disk must not empty every forward)
+  if awk -F'|' -v ip="$target_ip" '$4 != ip' "$file" > "$tmpf" 2>/dev/null; then
+    mv -f "$tmpf" "$file"
+  else
+    rm -f "$tmpf"
+  fi
   save_iptables
 }

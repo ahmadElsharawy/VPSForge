@@ -4,6 +4,7 @@
 #   free_vps_ip
 free_vps_ip() {
   [ -n "${NETWORK_PREFIX:-}" ] || get_network_info 2>/dev/null || true
+  [ -n "${NETWORK_PREFIX:-}" ] || return 1   # never hand out an address like ".250"
   local used_ips octet
   used_ips=$(vps_inventory 2>/dev/null | awk -F'|' '{ print $2 }')
   for octet in $(seq 250 -1 "$((IP_START + 1))"); do

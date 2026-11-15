@@ -6,6 +6,7 @@ port_forward_remove_rule_from_file() {
   local pattern="${proto}|${ext_ip}|${ext_port}|${int_ip}|${int_port}"
   local tmpf
   tmpf=$(mktemp)
-  grep -vFx "$pattern" "$file" > "$tmpf" 2>/dev/null || true
-  mv -f "$tmpf" "$file"
+  # grep exits 1 when no line is left (fine) and 2 on a real error (keep the file as it was)
+  grep -vFx "$pattern" "$file" > "$tmpf" 2>/dev/null
+  if [ $? -le 1 ]; then mv -f "$tmpf" "$file"; else rm -f "$tmpf"; fi
 }

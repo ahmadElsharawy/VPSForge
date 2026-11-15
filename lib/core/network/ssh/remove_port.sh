@@ -21,7 +21,10 @@ remove_port() {
   if [ -f "$PORT_FORWARD_RULES_FILE" ]; then
     local tmp_file
     tmp_file=$(mktemp)
-    awk -F'|' -v p="$port" '!($3 == p && $5 == "22")' "$PORT_FORWARD_RULES_FILE" > "$tmp_file" 2>/dev/null || true
-    mv -f "$tmp_file" "$PORT_FORWARD_RULES_FILE"
+    if awk -F'|' -v p="$port" '!($3 == p && $5 == "22")' "$PORT_FORWARD_RULES_FILE" > "$tmp_file" 2>/dev/null; then
+      mv -f "$tmp_file" "$PORT_FORWARD_RULES_FILE"
+    else
+      rm -f "$tmp_file"   # awk failed (full disk): keep the list as it was
+    fi
   fi
 }

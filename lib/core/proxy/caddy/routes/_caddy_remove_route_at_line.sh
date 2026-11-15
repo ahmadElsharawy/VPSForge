@@ -5,7 +5,7 @@ _caddy_remove_route_at_line() {
   local conf="$1" target_line="$2"
   local -a new_lines=()
   local deleting=0 brace_depth=0 open_b close_b n=0 line
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do   # also the last line when the file has no final newline
     n=$((n + 1))
     if [ $deleting -eq 1 ]; then
       open_b=$(echo "$line" | tr -cd '{' | wc -c)

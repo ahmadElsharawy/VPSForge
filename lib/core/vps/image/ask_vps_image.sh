@@ -39,7 +39,7 @@ ask_vps_image() {
     elif [ -z "$choice" ]; then
       SELECTED_IMAGE="$default_sel"
     elif [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#img_list[@]}" ]; then
-      SELECTED_IMAGE="${img_list[$((choice - 1))]}"
+      SELECTED_IMAGE="${img_list[$((10#$choice - 1))]}"
     else
       echo "Invalid choice."
       continue

@@ -28,14 +28,16 @@ ask_distro() {
     [ "$((idx + 1))" = "$default_index" ] && mark="   <- last used"
     printf '%2d) %s%s\n' "$((idx + 1))" "${labels[$idx]}" "$mark"
   done
-  read -r -p "Choice [0=Back, Enter=$default_index]: " choice </dev/tty
-  choice="${choice:-$default_index}"
-  [ "$choice" = "0" ] && return 1
-  if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#names[@]}" ]; then
-    SELECTED_DISTRO="${names[$((choice - 1))]}"
-    pref_set distro "$SELECTED_DISTRO"
-    return 0
-  fi
-  echo "Invalid choice."
-  return 1
+  # a typo asks again; only 0 goes back
+  while :; do
+    read -r -p "Choice [0=Back, Enter=$default_index]: " choice </dev/tty || return 1
+    choice="${choice:-$default_index}"
+    [ "$choice" = "0" ] && return 1
+    if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le "${#names[@]}" ]; then
+      SELECTED_DISTRO="${names[$((10#$choice - 1))]}"
+      pref_set distro "$SELECTED_DISTRO"
+      return 0
+    fi
+    echo "Invalid choice."
+  done
 }
