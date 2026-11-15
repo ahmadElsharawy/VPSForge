@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v3.6.2"
+VPSFORGE_VERSION="v3.6.3"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -67,7 +67,11 @@ case "${1:-}" in
     shift
     get_network_info 2>/dev/null || true
     vpsforge_with_update_lock vpsforge_perform_update "$@"
-    exit $?
+    _vpsforge_update_rc=$?
+    # Re-apply security hardening right away with the new code, so a fix ships the moment the owner
+    # updates instead of waiting for the next full run of the menu.
+    setup_inter_vps_isolation 2>/dev/null || true
+    exit $_vpsforge_update_rc
     ;;
 esac
 ensure_setup
