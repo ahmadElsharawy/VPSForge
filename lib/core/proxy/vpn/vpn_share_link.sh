@@ -19,6 +19,7 @@ vpn_share_link() {
   link=$(vpn_device_sub "$vps" "$name") || { echo "ERROR: device '$name' not found."; return 1; }
   label=$(printf '%s\n' "$link" | head -n 1)
   label="${label##*#}"
+  label="${label%-REALITY}"
   secret=$(head -c 18 /dev/urandom | od -An -tx1 | tr -d ' \n')
   # vpn_device_sub ran in a subshell, so find the public IP here too
   [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1

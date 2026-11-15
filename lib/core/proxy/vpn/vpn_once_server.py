@@ -41,7 +41,7 @@ It adds all 3 connections at once.<br>
 On this device: tap <b>Copy the 3 links</b>, then in the app tap <b>+</b> &gt; <b>Import from clipboard</b>.<br>
 Apps with subscriptions (Hiddify, v2rayN): you can add the subscription link instead.<br>
 </li>
-<li>The names <b>%(label)s</b>, <b>-HY2</b> and <b>-TLS</b> are filled in by themselves. Connect to the one that works best.</li>
+<li>The names <b>%(label)s</b> + <b>-REALITY</b>, <b>-HY2</b> and <b>-TLS</b> are filled in by themselves. Connect to the one that works best.</li>
 </ol>
 <p class="n">This page works for %(m)d minutes only. Keep it private: anyone with this QR code or link can use this VPN.</p>
 </body></html>""" % {"label": html.escape(label), "qr": qr, "link": html.escape(link), "m": minutes,

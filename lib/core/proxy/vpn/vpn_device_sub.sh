@@ -1,5 +1,6 @@
 #!/bin/bash
 # Print the three share links of one device, one per line: VLESS+Reality, Hysteria2, VLESS+TLS.
+# Their names end in -REALITY, -HY2 and -TLS so the app shows which is which.
 # All three use the device's own UUID. Import them together or pick the one that works best.
 #   vpn_device_sub <vps> <device_name>
 vpn_device_sub() {
@@ -12,7 +13,7 @@ vpn_device_sub() {
   [ -n "$id" ] || return 1
   [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1
   label=$(vpn_device_label "$vps" "$name")
-  echo "$reality"
+  echo "${reality}-REALITY"
   # Hysteria2: the password is the device's UUID (the server also accepts <name>:<uuid> from older links)
   echo "hysteria2://${id}@${PUBLIC_IP}:$(vpn_get_hy_port "$vps")/?insecure=1&sni=$(vpn_get_sni "$vps" hy)#${label}-HY2"
   echo "vless://${id}@${PUBLIC_IP}:$((ext + VPN_TLS_PORT_OFFSET))?security=tls&encryption=none&alpn=http/1.1&allowInsecure=1&insecure=1&fp=ios&type=tcp&sni=$(vpn_get_sni "$vps" tls)#${label}-TLS"
