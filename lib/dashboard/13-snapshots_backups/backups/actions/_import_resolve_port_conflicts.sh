@@ -19,10 +19,11 @@ _import_resolve_port_conflicts() {
     [ "$?" -ne 0 ] && { echo "Skipped forward $proto:$ext_port (the host uses that port)."; continue; }
 
     other_vps=$(awk -F'|' -v p="$proto" -v port="$ext_port" -v oldip="$old_ip" '$1 == p && $3 == port && $4 != oldip { print $4; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null || true)
+    _import_port_taken "$proto" "$ext_port" && other_vps="another rule of this backup"
     if [ -n "$other_vps" ]; then
       echo
       echo "⚠️  PORT FORWARD CONFLICT detected for Rule [ $proto:$ext_port -> $int_port ]"
-      echo "   External port $ext_port ($proto) is already used by VPS IP $other_vps."
+      echo "   External port $ext_port ($proto) is already used by: $other_vps."
       echo "   1) Change external port"
       echo "   2) Skip this rule (Default)"
       read -r -p "   Choice [1-2, Enter=2]: " action </dev/tty

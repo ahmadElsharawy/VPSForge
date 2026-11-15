@@ -30,8 +30,9 @@ _add_configure_single_vps() {
         if [ "$custom_name" = "0" ]; then
           return 1
         fi
-        if [ -n "$custom_name" ]; then cur_name="$custom_name"; fi
-        add_name_is_usable "$cur_name" "${names[@]:0:$((vps_i-1))}" || continue
+        # keep the default until the typed name is accepted, so a typo is not offered back as the default
+        add_name_is_usable "${custom_name:-$cur_name}" "${names[@]:0:$((vps_i-1))}" || continue
+        [ -n "$custom_name" ] && cur_name="$custom_name"
         ind_step=2
         ;;
       2)

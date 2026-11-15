@@ -5,9 +5,10 @@ _diagnose_dns_resolution() {
   local domain="$1"
   echo -n "[3/4] Checking DNS Resolution for $domain... "
   local resolved_ip=""
-  resolved_ip=$(getent ahosts "$domain" 2>/dev/null | awk '{print $1}' | head -n 1 || true)
+  # the A record (IPv4), like this server's public IP: an IPv6 answer first must not look like a mismatch
+  resolved_ip=$(getent ahostsv4 "$domain" 2>/dev/null | awk '{print $1}' | head -n 1 || true)
   [ -n "$resolved_ip" ] || resolved_ip=$(host "$domain" 2>/dev/null | awk '/has address/ {print $NF; exit}' || true)
-  [ -n "$resolved_ip" ] || resolved_ip=$(nslookup "$domain" 2>/dev/null | awk '/^Address: / {print $2}' | tail -n 1 || true)
+  [ -n "$resolved_ip" ] || resolved_ip=$(nslookup "$domain" 2>/dev/null | awk '/^Address: / && $2 ~ /^[0-9.]+$/ {print $2}' | tail -n 1 || true)
 
   if [ -n "$resolved_ip" ]; then
     if [ "$resolved_ip" = "$PUBLIC_IP" ]; then

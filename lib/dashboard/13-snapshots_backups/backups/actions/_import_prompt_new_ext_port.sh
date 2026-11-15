@@ -22,6 +22,8 @@ _import_prompt_new_ext_port() {
         echo "   ERROR: the host itself uses port $new_ext_port. Try another one."
       elif [ "$port_declined" -eq 1 ]; then
         echo "   Port $new_ext_port was not accepted. Try another one."
+      elif _import_port_taken "$proto" "$new_ext_port"; then
+        echo "   ERROR: another rule of this backup already takes port $new_ext_port. Try another one."
       elif ! awk -F'|' -v p="$proto" -v port="$new_ext_port" -v oldip="$old_ip" 'BEGIN { f=0 } $1 == p && $3 == port && $4 != oldip { f=1; exit } END { exit !f }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null; then
         ext_port="$new_ext_port"
         return 0

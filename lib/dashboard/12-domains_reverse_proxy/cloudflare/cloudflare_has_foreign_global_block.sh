@@ -6,5 +6,5 @@ cloudflare_has_foreign_global_block() {
   local caddyfile="${1:?caddyfile}" first
   first=$(sed '/^# BEGIN VPSFORGE CLOUDFLARE$/,/^# END VPSFORGE CLOUDFLARE$/d' "$caddyfile" \
     | grep -vE '^[[:space:]]*(#.*)?$' | head -n 1)
-  [[ "$first" =~ ^\{[[:space:]]*$ ]]
+  [[ "$first" =~ ^[[:space:]]*\{[[:space:]]*$ ]]   # also an indented "{"
 }

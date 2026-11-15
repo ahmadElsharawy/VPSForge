@@ -10,8 +10,10 @@ inspect_backup_file() {
 
   _inspect_backup_load_metadata "$file_path"
 
-  orig_name=$(extract_container_name_from_backup_filename "$file_path")
-  [ -n "$orig_name" ] || orig_name=$(echo "$index_content" | awk -F': ' '/^name:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "-")
+  # the name recorded inside the backup wins: the file may have been renamed
+  orig_name=$(echo "$index_content" | awk -F': ' '/^name:/{print $2; exit}' | tr -d '"' | tr -d "'")
+  [ -n "$orig_name" ] || orig_name=$(extract_container_name_from_backup_filename "$file_path")
+  [ -n "$orig_name" ] || orig_name="-"
 
   orig_ip=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.ip:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "-")
   orig_port=$(echo "$index_content" | awk -F': ' '/user\.vpsforge\.ssh_port:/{print $2; exit}' | tr -d '"' | tr -d "'" || echo "-")

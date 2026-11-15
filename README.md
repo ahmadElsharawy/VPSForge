@@ -1,7 +1,7 @@
-# VPSForge v3.6.0
+# VPSForge v3.6.1
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.6.0-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.6.1-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,14 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.6.1
+
+Last small fixes of the audit:
+- **Backup import:** two forwards of one backup can no longer be given the same public port.
+- **Domains:** removing a VPS's last site cleans every domain of it from the VPS (also `a.com, b.com {` lines); the Cloudflare check accepts an indented `{`; the backup preview lists only site names.
+- **Diagnose:** the SSL check reports only real Caddy errors (not a successful challenge), and the DNS check compares the IPv4 (A) record.
+- **Menus:** a typo in the VPS name is not offered back as the default; per-VPS username/password says `0=Skip this VPS`; backup inspect shows the name stored inside the backup.
 
 ## ✨ What's new in v3.6.0
 

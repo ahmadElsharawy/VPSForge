@@ -6,7 +6,7 @@ _diagnose_acme_ssl() {
   echo -n "[4/4] Checking Let's Encrypt / ACME Certificate Status... "
   sleep 2
   local cert_log=""
-  cert_log=$(journalctl -u caddy -n 30 --no-pager 2>/dev/null | grep -i "$domain" | grep -iE "(error|failed|could not get cert|challenge|tls-alpn|http-01)" | tail -n 2 || true)
+  cert_log=$(journalctl -u caddy -n 30 --no-pager 2>/dev/null | grep -i "$domain" | grep -iE '"level":"error"|could not get certificate|failed to obtain|obtaining certificate.*error' | tail -n 2 || true)
 
   if [ -n "$cert_log" ]; then
     echo "WARNING / ACME VALIDATION FAILED"

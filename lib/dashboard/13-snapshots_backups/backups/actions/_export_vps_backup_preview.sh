@@ -15,7 +15,8 @@ _export_vps_backup_preview() {
   if [ -n "$proxy_b64" ] && [ "$proxy_b64" != "-" ]; then
     local proxy_decoded
     proxy_decoded=$(echo "$proxy_b64" | base64 -d 2>/dev/null || true)
-    domains=$(echo "$proxy_decoded" | awk '/\{/{print $1}' | tr '\n' ' ' | sed 's/ *$//')
+    # site names only: top-level lines ending in "{" (not "handle /api {"), several names per line allowed
+    domains=$(grep -E '^[^[:space:]#].*\{[[:space:]]*$' <<< "$proxy_decoded" | sed 's/{.*//' | tr ',' ' ' | xargs)
     [ -n "$domains" ] || domains="Configured"
   fi
 

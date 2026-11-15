@@ -17,7 +17,7 @@ edit_text_for_selection() {
       { [ "$value" = "0" ] || [ -z "$value" ]; } && return
     else
       [ "${#SELECTED_VPS[@]}" -gt 1 ] && echo "--- $n ---"
-      read -r $silent -p "New $what${last:+ [Enter=$last]} [0=Back]: " value
+      read -r $silent -p "New $what${last:+ [Enter=$last]} [0=Skip this VPS]: " value
       value="${value:-$last}"
       [ -z "$silent" ] || echo
       { [ "$value" = "0" ] || [ -z "$value" ]; } && continue
