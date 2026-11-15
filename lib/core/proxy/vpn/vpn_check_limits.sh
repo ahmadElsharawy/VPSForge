@@ -9,6 +9,7 @@ vpn_check_limits() {
     is_vps_running "$vps" || continue
     out=$(vpn_guest_check "$vps" 2>/dev/null) || continue
     [ -n "$out" ] && logger -t vpsforge "VPN $vps: $out" 2>/dev/null
+    vpn_sub_refresh "$vps" >/dev/null 2>&1 || true   # days and GB left in the subscription links
   done < <(vpn_all_vps)
   return 0
 }

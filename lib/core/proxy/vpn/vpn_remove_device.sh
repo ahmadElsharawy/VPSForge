@@ -10,5 +10,6 @@ vpn_remove_device() {
     touch usage.txt
     awk -F"|" -v n="$NAME" "\$1 != n" usage.txt > usage.txt.new && mv -f usage.txt.new usage.txt
   ' </dev/null || return 1
+  vpn_sub_forget "$vps" "$name"   # its permanent link answers "not found" from now on
   vpn_guest_apply "$vps"
 }

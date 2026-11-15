@@ -280,6 +280,22 @@ t "generic kernel: its shared headers package goes too" "linux-headers-6.8.0-49 
 t "no kernels: nothing" "" "$(printf 'bash
 ' | select_old_kernel_packages 7.0.0-1-oracle)"
 
+# VPN link names: days and GB left
+PUBLIC_IP=1.2.3.4
+t "label unlimited" "1.2.3.4-v1-unl-unl" "$(_vpn_label_from v1 0 0 0)"
+t "label fresh 50 GB" "1.2.3.4-v1-unl-50GB" "$(_vpn_label_from v1 0 50 0)"
+t "label 47.5 GB left shows 47" "1.2.3.4-v1-unl-47GB" "$(_vpn_label_from v1 2684354560 50 0)"
+t "label under 10 GB has a decimal" "1.2.3.4-v1-unl-2.5GB" "$(_vpn_label_from v1 8053063680 10 0)"
+t "label used more than the limit" "1.2.3.4-v1-unl-0GB" "$(_vpn_label_from v1 99999999999 10 0)"
+t "label days left" "1.2.3.4-v1-30d-unl" "$(_vpn_label_from v1 0 0 $(( $(date +%s) + 30 * 86400 - 60 )))"
+t "label time is over" "1.2.3.4-v1-0d-unl" "$(_vpn_label_from v1 0 0 1000)"
+links=$(VPN_TLS_PORT_OFFSET=10000 _vpn_links_from ID PUB SID L 51990 r.com t.com h.com 443)
+t "three links" "3" "$(wc -l <<< "$links" | tr -d ' ')"
+t "reality link" "vless://ID@1.2.3.4:51990?encryption=none&flow=xtls-rprx-vision&security=reality&sni=r.com&fp=chrome&pbk=PUB&sid=SID&type=tcp#L-REALITY" "$(sed -n 1p <<< "$links")"
+t "hysteria2 link" "hysteria2://ID@1.2.3.4:443/?insecure=1&sni=h.com#L-HY2" "$(sed -n 2p <<< "$links")"
+t "tls link port and sni" "yes" "$(sed -n 3p <<< "$links" | grep -q '^vless://ID@1.2.3.4:61990?security=tls.*sni=t.com#L-TLS$' && echo yes)"
+unset PUBLIC_IP links
+
 # VPN SNI names
 t "sni ok" ok "$(is_valid_vpn_sni www.microsoft.com && echo ok || echo bad)"
 t "sni with scheme refused" bad "$(is_valid_vpn_sni https://www.microsoft.com && echo ok || echo bad)"

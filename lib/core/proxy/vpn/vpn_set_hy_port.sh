@@ -19,5 +19,6 @@ vpn_set_hy_port() {
   port_forward_remove_rule_from_file "$PORT_FORWARD_RULES_FILE" udp 0.0.0.0 "$old" "$ip" "$VPN_HY_INNER_PORT"
   incus config set "$vps" user.vpsforge.vpn_hy_port "$new" || return 1
   save_iptables
+  vpn_sub_refresh "$vps" >/dev/null 2>&1 || true   # subscriptions give the new port at the next update
   echo "Hysteria2 now uses UDP $new. Open UDP $new in your cloud firewall."
 }

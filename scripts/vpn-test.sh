@@ -97,32 +97,59 @@ client_up laptop
 ok "laptop goes online again" online
 no "bad limit refused" vpn_set_device_limits "$S" phone abc 1
 
+echo "-- permanent subscription link"
+P2=$((PORT + 1))
+SUB=$(vpn_sub_url "$S" phone)
+ok "subscription address printed" test -n "$SUB"
+ok "subscription server runs" t_sub_service
+ok "firewall lets the subscription in" t_in
+ok "subscription gives the 3 links and the usage header" t_sub "${SUB/$PUBLIC_IP/127.0.0.1}"
+ok "an app adding ?flag=... still gets it" t_sub "${SUB/$PUBLIC_IP/127.0.0.1}?flag=1"
+no "wrong token is refused" curl -fsS -m 5 "http://127.0.0.1:$P2/s/0123456789abcdef0123456789abcdef"
+no "a path trick is refused" curl -fsS -m 5 "http://127.0.0.1:$P2/s/..%2ftokens"
+ok "give phone 20 GB and 7 days" vpn_set_device_limits "$S" phone 20 7
+ok "the subscription shows the new days and GB at once" t_sub_name "${SUB/$PUBLIC_IP/127.0.0.1}" "${PUBLIC_IP}-${S}-7d-20GB"
+ok "renew phone (unlimited)" vpn_set_device_limits "$S" phone 0 0
+systemctl restart "vpsforge-vpnsub-$PORT"; sleep 2
+ok "the same link works after the server restarts" t_sub "${SUB/$PUBLIC_IP/127.0.0.1}"
+
 echo "-- QR page"
 url=$(vpn_share_link "$S" phone 1)
 path="/${url#http://*/}"
-P2=$((PORT + 1))
 ok "page address printed" test -n "$url"
 ok "page shows the QR code" t_page
 ok "page shows the link to copy" t_page_link
+ok "page shows the permanent subscription link" eval 'curl -fsS -m 5 "http://127.0.0.1:$P2$path" | grep -qF "/s/${SUB##*/s/}"'
+ok "page subscription (old form .../sub) works while it lives" t_sub "http://127.0.0.1:$P2${path}sub"
 no "wrong secret is refused" curl -fsS -m 5 "http://127.0.0.1:$P2/wrong/"
-ok "firewall opening while the page lives" t_in
+no "bad minutes refused" vpn_share_link "$S" phone 10m
 exec 7<>"/dev/tcp/127.0.0.1/$P2"   # a browser-like connection that never sends anything
 echo "      waiting 65 s for the page to expire (with a connection left open)..."; sleep 65
 exec 7>&- 7<&-
 no "page is gone after its time" curl -fsS -m 5 "http://127.0.0.1:$P2$path"
-no "firewall opening closed again" t_in
-no "no copy of the link left" t_copy_left
+no "its folder is deleted" t_copy_left
+ok "the subscription link still works after the page is gone" t_sub "${SUB/$PUBLIC_IP/127.0.0.1}"
 
 echo "-- remove"
+LSUB=$(vpn_sub_url "$S" laptop)
+vpn_sub_refresh "$S" >/dev/null 2>&1
+ok "laptop has a working subscription" t_sub "${LSUB/$PUBLIC_IP/127.0.0.1}"
 ok "remove a device" vpn_remove_device "$S" laptop
 ok "1 device left" test "$(vpn_list_devices "$S" | wc -l)" = "1"
 no "removed device is gone from Xray" incus exec "$S" -- grep -q '"email":"laptop"' "$VPN_GUEST_DIR/config.json"
+no "removed device's subscription link stops" curl -fsS -m 5 "${LSUB/$PUBLIC_IP/127.0.0.1}"
+ok "the other device's link still works" t_sub "${SUB/$PUBLIC_IP/127.0.0.1}"
 ok "remove the VPN" vpn_remove "$S"
 no "Xray stopped" incus exec "$S" -- pgrep -x xray
 no "Xray program removed" incus exec "$S" -- test -e /usr/local/bin/xray
 no "VPN record is gone" test -n "$(vpn_get_port "$S")"
 no "TCP forward is gone" t_fwd
 no "forward file is clean" grep -q "|$PORT|" "$PORT_FORWARD_RULES_FILE"
+no "subscription server stopped" t_sub_service
+no "its service file is gone" test -e "/etc/systemd/system/vpsforge-vpnsub-$PORT.service"
+no "its firewall opening is closed" t_in
+no "its folder is gone" test -e "$VPN_SUB_DIR/$PORT"
+no "the subscription link stops" curl -fsS -m 5 "${SUB/$PUBLIC_IP/127.0.0.1}"
 
 echo "-- interrupted create leaves nothing"
 ( vpn_create "$S" "$PORT" >/dev/null 2>&1 & p=$!; sleep 2; kill -TERM $p; wait $p ) 2>/dev/null

@@ -233,7 +233,7 @@ def section_details(ui):
     check("10) connection info with SSH command", ui.expect(r"SSH Command: ssh root@.*? -p 90\d\d", 30), ui.tail())
     pause(ui)
     main_choice(ui, 9)
-    step(ui, "select vps", r"Select VPS by number, name, or A for All.*?: ", "uit1\r")
+    step(ui, "select vps", r"Select VPS by number or name \[0=Back, Enter=1\]: ", "uit1\r")
     # The shell may need a few seconds to open on a weak host: type the probe again until it answers.
     shell_ok = False
     for attempt in range(4):

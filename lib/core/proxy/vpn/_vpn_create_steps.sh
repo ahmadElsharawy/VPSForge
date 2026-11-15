@@ -27,6 +27,7 @@ _vpn_create_steps() {
   port_forward_apply_rule tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT" || { echo "ERROR: iptables refused the TLS rule."; return 1; }
   port_forward_append_rule_to_file "$PORT_FORWARD_RULES_FILE" tcp 0.0.0.0 "$tls_ext" "$ip" "$VPN_TLS_INNER_PORT"
   save_iptables
+  vpn_sub_refresh "$vps" >/dev/null 2>&1 || true   # starts the subscription server with the final ports
   sync_vps_metadata "$vps"
   return 0
 }

@@ -8,8 +8,8 @@ vpn_remove() {
   hy_ext=$(vpn_get_hy_port "$vps")
   ip=$(get_ip "$vps" 2>/dev/null || true)
   if [ -n "$ext" ]; then
-    # close an open QR/subscription page of this VPN: its links stop working now
-    pkill -f "vpn_once_server.py .* $((ext + 1)) " 2>/dev/null || true
+    # stop the VPN's web server: its subscription links and QR pages stop working now
+    vpn_sub_server_remove "$ext"
     [ -n "$ip" ] || ip=$(awk -F'|' -v p="$ext" '$1 == "tcp" && $3 == p && $5 == p { print $4; exit }' "$PORT_FORWARD_RULES_FILE" 2>/dev/null)
     if [ -n "$ip" ]; then
       tls_ext=$((ext + VPN_TLS_PORT_OFFSET))

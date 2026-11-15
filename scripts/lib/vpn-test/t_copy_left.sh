@@ -1,3 +1,3 @@
 #!/bin/bash
-# Check for any lingering runtime files from the temporary QR server.
-t_copy_left() { ls /run/vpsforge-vpn-* /run/vpsforge-vpnqr-* 2>/dev/null | grep -q .; }
+# Check whether a page folder of the test VPN is still on disk (it must be deleted when it expires).
+t_copy_left() { ls "$VPN_SUB_DIR/$PORT/pages" 2>/dev/null | grep -q .; }

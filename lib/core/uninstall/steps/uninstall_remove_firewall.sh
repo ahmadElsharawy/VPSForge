@@ -6,6 +6,7 @@ uninstall_remove_firewall() {
   echo "[2/7] Removing firewall rules..."
 
   _uninstall_remove_saved_forwards
+  _uninstall_remove_vpn_sub_servers
   _uninstall_remove_subnet_rules "$subnet"
 
   # Isolation / NAT rules from setup_inter_vps_isolation.

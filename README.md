@@ -1,7 +1,7 @@
-# VPSForge v3.5.1
+# VPSForge v3.6.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.5.1-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v3.6.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,13 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v3.6.0
+
+- **Permanent VPN subscription link per device** (`http://SERVER:<VPN port + 1>/s/<token>`): add it once in v2rayNG, Hiddify or v2rayN; **Update** always brings the current links. The names show the **days and GB left** (`1.2.3.4-vps1-29d-47GB-REALITY`), and apps that read the `subscription-userinfo` header show the usage too. Menu 12 > VPN > a device > **4) Subscription link**.
+- It survives key resets, SNI and port changes (same link, new content); removing the device or the VPN makes it stop.
+- A small permanent web server per VPN (`vpsforge-vpnsub-<port>`, starts after a reboot) serves the subscriptions and the 10-minute QR pages; it is removed with the VPN and by `vpsforge uninstall`.
+- Links refresh by themselves every 5 minutes (with the limits check) and right after any change.
 
 ## ✨ What's new in v3.5.1
 

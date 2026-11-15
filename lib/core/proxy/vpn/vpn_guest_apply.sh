@@ -4,5 +4,7 @@
 vpn_guest_apply() {
   local vps="${1:?vps}"
   incus exec "$vps" --env PORT="$(vpn_inner_port "$vps")" --env SNI="$(vpn_get_sni "$vps")" --env API="$VPN_API_PORT"     --env TLS_PORT="$VPN_TLS_INNER_PORT" --env HY_PORT="$VPN_HY_INNER_PORT" --env HY_MASQ="$VPN_HY_MASQUERADE_URL" \
-    -- sh "$VPN_GUEST_DIR/apply.sh" </dev/null
+    -- sh "$VPN_GUEST_DIR/apply.sh" </dev/null || return 1
+  vpn_sub_refresh "$vps" >/dev/null 2>&1 || true   # the permanent subscription links follow every change
+  return 0
 }

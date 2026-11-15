@@ -8,7 +8,7 @@ uninstall_verify_clean() {
   echo "Verifying the server is clean..."
   for path in /opt/vpsforge /usr/local/bin/vpsforge /etc/caddy/vpsforge /etc/cron.d/vpsforge-quota \
               /etc/profile.d/vpsforge-autostart.sh /etc/modules-load.d/vpsforge.conf \
-              /etc/sysctl.d/99-vpsforge-nesting.conf "$SWAPFILE_PATH" $incus_paths; do
+              /etc/sysctl.d/99-vpsforge-nesting.conf "$SWAPFILE_PATH" /etc/systemd/system/vpsforge-vpnsub-*.service               $incus_paths; do
     if [ -e "$path" ]; then
       echo "  still present: $path"
       leftovers=$((leftovers + 1))
