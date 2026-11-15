@@ -86,6 +86,20 @@ Or scan the QR code (<b>+</b> &gt; <b>Scan QR code</b>) or copy the 3 links (<b>
 class Handler(http.server.BaseHTTPRequestHandler):
     timeout = 10   # a client that opens a connection and sends nothing must not hold a thread
 
+    def setup(self):
+        # Do the TLS handshake HERE, in the per-connection thread - never on the listening socket in the
+        # accept loop, or one slow/stalled client (e.g. a phone on a network that throttles the port)
+        # would block the handshake and freeze the whole server for everyone.
+        if TLS_CTX is not None:
+            try:
+                self.request.settimeout(10)
+                self.request = TLS_CTX.wrap_socket(self.request, server_side=True)
+                self.connection = self.request
+            except Exception:
+                self.close_connection = True
+                return
+        super().setup()
+
     def reply(self, code, body, ctype, extra=()):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
@@ -132,17 +146,18 @@ class Handler(http.server.BaseHTTPRequestHandler):
         pass
 
 
+# Optional HTTPS: with a cert dir (cert.pem + key.pem) the token is served over TLS, not clear HTTP.
+# The context is built once here; each connection is wrapped later in Handler.setup (its own thread),
+# so a slow handshake never blocks the accept loop. Self-signed (IP-only), so an app may allow it once.
+TLS_CTX = None
+_cert_dir = sys.argv[3] if len(sys.argv) > 3 else ""
+if _cert_dir:
+    import ssl
+    _cert, _key = os.path.join(_cert_dir, "cert.pem"), os.path.join(_cert_dir, "key.pem")
+    if os.path.exists(_cert) and os.path.exists(_key):
+        TLS_CTX = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        TLS_CTX.load_cert_chain(_cert, _key)
+
 server = http.server.ThreadingHTTPServer(("0.0.0.0", port), Handler)
 server.daemon_threads = True
-# Optional HTTPS: wrap the socket in TLS when a cert dir with cert.pem + key.pem is given, so the
-# subscription token never travels in clear. The cert is self-signed (IP-only install), so a VPN app
-# may ask to allow it once.
-cert_dir = sys.argv[3] if len(sys.argv) > 3 else ""
-if cert_dir:
-    import ssl
-    cert, key = os.path.join(cert_dir, "cert.pem"), os.path.join(cert_dir, "key.pem")
-    if os.path.exists(cert) and os.path.exists(key):
-        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        ctx.load_cert_chain(cert, key)
-        server.socket = ctx.wrap_socket(server.socket, server_side=True)
 server.serve_forever()
