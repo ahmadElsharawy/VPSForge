@@ -24,6 +24,13 @@ _pf_cli_add() {
     is_valid_port_forward_rule "$proto" "$external_ip" "$external_port" "$internal_port" || { echo "ERROR: invalid rule (IPv4, ports 1-65535, not 22/80/443)."; return 1; }
   done
   [[ "$internal_ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || { echo "ERROR: the internal address must be an IPv4 address."; return 1; }
+  # The destination must be an existing VPS on this server - never the host, the gateway, the cloud
+  # metadata IP (169.254.169.254) or an outside address. Without this, a forward could expose host
+  # services or cloud metadata to the internet, or turn the server into an open relay to any address.
+  if [ -z "$(get_vps_name_by_ip "$internal_ip" 2>/dev/null)" ]; then
+    echo "ERROR: $internal_ip is not a VPS on this server. A port forward can only point to a VPS."
+    return 1
+  fi
   # One external port can forward to only ONE destination. Refuse a second rule on a port already
   # forwarded elsewhere: iptables would keep both DNAT rules but only the first ever fires, so the user
   # would be told the forward was "applied" while it silently never works.
