@@ -64,20 +64,31 @@ setup_inter_vps_isolation() {
   fi
 
   # A VPS may reach the host only for DNS, DHCP and ICMP. Everything else the host listens on (its own
-  # SSH, the Caddy proxy/admin, the VPN subscription server, rpcbind, ...) must be invisible to tenants,
-  # so one tenant cannot probe host services or open another tenant's subscription page from the inside.
-  iptables -C INPUT -i incusbr0 -p udp --dport 53 -j ACCEPT 2>/dev/null || iptables -I INPUT 1 -i incusbr0 -p udp --dport 53 -j ACCEPT
-  iptables -C INPUT -i incusbr0 -p tcp --dport 53 -j ACCEPT 2>/dev/null || iptables -I INPUT 2 -i incusbr0 -p tcp --dport 53 -j ACCEPT
-  iptables -C INPUT -i incusbr0 -p udp --dport 67 -j ACCEPT 2>/dev/null || iptables -I INPUT 3 -i incusbr0 -p udp --dport 67 -j ACCEPT
-  iptables -C INPUT -i incusbr0 -p icmp -j ACCEPT 2>/dev/null || iptables -I INPUT 4 -i incusbr0 -p icmp -j ACCEPT
-  iptables -C INPUT -i incusbr0 -j DROP 2>/dev/null || iptables -A INPUT -i incusbr0 -j DROP
+  # SSH, the Caddy proxy, the VPN subscription servers, rpcbind, ...) must be invisible to tenants, so one
+  # tenant cannot probe host services or open another tenant's subscription page from the inside.
+  # The VPN/Caddy code opens its ports with plain `-A INPUT --dport X -j ACCEPT` rules that are NOT
+  # interface-restricted, so our DROP must sit ABOVE them. We rebuild the five rules at the very top of
+  # INPUT every time (delete any old copy, then insert at position 1 in reverse so the final order is
+  # DNS, DNS, DHCP, ICMP, DROP) - the DROP then wins over any later per-service ACCEPT.
+  local _r
+  for _r in "-i incusbr0 -j DROP" \
+            "-i incusbr0 -p icmp -j ACCEPT" \
+            "-i incusbr0 -p udp --dport 67 -j ACCEPT" \
+            "-i incusbr0 -p tcp --dport 53 -j ACCEPT" \
+            "-i incusbr0 -p udp --dport 53 -j ACCEPT"; do
+    while iptables -D INPUT $_r 2>/dev/null; do :; done
+    iptables -I INPUT 1 $_r
+  done
   if command -v ip6tables >/dev/null 2>&1; then
     # ICMPv6 must stay open or IPv6 (NDP) breaks; DNS/DHCPv6 too. Drop the rest to the host.
-    ip6tables -C INPUT -i incusbr0 -p ipv6-icmp -j ACCEPT 2>/dev/null || ip6tables -I INPUT 1 -i incusbr0 -p ipv6-icmp -j ACCEPT 2>/dev/null || true
-    ip6tables -C INPUT -i incusbr0 -p udp --dport 53 -j ACCEPT 2>/dev/null || ip6tables -I INPUT 2 -i incusbr0 -p udp --dport 53 -j ACCEPT 2>/dev/null || true
-    ip6tables -C INPUT -i incusbr0 -p tcp --dport 53 -j ACCEPT 2>/dev/null || ip6tables -I INPUT 3 -i incusbr0 -p tcp --dport 53 -j ACCEPT 2>/dev/null || true
-    ip6tables -C INPUT -i incusbr0 -p udp --dport 547 -j ACCEPT 2>/dev/null || ip6tables -I INPUT 4 -i incusbr0 -p udp --dport 547 -j ACCEPT 2>/dev/null || true
-    ip6tables -C INPUT -i incusbr0 -j DROP 2>/dev/null || ip6tables -A INPUT -i incusbr0 -j DROP 2>/dev/null || true
+    for _r in "-i incusbr0 -j DROP" \
+              "-i incusbr0 -p udp --dport 547 -j ACCEPT" \
+              "-i incusbr0 -p tcp --dport 53 -j ACCEPT" \
+              "-i incusbr0 -p udp --dport 53 -j ACCEPT" \
+              "-i incusbr0 -p ipv6-icmp -j ACCEPT"; do
+      while ip6tables -D INPUT $_r 2>/dev/null; do :; done
+      ip6tables -I INPUT 1 $_r 2>/dev/null || true
+    done
   fi
 
   _purge_legacy_forward_rules "$NETWORK_PREFIX"
