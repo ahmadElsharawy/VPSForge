@@ -24,10 +24,12 @@ vpn_share_link() {
   # the QR code holds the three links themselves: one scan adds all three (no download needed)
   printf '%s' "$links" | incus exec "$vps" -- qrencode -t png -s 10 -m 2 -o - > "$pd/qr.png" 2>/dev/null
   [ -s "$pd/qr.png" ] || { rm -rf "$pd"; echo "ERROR: could not make the QR code."; return 1; }
-  VPN_SUB_URL="http://${PUBLIC_IP}:${port}/s/${tok}"
+  local scheme="http"
+  [ -f "$VPN_SUB_DIR/.tls/cert.pem" ] && scheme="https"   # https when the subscription server serves TLS
+  VPN_SUB_URL="${scheme}://${PUBLIC_IP}:${port}/s/${tok}"
   echo "$tok" > "$pd/token"
   echo "$VPN_SUB_URL" > "$pd/url"
   echo $(( $(date +%s) + minutes * 60 )) > "$pd/expires"   # written last: the page exists only once complete
-  VPN_SHARE_URL="http://${PUBLIC_IP}:${port}/${secret}/"
+  VPN_SHARE_URL="${scheme}://${PUBLIC_IP}:${port}/${secret}/"
   echo "$VPN_SHARE_URL"
 }

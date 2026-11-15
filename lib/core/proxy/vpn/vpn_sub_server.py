@@ -4,8 +4,10 @@
                   with the days and GB left (in the names and in the "subscription-userinfo" header)
    /<secret>/     a short-lived page with one QR code and "Copy" buttons (made by vpn_share_link)
    /<secret>/sub  the subscription of that page's device, while the page lives
-   vpn_sub_server.py <folder> <port>
-Files are read on every request, so a change made by VPSForge shows at once. Nothing else is served."""
+   vpn_sub_server.py <folder> <port> [tls_cert_dir]
+Files are read on every request, so a change made by VPSForge shows at once. Nothing else is served.
+With a tls_cert_dir that holds cert.pem + key.pem, it serves HTTPS (so the subscription token is not
+sent in clear over the network); without one it serves plain HTTP."""
 import base64, html, http.server, os, re, shutil, sys, time
 
 root, port = sys.argv[1], int(sys.argv[2])
@@ -132,4 +134,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 server = http.server.ThreadingHTTPServer(("0.0.0.0", port), Handler)
 server.daemon_threads = True
+# Optional HTTPS: wrap the socket in TLS when a cert dir with cert.pem + key.pem is given, so the
+# subscription token never travels in clear. The cert is self-signed (IP-only install), so a VPN app
+# may ask to allow it once.
+cert_dir = sys.argv[3] if len(sys.argv) > 3 else ""
+if cert_dir:
+    import ssl
+    cert, key = os.path.join(cert_dir, "cert.pem"), os.path.join(cert_dir, "key.pem")
+    if os.path.exists(cert) and os.path.exists(key):
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(cert, key)
+        server.socket = ctx.wrap_socket(server.socket, server_side=True)
 server.serve_forever()

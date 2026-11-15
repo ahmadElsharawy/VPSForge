@@ -12,7 +12,15 @@ vpn_sub_server_ensure() {
   helper="${LIB_DIR:-/opt/vpsforge/lib}/core/proxy/vpn/vpn_sub_server.py"
   [ -f "$helper" ] || { echo "ERROR: $helper is missing."; return 1; }
   mkdir -p "$dir/subs" "$dir/pages" && chmod 700 "$dir" || return 1
-  want="ExecStart=/usr/bin/python3 $helper $dir $port"
+  # Serve the subscription over HTTPS (self-signed, by IP) so the token is not sent in clear. If the
+  # certificate cannot be made (no openssl), fall back to plain HTTP rather than failing.
+  local certdir
+  certdir=$(_vpn_sub_ensure_cert 2>/dev/null || true)
+  if [ -n "$certdir" ]; then
+    want="ExecStart=/usr/bin/python3 $helper $dir $port $certdir"
+  else
+    want="ExecStart=/usr/bin/python3 $helper $dir $port"
+  fi
   # upgrade from v3.5.1 and older: a short-lived page (vpn_once_server.py) may still hold the port.
   # Stop it and wait until its wrapper has closed ITS firewall opening, so ours below is not removed.
   local old_pids n=0

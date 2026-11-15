@@ -7,5 +7,8 @@ vpn_sub_url() {
   [ -n "$ext" ] || return 1
   tok=$(vpn_sub_token "$vps" "$name") || return 1
   [ -n "${PUBLIC_IP:-}" ] || get_public_ip >/dev/null 2>&1
-  echo "http://${PUBLIC_IP}:$((ext + 1))/s/${tok}"
+  # https when the subscription server has a TLS cert (the normal case), http only as a fallback.
+  local scheme="http"
+  [ -f "$VPN_SUB_DIR/.tls/cert.pem" ] && scheme="https"
+  echo "${scheme}://${PUBLIC_IP}:$((ext + 1))/s/${tok}"
 }
