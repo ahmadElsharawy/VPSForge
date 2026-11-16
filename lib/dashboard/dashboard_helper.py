@@ -495,9 +495,14 @@ def main():
 
     # Print container list
     tw = [12, 12, 25, 20, 25, 26, 17, 8]   # NAME, STATUS, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
+    ordered = sorted(rows, key=lambda x: x[0])
+    # Widen a column when a value (a long VPS name, big traffic numbers) would not fit,
+    # otherwise the value pushes every border after it out of line.
+    for row in ordered:
+        for k, c in enumerate(row[:8]):
+            tw[k] = max(tw[k], len(str(c)) + 2)
     print(line(tw, TOP))
     print(cells(["NAME", "STATUS", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
-    ordered = sorted(rows, key=lambda x: x[0])
     print(line(tw, MID if ordered else BOT))
     for i, row in enumerate(ordered):
         print(cells([str(c) for c in row[:8]], tw))
