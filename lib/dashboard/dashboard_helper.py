@@ -469,11 +469,27 @@ def main():
     def cells(values, widths):
         return V + V.join(" " + f"{v:<{w - 2}}" + " " for v, w in zip(values, widths)) + V
 
+    # Column widths of both tables. Each VPS column widens to fit its longest value
+    # (otherwise a long name pushes every border after it out of line).
+    gw = [27, 27, 26, 26, 26, 26]   # AUTO REFRESH/TOTAL DISK, PUBLIC IP/HOST OS, ... HOST CPU/AVAILABLE DISK
+    tw = [12, 12, 25, 20, 25, 26, 17, 8]   # NAME, STATUS, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
+    ordered = sorted(rows, key=lambda x: x[0])
+    for row in ordered:
+        for k, c in enumerate(row[:8]):
+            tw[k] = max(tw[k], len(str(c)) + 2)
+
+    # Give the narrower table the extra space, spread over its columns, so both tables are equally wide.
+    def total_width(widths):
+        return sum(widths) + len(widths) + 1
+    narrow = gw if total_width(gw) < total_width(tw) else tw
+    extra = abs(total_width(gw) - total_width(tw))
+    for k in range(extra):
+        narrow[k % len(narrow)] += 1
+
     # Print dashboard header
     if not only_table:
         refresh_str = f"ON ({refresh_interval}s)" if auto_refresh == "on" else "OFF"
         host_cpu_str = f"{host_cpu_count} Core" + ("" if str(host_cpu_count) == "1" else "s")
-        gw = [27, 27, 26, 26, 26, 26]   # AUTO REFRESH/TOTAL DISK, PUBLIC IP/HOST OS, ... HOST CPU/AVAILABLE DISK
         title_w = sum(gw) + len(gw) - 1
         print(line([title_w], TOP))
         print(V + f" {('VPSFORGE MANAGER ' + version):^{title_w - 2}} " + V)
@@ -494,13 +510,6 @@ def main():
         print()
 
     # Print container list
-    tw = [12, 12, 25, 20, 25, 26, 17, 8]   # NAME, STATUS, RAM, CPU, DISK, NETWORK_IO, INTERNAL_IP, PORT
-    ordered = sorted(rows, key=lambda x: x[0])
-    # Widen a column when a value (a long VPS name, big traffic numbers) would not fit,
-    # otherwise the value pushes every border after it out of line.
-    for row in ordered:
-        for k, c in enumerate(row[:8]):
-            tw[k] = max(tw[k], len(str(c)) + 2)
     print(line(tw, TOP))
     print(cells(["NAME", "STATUS", "RAM", "CPU", "DISK", "NETWORK_IO", "INTERNAL_IP", "PORT"], tw))
     print(line(tw, MID if ordered else BOT))
