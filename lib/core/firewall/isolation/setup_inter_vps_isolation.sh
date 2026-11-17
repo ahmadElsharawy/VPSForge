@@ -69,13 +69,16 @@ setup_inter_vps_isolation() {
   # The VPN/Caddy code opens its ports with plain `-A INPUT --dport X -j ACCEPT` rules that are NOT
   # interface-restricted, so our DROP must sit ABOVE them. We rebuild the five rules at the very top of
   # INPUT every time (delete any old copy, then insert at position 1 in reverse so the final order is
-  # DNS, DNS, DHCP, ICMP, DROP) - the DROP then wins over any later per-service ACCEPT.
+  # REPLIES, DNS, DNS, DHCP, ICMP, DROP) - the DROP then wins over any later per-service ACCEPT.
+  # REPLIES lets back only answers to connections the HOST opened (Caddy -> a VPS website, the
+  # dashboard shell); without it the Caddy proxy gets 502 because the VPS's SYN-ACK is dropped.
   local _r
   for _r in "-i incusbr0 -j DROP" \
             "-i incusbr0 -p icmp -j ACCEPT" \
             "-i incusbr0 -p udp --dport 67 -j ACCEPT" \
             "-i incusbr0 -p tcp --dport 53 -j ACCEPT" \
-            "-i incusbr0 -p udp --dport 53 -j ACCEPT"; do
+            "-i incusbr0 -p udp --dport 53 -j ACCEPT" \
+            "-i incusbr0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"; do
     while iptables -D INPUT $_r 2>/dev/null; do :; done
     iptables -I INPUT 1 $_r
   done
@@ -85,7 +88,8 @@ setup_inter_vps_isolation() {
               "-i incusbr0 -p udp --dport 547 -j ACCEPT" \
               "-i incusbr0 -p tcp --dport 53 -j ACCEPT" \
               "-i incusbr0 -p udp --dport 53 -j ACCEPT" \
-              "-i incusbr0 -p ipv6-icmp -j ACCEPT"; do
+              "-i incusbr0 -p ipv6-icmp -j ACCEPT" \
+              "-i incusbr0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT"; do
       while ip6tables -D INPUT $_r 2>/dev/null; do :; done
       ip6tables -I INPUT 1 $_r 2>/dev/null || true
     done
