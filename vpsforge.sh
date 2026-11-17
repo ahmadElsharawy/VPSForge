@@ -5,7 +5,7 @@
 # ═══════════════════════════════════════════════════════════════════════════
 set -uo pipefail
 
-VPSFORGE_VERSION="v3.6.14"
+VPSFORGE_VERSION="v3.6.15"
 
 # Fast version query (no lib loading needed).
 if [[ "${1:-}" == "--version" || "${1:-}" == "-v" || "${1:-}" == "version" ]]; then
@@ -63,14 +63,17 @@ case "${1:-}" in
   quota-check) check_vps_traffic_quotas; vpn_check_limits; tunnel_pending_cleanup; exit 0;;
   tidy) get_network_info 2>/dev/null || true; host_tidy; exit 0;;
   reclaim) reclaim_pool_space; echo "Freed disk space returned to the server."; exit 0;;
+  # Internal: re-apply the security rules with the code now on disk (called right after an update).
+  _reharden) get_network_info 2>/dev/null || true; setup_inter_vps_isolation; exit $?;;
   update|upgrade)
     shift
     get_network_info 2>/dev/null || true
     vpsforge_with_update_lock vpsforge_perform_update "$@"
     _vpsforge_update_rc=$?
     # Re-apply security hardening right away with the new code, so a fix ships the moment the owner
-    # updates instead of waiting for the next full run of the menu.
-    setup_inter_vps_isolation 2>/dev/null || true
+    # updates instead of waiting for the next full run of the menu. This shell still holds the OLD
+    # functions, so start a fresh one that loads the NEW files from disk.
+    bash "$(readlink -f "$0")" _reharden 2>/dev/null || setup_inter_vps_isolation 2>/dev/null || true
     exit $_vpsforge_update_rc
     ;;
 esac
