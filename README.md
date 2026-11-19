@@ -1,7 +1,7 @@
-# VPSForge v3.6.1
+# VPSForge v4.0.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v3.6.1-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v4.0.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,16 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v4.0.0
+
+v4.0.0 gathers every change since v3.6.1 (v3.6.2 - v3.6.15): a security pass after an external pentest, safer VPN subscriptions and many fixes.
+- **Security:** fixed tenant-to-host and tenant-to-tenant attacks found by an external pentest; host-service isolation now drops traffic above the per-service ACCEPT rules; the hardening is applied right away on `vpsforge update` (with the new code, not the old one).
+- **VPN subscription:** served over HTTP by default, HTTPS only with a trusted certificate; a slow TLS handshake no longer blocks the whole subscription server.
+- **VPN:** deleting a VPS now removes its VPN too (clean-host promise); no Hysteria UDP port collision when VPNs are created in parallel; no VPN residue left on a cloned VPS.
+- **Port forwards:** the destination must be a VPS on this server; no collision between forwards.
+- **Domains (Caddy):** a website domain pointing to a VPS no longer returns 502 (host isolation was dropping the VPS's replies).
+- **Dashboard:** the server table and the VPS table are equally wide, and the borders stay in line with long VPS names.
 
 ## ✨ What's new in v3.6.1
 
