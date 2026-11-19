@@ -17,7 +17,9 @@ _create_vps_steps() {
 
   local ram_label cpu_label
   [ "$ram_mode" = "unlimited" ] && ram_label="Unlimited" || ram_label="${ram}MB"
-  [ "$cpu_mode" = "unlimited" ] && cpu_label="$(get_host_cpu_count) Core(s)" || cpu_label="${cpu_value} Core(s)"
+  split_cpu_value "$cpu_value"
+  [ "$cpu_mode" = "unlimited" ] && cpu_label="$(get_host_cpu_count) Core(s)" || cpu_label="${CPU_CORES_PART} Core(s)"
+  [ -n "$CPU_ALLOWANCE_PART" ] && cpu_label="${cpu_label}, ${CPU_ALLOWANCE_PART}% cap"
   echo "Creating $name | Target Image: $image | RAM $ram_label | CPU $cpu_label | IP $ip | Port $port"
 
   _init_vps_instance "$name" "$image" || return 1

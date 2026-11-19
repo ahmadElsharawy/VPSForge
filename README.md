@@ -1,7 +1,7 @@
-# VPSForge v4.0.0
+# VPSForge v4.1.0
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-v4.0.0-blue?style=for-the-badge&logo=git" alt="Version" />
+  <img src="https://img.shields.io/badge/Version-v4.1.0-blue?style=for-the-badge&logo=git" alt="Version" />
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2022.04%20|%2024.04-orange?style=for-the-badge&logo=ubuntu" alt="Platform" />
   <img src="https://img.shields.io/badge/Backend-Incus%20System%20Containers-brightgreen?style=for-the-badge&logo=linux" alt="Backend" />
   <img src="https://img.shields.io/badge/Storage-BTRFS%20CoW-red?style=for-the-badge&logo=disk" alt="Storage" />
@@ -15,6 +15,11 @@
 VPSForge transforms any standard Ubuntu host into an enterprise-ready, multi-tenant VPS virtualization node. By marrying **Incus** (system containers) with **BTRFS** Copy-on-Write storage, **iptables** NAT rules, **Caddy** auto-SSL reverse proxying, and **Traffic Control (tc)** bandwidth shaping, VPSForge provides the full isolation and features of a commercial hypervisor at near-zero virtualization overhead.
 
 ---
+
+## ✨ What's new in v4.1.0
+
+- **CPU usage cap:** right after the CPU cores question (create VPS and Edit > resources) you choose how much of the CPU the VPS may use, 1-100% (Enter = 70%). It is a hard limit (`limits.cpu.allowance` as `Nms/100ms`), so a busy or broken VPS can no longer take the whole host CPU. Shown in Details and kept on reinstall.
+- **Safer number prompts:** traffic limits and some menu choices now reject letters and wrong values and ask again instead of silently using a default.
 
 ## ✨ What's new in v4.0.0
 

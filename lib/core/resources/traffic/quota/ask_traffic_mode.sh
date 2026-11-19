@@ -23,10 +23,22 @@ ask_traffic_mode() {
         ;;
       2)
         show_example "100 = the VPS may download 100GB, then it is slowed or stopped"
-        read -r -p "Download (Rx) Data Limit in GB [0=Unlimited, Enter=$last_rx]: " rx </dev/tty
-        rx="${rx:-$last_rx}"; [[ "$rx" =~ ^[0-9]+$ ]] || rx=0
-        read -r -p "Upload (Tx) Data Limit in GB [0=Unlimited, Enter=$last_tx]: " tx </dev/tty
-        tx="${tx:-$last_tx}"; [[ "$tx" =~ ^[0-9]+$ ]] || tx=0
+        while :; do
+          read -r -p "Download (Rx) Data Limit in GB [0=Unlimited, Enter=$last_rx]: " rx </dev/tty
+          rx="${rx:-$last_rx}"
+          if [[ "$rx" =~ ^[0-9]+$ ]]; then
+            break
+          fi
+          echo "ERROR: Download limit must be a whole number of GB (0 = unlimited)."
+        done
+        while :; do
+          read -r -p "Upload (Tx) Data Limit in GB [0=Unlimited, Enter=$last_tx]: " tx </dev/tty
+          tx="${tx:-$last_tx}"
+          if [[ "$tx" =~ ^[0-9]+$ ]]; then
+            break
+          fi
+          echo "ERROR: Upload limit must be a whole number of GB (0 = unlimited)."
+        done
         TRAFFIC_MODE_RESULT="limited"; TRAFFIC_RX_RESULT="$rx"; TRAFFIC_TX_RESULT="$tx"
         pref_set traffic_mode 2; pref_set traffic_rx "$rx"; pref_set traffic_tx "$tx"
         return 0

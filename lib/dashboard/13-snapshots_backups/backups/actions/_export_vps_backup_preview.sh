@@ -6,7 +6,10 @@ _export_vps_backup_preview() {
   ip=$(get_ip "$name" 2>/dev/null || echo "-")
   port=$(get_vps_saved_port "$name" 2>/dev/null || echo "-")
   ram=$(incus config get "$name" limits.memory 2>/dev/null || true); ram="${ram:-Unlimited}"
+  local cpu_allowance
   cpu=$(incus config get "$name" limits.cpu 2>/dev/null || true); cpu="${cpu:-Unlimited}"
+  cpu_allowance=$(get_vps_cpu_cap "$name")
+  [ -n "$cpu_allowance" ] && cpu="${cpu}, ${cpu_allowance}% cap"
   image=$(incus config get "$name" user.vpsforge.image 2>/dev/null || true); image="${image:-Ubuntu}"
   pfs=$(incus config get "$name" user.vpsforge.port_forwards.summary 2>/dev/null || true); pfs="${pfs:-None}"
   proxy_b64=$(incus config get "$name" user.vpsforge.proxy 2>/dev/null || echo "-")

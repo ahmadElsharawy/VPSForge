@@ -5,7 +5,9 @@ _add_print_container_summary() {
   v_ip="${NETWORK_PREFIX}.$((IP_START + ${nums[$idx]} - 1))"
   
   if [ "${ram_modes[$idx]}" = "limited" ]; then r_disp="${ram_values[$idx]}MB"; else r_disp="Unlimited"; fi
-  if [ "${cpu_modes[$idx]}" = "limited" ]; then c_disp="${cpu_values[$idx]} Core(s)"; else c_disp="Unlimited"; fi
+  split_cpu_value "${cpu_values[$idx]}"
+  if [ "${cpu_modes[$idx]}" = "limited" ]; then c_disp="${CPU_CORES_PART} Core(s)"; else c_disp="Unlimited"; fi
+  [ -n "$CPU_ALLOWANCE_PART" ] && c_disp="${c_disp}, ${CPU_ALLOWANCE_PART}% cap"
   if [ "${disk_modes[$idx]}" = "limited" ]; then d_disp="${disk_values[$idx]}GB"; else d_disp="Unlimited"; fi
   if [ "${network_modes[$idx]}" = "limited" ]; then n_disp="${network_values[$idx]} Mbit"; else n_disp="Unlimited"; fi
   if [ "${traffic_modes[$idx]}" = "limited" ]; then

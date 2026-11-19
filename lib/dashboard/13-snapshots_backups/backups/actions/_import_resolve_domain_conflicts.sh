@@ -24,8 +24,14 @@ _import_resolve_domain_conflicts() {
       echo "   Domain '$dom' is already linked to VPS '$conflicting_vps'."
       echo "   1) Skip this domain (Default)"
       echo "   2) Takeover (unlink from '$conflicting_vps' and link to '$target_name')"
-      read -r -p "   Choice [1-2, Enter=1]: " choice </dev/tty
-      choice="${choice:-1}"
+      while :; do
+        read -r -p "   Choice [1-2, Enter=1]: " choice </dev/tty
+        choice="${choice:-1}"
+        case "$choice" in
+          1|2) break;;
+          *) echo "   Invalid choice. Please enter 1 or 2.";;
+        esac
+      done
       if [ "$choice" = "2" ]; then
         echo "   Will take over domain '$dom' (unlinking from '$conflicting_vps')..."
         caddy_conflicts_to_remove+=("$conflict_file|$dom")

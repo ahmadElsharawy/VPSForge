@@ -5,6 +5,9 @@ preserve_vps_settings() {
 
   PRESERVED_RAM_LIMIT=$(get_vps_ram_limit_mb "$name")
   PRESERVED_CPU_LIMIT=$(incus config get "$name" limits.cpu 2>/dev/null || true)
+  local cpu_allowance
+  cpu_allowance=$(get_vps_cpu_cap "$name")
+  cpu_allowance="${cpu_allowance%%%}"
   PRESERVED_DISK_LIMIT=$(get_vps_disk_limit_gb "$name")
   PRESERVED_NETWORK_LIMIT=$(get_vps_network_limit_mbit "$name")
 
@@ -17,6 +20,7 @@ preserve_vps_settings() {
 
   PRESERVED_CPU_MODE="unlimited"
   [ -n "$PRESERVED_CPU_LIMIT" ] && PRESERVED_CPU_MODE="limited"
+  [ -n "$cpu_allowance" ] && PRESERVED_CPU_LIMIT="${PRESERVED_CPU_LIMIT}@${cpu_allowance}"
 
   PRESERVED_DISK_MODE="unlimited"
   [ -n "$PRESERVED_DISK_LIMIT" ] && PRESERVED_DISK_MODE="limited"

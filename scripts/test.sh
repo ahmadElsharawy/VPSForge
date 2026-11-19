@@ -27,6 +27,22 @@ t "arc 1GiB host floor" 134217728 "$(zfs_arc_max_bytes 1048576)"
 t "arc 256MiB host min 64MiB" 67108864 "$(zfs_arc_max_bytes 262144)"
 zfs_arc_max_bytes abc >/dev/null && r=ok || r=bad; t "arc bad input refused" bad "$r"
 
+# CPU allowance and split
+is_valid_cpu_allowance 70 && r=ok || r=bad;  t "allowance 70 ok" ok "$r"
+is_valid_cpu_allowance 1 && r=ok || r=bad;   t "allowance 1 ok" ok "$r"
+is_valid_cpu_allowance 100 && r=ok || r=bad; t "allowance 100 ok" ok "$r"
+is_valid_cpu_allowance 0 && r=ok || r=bad;   t "allowance 0 refused" bad "$r"
+is_valid_cpu_allowance 101 && r=ok || r=bad; t "allowance 101 refused" bad "$r"
+is_valid_cpu_allowance -5 && r=ok || r=bad;  t "allowance negative refused" bad "$r"
+is_valid_cpu_allowance 3.5 && r=ok || r=bad; t "allowance float refused" bad "$r"
+is_valid_cpu_allowance abc && r=ok || r=bad; t "allowance letters refused" bad "$r"
+is_valid_cpu_allowance " 5" && r=ok || r=bad; t "allowance space refused" bad "$r"
+
+split_cpu_value "2@70"; t "split 2@70 cores" "2" "$CPU_CORES_PART"; t "split 2@70 allowance" "70" "$CPU_ALLOWANCE_PART"
+split_cpu_value "@70";  t "split @70 cores" "" "$CPU_CORES_PART";   t "split @70 allowance" "70" "$CPU_ALLOWANCE_PART"
+split_cpu_value "2";    t "split 2 cores" "2" "$CPU_CORES_PART";    t "split 2 allowance" "" "$CPU_ALLOWANCE_PART"
+split_cpu_value "";     t "split empty cores" "" "$CPU_CORES_PART"; t "split empty allowance" "" "$CPU_ALLOWANCE_PART"
+
 # forward rules read from backups must be safe
 is_valid_port_forward_rule tcp "" 8080 80 && r=ok || r=bad; t "rule ok" ok "$r"
 is_valid_port_forward_rule tcp any 8080 80 && r=ok || r=bad; t "rule any ext_ip ok" ok "$r"
@@ -182,6 +198,24 @@ ask_mode_and_value vpsX ram RAM RAM MB "in MB" is_valid_ram_value <<< $'2
 0
 0' >/dev/null && r=bad || r=ok
 t "typing 0 backs out" ok "$r"
+
+# ask_cpu_allowance and ask_cpu_mode
+CPU_ALLOWANCE_RESULT=""; ask_cpu_allowance vpsX <<< "" >/dev/null
+t "cpu allowance Enter defaults to 70" 70 "$CPU_ALLOWANCE_RESULT"
+CPU_ALLOWANCE_RESULT=""; ask_cpu_allowance vpsX <<< "85" >/dev/null
+t "cpu allowance custom value" 85 "$CPU_ALLOWANCE_RESULT"
+CPU_ALLOWANCE_RESULT=""; ask_cpu_allowance vpsX <<< "" >/dev/null
+t "cpu allowance remembered default" 85 "$CPU_ALLOWANCE_RESULT"
+ask_cpu_allowance vpsX <<< "0" >/dev/null && r=bad || r=ok
+t "cpu allowance 0 backs out" ok "$r"
+
+CPU_MODE_RESULT=""; CPU_VALUE_RESULT=""
+ask_cpu_mode vpsX <<< $'1
+75
+' >/dev/null
+t "ask_cpu_mode unlimited with allowance mode" unlimited "$CPU_MODE_RESULT"
+t "ask_cpu_mode unlimited with allowance value" "@75" "$CPU_VALUE_RESULT"
+
 rm -f "$PREFS_FILE"
 
 # --- wizard: 0 goes back ONE step ---
@@ -363,6 +397,45 @@ vps_ssh_forward_enabled v1 && r=on || r=off; t "ssh_forward flag empty: enabled"
 incus() { return 1; }
 vps_ssh_forward_enabled v1 && r=on || r=off; t "ssh_forward incus fails: enabled" on "$r"
 unset -f incus
+
+# CPU mode and allowance setting, preserve, print, and details
+declare -A fake_cfg=()
+incus() {
+  case "$1 $2" in
+    "config get") echo "${fake_cfg["$3:$4"]:-}";;
+    "config set") fake_cfg["$3:$4"]="$5";;
+    "config unset") unset 'fake_cfg["'"$3:$4"'"]';;
+  esac
+}
+get_host_cpu_count() { echo 4; }
+set_cpu_mode_for_vps v1 limited "2@70"
+t "set cpu cores" "2" "${fake_cfg["v1:limits.cpu"]:-}"
+t "set cpu allowance" "140ms/100ms" "${fake_cfg["v1:limits.cpu.allowance"]:-}"
+t "set cpu cap stored" "70" "${fake_cfg["v1:user.vpsforge.cpu_cap"]:-}"
+
+set_cpu_mode_for_vps v1 unlimited "@100"
+t "set cpu cores unlimited" "" "${fake_cfg["v1:limits.cpu"]:-}"
+t "set cpu allowance 100 unset" "" "${fake_cfg["v1:limits.cpu.allowance"]:-}"
+
+set_cpu_mode_for_vps v1 unlimited "@80"
+get_vps_ram_limit_mb() { echo 512; }
+get_vps_disk_limit_gb() { echo 10; }
+get_vps_network_limit_mbit() { echo 100; }
+get_vps_user() { echo "root"; }
+get_vps_password() { echo "root"; }
+preserve_vps_settings v1
+t "preserved cpu limit format" "@80" "$PRESERVED_CPU_LIMIT"
+t "preserved cpu mode stays unlimited" "unlimited" "$PRESERVED_CPU_MODE"
+p_out=$(print_preserved_settings v1 9001)
+case "$p_out" in *"CPU: unlimited, 80% cap"*) r=ok;; *) r=bad;; esac
+t "print preserved cpu with cap" ok "$r"
+
+details_cpu=$(_details_format_cpu_display v1)
+case "$details_cpu" in *"4 / 4 / 4 Cores, 80% cap"*) r=ok;; *) r=bad;; esac
+t "details format cpu shows cap" ok "$r"
+
+unset -f incus get_host_cpu_count get_vps_ram_limit_mb get_vps_disk_limit_gb get_vps_network_limit_mbit get_vps_user get_vps_password
+unset fake_cfg
 
 echo "Passed: $pass  Failed: $failn"
 [ "$failn" -eq 0 ]

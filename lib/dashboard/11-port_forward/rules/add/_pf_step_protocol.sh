@@ -9,14 +9,17 @@ _pf_step_protocol() {
   echo "  1) TCP$([ "$last" = "1" ] && echo '   <- last used')"
   echo "  2) UDP$([ "$last" = "2" ] && echo '   <- last used')"
   echo "  3) BOTH (TCP + UDP)$([ "$last" = "3" ] && echo '   <- last used')"
-  read -r -p "Choice [1-3, Enter=$last, 0=Back]: " choice </dev/tty
-  choice="${choice:-$last}"
-  case "$choice" in
-    0) return "$WIZARD_BACK";;
-    2) PF_PROTOCOL="udp";;
-    3) PF_PROTOCOL="both";;
-    *) PF_PROTOCOL="tcp"; choice=1;;
-  esac
+  while :; do
+    read -r -p "Choice [1-3, Enter=$last, 0=Back]: " choice </dev/tty
+    choice="${choice:-$last}"
+    case "$choice" in
+      0) return "$WIZARD_BACK";;
+      1) PF_PROTOCOL="tcp"; break;;
+      2) PF_PROTOCOL="udp"; break;;
+      3) PF_PROTOCOL="both"; break;;
+      *) echo "Invalid choice. Please enter 1, 2, or 3.";;
+    esac
+  done
   pref_set pf_protocol "$choice"
   return 0
 }

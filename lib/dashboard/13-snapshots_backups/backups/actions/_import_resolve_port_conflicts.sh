@@ -26,8 +26,14 @@ _import_resolve_port_conflicts() {
       echo "   External port $ext_port ($proto) is already used by: $other_vps."
       echo "   1) Change external port"
       echo "   2) Skip this rule (Default)"
-      read -r -p "   Choice [1-2, Enter=2]: " action </dev/tty
-      action="${action:-2}"
+      while :; do
+        read -r -p "   Choice [1-2, Enter=2]: " action </dev/tty
+        action="${action:-2}"
+        case "$action" in
+          1|2) break;;
+          *) echo "   Invalid choice. Please enter 1 or 2.";;
+        esac
+      done
       if [ "$action" = "1" ]; then
         if _import_prompt_new_ext_port "$proto" "$ext_ip" "$int_port" "$old_ip"; then
           rules_to_apply+=("${proto}|${ext_ip}|${ext_port}|${int_port}")
