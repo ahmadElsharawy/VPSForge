@@ -184,6 +184,9 @@ def section_create(ui):
     step(ui, "ram mode", r"RAM Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "ram value", r"RAM limit \(.*?: ", "256\r")
     step(ui, "cpu mode", r"CPU Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "\r")
+    step(ui, "cpu cap letters", r"CPU usage cap in percent.*?: ", "abc\r")
+    check("1) CPU cap rejects letters", step(ui, "cpu cap error", r"ERROR: CPU usage cap must be a whole number"))
+    step(ui, "cpu cap default", r"CPU usage cap in percent.*?: ", "\r")                                 # Enter = 70
     step(ui, "disk mode", r"Disk Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "disk value", r"Disk limit \(.*?: ", "5\r")
     step(ui, "network mode", r"Network Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "\r")
@@ -192,6 +195,8 @@ def section_create(ui):
     step(ui, "confirm", r"Proceed with VPS creation\?.*?: ", "\r")
     ok = ui.expect(r"Creation summary: Success=1", 420)
     check("1) create one VPS (individual settings)", ok and running("uit1"), ui.tail())
+    check("1) CPU cap Enter = 70% (hard limit)", sh("incus config get uit1 user.vpsforge.cpu_cap")[1] == "70"
+          and sh("incus config get uit1 limits.cpu.allowance")[1] == "%dms/100ms" % (70 * os.cpu_count()))
     pause(ui)
 
     # --- two VPSs with the same settings
@@ -203,6 +208,7 @@ def section_create(ui):
     step(ui, "ram mode", r"RAM Mode.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "ram value", r"RAM limit \(.*?: ", "256\r")
     step(ui, "cpu mode", r"CPU Mode.*?Choice \[0=Back, Enter=\d\]: ", "\r")
+    step(ui, "cpu cap", r"CPU usage cap in percent.*?: ", "40\r")
     step(ui, "disk mode", r"Disk Mode.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
     step(ui, "disk value", r"Disk limit \(.*?: ", "5\r")
     step(ui, "network mode", r"Network Mode.*?Choice \[0=Back, Enter=\d\]: ", "\r")
@@ -213,6 +219,7 @@ def section_create(ui):
     step(ui, "confirm", r"Proceed with VPS creation\?.*?: ", "\r")
     ok = ui.expect(r"Creation summary: Success=2", 700)
     check("1) create two VPSs (same settings for all)", ok and running("uit2") and running("uit3"), ui.tail())
+    check("1) shared CPU cap 40% on both", all(sh("incus config get %s user.vpsforge.cpu_cap" % n)[1] == "40" for n in ("uit2", "uit3")))
     pause(ui)
     # an app inside uit2 for the websites section
     sh("incus exec uit2 -- sh -c 'nohup python3 -m http.server 8088 >/dev/null 2>&1 &'")
@@ -307,8 +314,12 @@ def section_edit(ui):
 
     step(ui, "edit menu", sub_prompt, "2\r")
     step(ui, "cpu mode", r"CPU Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "1\r")
+    step(ui, "cpu cap 150", r"CPU usage cap in percent.*?: ", "150\r")
+    check("7.2 CPU cap rejects 150", step(ui, "cpu cap error", r"ERROR: CPU usage cap must be a whole number"))
+    step(ui, "cpu cap 55", r"CPU usage cap in percent.*?: ", "55\r")
     time.sleep(1)
     check("7.2 change CPU (unlimited)", eventually(lambda: sh("incus config get uit1 limits.cpu")[1] == ""))
+    check("7.2 change CPU cap to 55%", eventually(lambda: sh("incus config get uit1 limits.cpu.allowance")[1] == "%dms/100ms" % (55 * os.cpu_count())))
 
     step(ui, "edit menu", sub_prompt, "3\r")
     step(ui, "disk mode", r"Disk Mode for uit1.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
@@ -324,6 +335,8 @@ def section_edit(ui):
 
     step(ui, "edit menu", sub_prompt, "5\r")
     step(ui, "traffic mode", r"Traffic Data Limit.*?Choice \[0=Back, Enter=\d\]: ", "2\r")
+    step(ui, "rx letters", r"Download \(Rx\) Data Limit.*?: ", "xx\r")
+    check("7.5 traffic limit rejects letters", step(ui, "rx error", r"ERROR: Download limit must be a whole number"))
     step(ui, "rx", r"Download \(Rx\) Data Limit.*?: ", "50\r")
     step(ui, "tx", r"Upload \(Tx\) Data Limit.*?: ", "40\r")
     time.sleep(1)
@@ -789,6 +802,8 @@ def section_reinstall(ui):
     time.sleep(3)
     check("6) reinstall keeps IP, limits and login", ok and running("uit3") and ip_of("uit3") == before_ip
           and sh("incus config get uit3 limits.memory")[1] == "300MiB" and login("root", "MultiPass9", before_ip), ui.tail())
+    check("6) reinstall keeps the CPU cap", sh("incus config get uit3 user.vpsforge.cpu_cap")[1] == "40"
+          and sh("incus config get uit3 limits.cpu.allowance")[1] == "%dms/100ms" % (40 * os.cpu_count()))
     pause(ui)
 
 
